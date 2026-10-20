@@ -1,0 +1,30 @@
+{
+  "name": "ledgerflow-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LedgerFlow ERP SPA (React 19, TypeScript). Renders the existing LedgerFlow design-system components.",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:embed": "node build.mjs --embed",
+    "typecheck": "tsc -p .",
+    "test": "node tests/run-unit.mjs",
+    "e2e": "node --test --test-timeout=120000 --test-concurrency=1 \"tests/e2e/*.test.mjs\""
+  },
+  "dependencies": {
+    "@hookform/resolvers": "3.10.0",
+    "@tanstack/react-query": "5.90.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "7.90.0",
+    "react-router-dom": "6.30.6",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "0.28.2",
+    "playwright": "1.56.0",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,310 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate, useParams } from 'react-router-dom'
+import { api, ApiError } from '../../api/client'
+import type { Party } from '../../api/contract.gen'
+import { useCreateCustomer, useCustomer, useCustomerAction, useCustomerGroups, usePaymentTerms, useUpdateCustomer } from '../../api/parties'
+import { useToast } from '../../app/toast'
+import { useSession } from '../../auth/session'
+import { lf } from '../../ds'
+import { customerSchema, emptyCustomer, serverFieldMap, toPartyInput, type CustomerFormParsed, type CustomerFormValues } from '../../lib/customerSchema'
+import { formatTaka, termLabel } from '../../lib/format'
+import { Forbidden } from '../states/Forbidden'
+import { NotFound } from '../states/NotFound'
+import { ErrorBanner } from './shared'
+
+/** Districts offered by the design (Parties.dc.html districtOptions). */
+const DISTRICTS = ['Dhaka', 'Chattogram', 'Gazipur', 'Narayanganj', 'Cumilla', 'Sylhet', 'Rajshahi', 'Khulna', 'Bogura', 'Naogaon']
+const TYPES = [{ value: '', label: 'Choose…' }, { value: 'business', label: 'Business' }, { value: 'individual', label: 'Individual' }, { value: 'walk_in', label: 'Walk-in counter' }]
+
+const newKey = () => crypto.randomUUID()
+
+/** B2 Add customer / B3 Edit customer (Cust-Add.dc.html, Cust-Edit.dc.html). */
+export function CustomerForm({ mode }: { mode: 'add' | 'edit' }) {
+  const { can } = useSession()
+  const id = Number(useParams().id)
+  const existing = useCustomer(mode === 'edit' ? id : 0)
+  if (mode === 'add' && !can('parties.create')) return <Forbidden permission="parties.create" what="adding customers" />
+  if (mode === 'edit' && !can('parties.edit')) return <Forbidden permission="parties.edit" what="editing customers" />
+  if (mode === 'edit') {
+    if (existing.error instanceof ApiError && existing.error.status === 404) return <NotFound what="this customer" />
+    if (existing.error) return <ErrorBanner error={existing.error} />
+    if (!existing.data) return null
+    if (existing.data.party.party_type !== 'customer') return <NotFound what="this customer" />
+  }
+  return <Form key={mode === 'edit' ? `${id}` : 'add'} mode={mode} party={existing.data?.party ?? null} />
+}
+
+function toForm(p: Party | null): CustomerFormValues {
+  if (!p) return { ...emptyCustomer }
+  const cat = p.category === 'business' || p.category === 'individual' || p.category === 'walk_in' ? p.category : ''
+  return {
+    name: p.name, category: cat, party_group_id: p.group ? String(p.group.id) : '', contact_person: p.contact_person ?? '',
+    mobile: p.mobile ?? '', email: p.email ?? '', alt_phone: p.alt_phone ?? '', address: p.address ?? '', district: p.district ?? '',
+    area: p.area ?? '', payment_term_id: p.payment_term ? String(p.payment_term.id) : '', credit_limit: p.credit_limit ?? '',
+    price_tier: p.price_tier === 'wholesale' ? 'wholesale' : 'standard', tax_registration_no: p.tax_registration_no ?? '', notes: p.notes ?? '',
+  }
+}
+
+function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
+  const L = lf()
+  const { Card, Field, Input, Select, Button, Banner, Badge, Icon, PageHeader, Dialog } = L
+  const navigate = useNavigate()
+  const toast = useToast()
+  const { can } = useSession()
+  const terms = usePaymentTerms()
+  const groups = useCustomerGroups()
+  const create = useCreateCustomer()
+  const update = useUpdateCustomer(party?.id ?? 0)
+  const action = useCustomerAction(party?.id ?? 0)
+  const idemKey = useRef(newKey())
+  const [version, setVersion] = useState(party?.version ?? 0)
+  const [conflict, setConflict] = useState(false)
+  const [formError, setFormError] = useState<unknown>(null)
+  const [confirm, setConfirm] = useState<null | 'leave' | 'delete'>(null)
+  const [deleteText, setDeleteText] = useState('')
+  const addAnother = useRef(false)
+
+  const defaults = useMemo(() => {
+    const d = toForm(party)
+    if (mode === 'add' && terms.data) d.payment_term_id = String(terms.data.find((t) => t.is_default)?.id ?? '')
+    return d
+  }, [party, mode, terms.data])
+  const { register, handleSubmit, setError, reset, formState: { errors, isDirty, isSubmitting, submitCount } } =
+    useForm<CustomerFormValues, unknown, CustomerFormParsed>({ resolver: zodResolver(customerSchema), defaultValues: defaults, mode: 'onSubmit' })
+  // New server data (record refetched, payment terms arrived): update the untouched fields, never what the user typed.
+  useEffect(() => { reset(defaults, { keepDirtyValues: true, keepErrors: true, keepSubmitCount: true, keepTouched: true }) }, [defaults]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const errorCount = Object.keys(errors).length
+  const err = (k: keyof CustomerFormValues) => errors[k]?.message as string | undefined
+
+  async function onValid(values: CustomerFormParsed) {
+    setFormError(null)
+    setConflict(false)
+    const input = toPartyInput(values)
+    try {
+      if (mode === 'add') {
+        const r = await create.mutateAsync({ input, idempotencyKey: idemKey.current })
+        idemKey.current = newKey()
+        toast({ tone: 'positive', title: `${r.data.name} added as ${r.data.code}`, description: `Ledger ${r.data.ledger_code} created under Sundry debtors.` })
+        for (const w of r.warnings ?? []) toast({ tone: 'warning', title: w.message })
+        if (addAnother.current) { reset({ ...emptyCustomer, payment_term_id: defaults.payment_term_id }); return }
+        reset(toForm(r.data))
+        navigate(`/customers/${r.data.id}`)
+      } else if (party) {
+        const updated = await update.mutateAsync({ input, version })
+        setVersion(updated.version)
+        reset(toForm(updated))
+        toast({ tone: 'positive', title: 'Changes saved', description: `${updated.name} · version ${updated.version}` })
+        navigate(`/customers/${party.id}`)
+      }
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 422)) {
+        for (const [field, msgs] of Object.entries(e.fieldErrors)) {
+          const target = serverFieldMap[field]
+          if (target) setError(target, { type: 'server', message: msgs[0] })
+        }
+        if (!Object.keys(e.fieldErrors).some((f) => serverFieldMap[f])) setFormError(e)
+      } else if (e instanceof ApiError && e.code === 'version_conflict') {
+        setConflict(true)
+      } else {
+        setFormError(e)
+      }
+    }
+  }
+
+  async function reloadLatest() {
+    if (!party) return
+    const fresh = await api.request<{ data: Party }>('GET', `/parties/${party.id}`)
+    setVersion(fresh.data.data.version)
+    setConflict(false)
+    toast({ tone: 'info', title: 'Loaded the latest version', description: 'Your edits are kept; save again to apply them.' })
+  }
+
+  async function runAction(a: 'deactivate' | 'reactivate' | 'delete') {
+    try {
+      await action.mutateAsync(a)
+      if (a === 'delete') {
+        toast({ tone: 'positive', title: `${party?.name} deleted` })
+        navigate('/customers')
+      } else {
+        toast({ tone: 'positive', title: a === 'deactivate' ? `${party?.name} is now inactive` : `${party?.name} is active again` })
+        navigate(`/customers/${party?.id}`)
+      }
+    } catch (e) {
+      setConfirm(null)
+      if (e instanceof ApiError && e.code === 'has_history') toast({ tone: 'warning', title: 'This customer has transactions', description: 'Make it inactive instead.' })
+      else setFormError(e)
+    }
+  }
+
+  const cancel = () => (isDirty ? setConfirm('leave') : navigate(mode === 'edit' && party ? `/customers/${party.id}` : '/customers'))
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); void handleSubmit(onValid)() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 } as const
+  const checklist = [
+    { ok: !err('name') && !err('mobile'), title: 'Name and mobile', body: 'Both are required to issue documents.' },
+    { info: true, title: 'Opening balance', body: 'Recorded with the accounting module (next release); locked after the first invoice.' },
+    { info: true, title: 'Tax registration', body: 'Optional. Leave blank if tax does not apply to this customer.' },
+    { ok: true, title: 'Ledger created for you', body: 'Posted under 1201 · Sundry debtors.' },
+  ]
+
+  return (
+    <form onSubmit={handleSubmit(onValid)} noValidate data-testid="customer-form">
+      <PageHeader eyebrow="Customers" title={mode === 'edit' ? `Edit ${party?.name}` : 'New customer'}
+        description={mode === 'edit' ? `${party?.code}${party?.area || party?.district ? ` · ${[party.area, party.district].filter(Boolean).join(', ')}` : ''}` : 'Fields marked * are required. Everything else can be added later.'} />
+      {submitCount > 0 && errorCount > 0 && <Banner tone="negative" title={`Fix ${errorCount} ${errorCount === 1 ? 'field' : 'fields'} to save this customer`}>Fields that need attention are marked below.</Banner>}
+      {conflict && <Banner tone="warning" title="Someone else changed this record" action={<Button size="sm" variant="secondary" onClick={() => void reloadLatest()}>Reload</Button>}>Your changes are kept below. Reload to see the latest version, then save again.</Banner>}
+      {formError ? <ErrorBanner error={formError} /> : null}
+      {mode === 'edit' && party?.status === 'inactive' && <Banner tone="info" title="This customer is inactive">It is hidden from new invoices. Reactivate it below.</Banner>}
+      {mode === 'edit' && party?.status !== 'inactive' && <Banner tone="info" title={`Editing ${party?.code}`}>Changes apply to new invoices. Posted invoices keep the details they were issued with.</Banner>}
+
+      <div className="lf-grid" style={{ alignItems: 'start' }}>
+        <div className="lf-c8" style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
+          <Card title="Basic details" subtitle="How this customer appears on invoices and in lists">
+            <div style={grid}>
+              <Field label="Customer name" required error={err('name')} hint="As it appears on documents" htmlFor="f-name">
+                <Input id="f-name" {...register('name')} invalid={!!err('name')} placeholder="e.g. Karim Distributors" />
+              </Field>
+              <Field label="Customer code" hint="Generated automatically">
+                <Input mono readOnly value={party?.code ?? 'CUS-…'} aria-label="Customer code" />
+              </Field>
+              <Field label="Type" htmlFor="f-category">
+                <Select id="f-category" options={TYPES} {...register('category')} />
+              </Field>
+              <Field label="Customer group" hint="Used to filter lists and reports" htmlFor="f-group">
+                <Select id="f-group" options={[{ value: '', label: 'No group' }, ...(groups.data ?? []).map((g) => ({ value: String(g.id), label: g.name }))]} {...register('party_group_id')} />
+              </Field>
+            </div>
+          </Card>
+
+          <Card title="Contact" subtitle="Who to call about orders and payments">
+            <div style={grid}>
+              <Field label="Contact person" error={err('contact_person')} htmlFor="f-person">
+                <Input id="f-person" {...register('contact_person')} placeholder="Full name" />
+              </Field>
+              <Field label="Mobile number" required error={err('mobile')} hint="11 digits, starting 01" htmlFor="f-mobile">
+                <Input id="f-mobile" prefix="+88" mono {...register('mobile')} invalid={!!err('mobile')} placeholder="01XXX-XXXXXX" inputMode="tel" />
+              </Field>
+              <Field label="Email" error={err('email')} htmlFor="f-email">
+                <Input id="f-email" type="email" {...register('email')} invalid={!!err('email')} placeholder="name@company.com" />
+              </Field>
+              <Field label="Alternate number" error={err('alt_phone')} htmlFor="f-alt">
+                <Input id="f-alt" prefix="+88" mono {...register('alt_phone')} placeholder="Optional" />
+              </Field>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Field label="Address" error={err('address')} htmlFor="f-address">
+                  <Input id="f-address" {...register('address')} placeholder="House, road, area" />
+                </Field>
+              </div>
+              <Field label="District" htmlFor="f-district">
+                <Select id="f-district" options={[{ value: '', label: 'Choose…' }, ...DISTRICTS]} {...register('district')} />
+              </Field>
+              <Field label="Area or thana" error={err('area')} htmlFor="f-area">
+                <Input id="f-area" {...register('area')} placeholder="e.g. Mirpur" />
+              </Field>
+            </div>
+          </Card>
+
+          <Card title="Accounting" subtitle="How this customer is posted to your books">
+            <div style={grid}>
+              <Field label="Opening balance" term="What this customer already owed you on the day you started using LedgerFlow."
+                hint="Entered with the accounting module (next release)">
+                <Input prefix="৳" align="right" readOnly value={formatTaka(party?.opening_balance ?? '0.00')} aria-label="Opening balance" />
+              </Field>
+              <Field label="Payment terms" htmlFor="f-terms">
+                <Select id="f-terms" options={[{ value: '', label: 'None' }, ...(terms.data ?? []).map((t) => ({ value: String(t.id), label: termLabel(t.name) }))]} {...register('payment_term_id')} />
+              </Field>
+              <Field label="Credit limit" error={err('credit_limit')} hint="Warn before invoicing past this amount" htmlFor="f-limit">
+                <Input id="f-limit" prefix="৳" align="right" mono {...register('credit_limit')} invalid={!!err('credit_limit')} placeholder="0.00" inputMode="decimal" />
+              </Field>
+              <Field label="Control ledger" hint="Where this balance rolls up">
+                <Input readOnly value={party?.ledger_code ? `${party.ledger_code} · Sundry debtors` : '1201 · Sundry debtors'} aria-label="Control ledger" />
+              </Field>
+              <Field label="Tax registration number" error={err('tax_registration_no')} hint="Optional. Tax rules are set in Settings › Tax" htmlFor="f-tax">
+                <Input id="f-tax" mono {...register('tax_registration_no')} placeholder="Leave blank if not registered" />
+              </Field>
+            </div>
+          </Card>
+
+          <Card title="Notes" subtitle="Visible to your team only">
+            <textarea aria-label="Notes" {...register('notes')}
+              style={{ width: '100%', minHeight: 84, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid var(--line-strong)', borderRadius: 'var(--radius-sm)', font: '14px/20px var(--font-sans)', color: 'var(--ink)', background: 'var(--surface)', resize: 'vertical' }} />
+          </Card>
+
+          {mode === 'edit' && party && (
+            <section style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', background: 'var(--surface)', padding: '16px 20px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 560 }}>
+                <span style={{ font: '600 15px/20px var(--font-sans)' }}>{party.status === 'inactive' ? 'Reactivate customer' : 'Make customer inactive'}</span>
+                <span style={{ fontSize: 13, lineHeight: '18px', color: 'var(--ink-muted)' }}>Hides them from new invoices. Their ledger and past documents stay. You can reactivate them any time.</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {party.status === 'inactive'
+                  ? <Button variant="secondary" icon="check" onClick={() => void runAction('reactivate')} loading={action.isPending}>Reactivate</Button>
+                  : <Button variant="secondary" icon="x" onClick={() => void runAction('deactivate')} loading={action.isPending}>Make inactive</Button>}
+                {can('parties.delete') && !party.opening_locked && <Button variant="ghost" icon="trash-2" onClick={() => { setDeleteText(''); setConfirm('delete') }}>Delete</Button>}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <aside className="lf-c4" style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
+          <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <span className="lf-label">Before you save</span>
+            {checklist.map((c) => (
+              <div key={c.title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', flex: 'none', display: 'grid', placeItems: 'center',
+                  background: c.info ? 'var(--info-soft)' : c.ok ? 'var(--positive-soft)' : 'var(--negative-soft)', color: c.info ? 'var(--info)' : c.ok ? 'var(--positive)' : 'var(--negative)' }}>
+                  <Icon name={c.info ? 'info' : c.ok ? 'check' : 'x'} size={14} />
+                </span>
+                <span style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 600 }}>{c.title}</span>
+                  <span style={{ fontSize: 13, lineHeight: '18px', color: 'var(--ink-muted)' }}>{c.body}</span>
+                </span>
+              </div>
+            ))}
+          </section>
+          {mode === 'edit' && party && (
+            <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span className="lf-label">Current balance</span>
+              <span className="lf-num" style={{ font: '500 22px/28px var(--font-serif)' }}>{formatTaka(party.balance, { symbol: true })} {party.balance_side === 'cr' ? 'Cr' : 'Dr'}</span>
+              <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>From posted entries on ledger {party.ledger_code}</span>
+            </section>
+          )}
+        </aside>
+      </div>
+
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 5, margin: '0 -24px -48px', padding: '12px 24px', background: 'var(--surface)', borderTop: '1px solid var(--line)', boxShadow: '0 -4px 12px rgba(19,32,47,.05)', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+        {mode === 'edit' && isDirty && <Badge tone="accent" dot>Unsaved changes</Badge>}
+        <span style={{ flex: 1 }} />
+        <Button variant="ghost" onClick={cancel}>Cancel</Button>
+        {mode === 'add' && <Button variant="secondary" type="submit" disabled={isSubmitting} onClick={() => { addAnother.current = true }}>Save and add another</Button>}
+        <Button variant="primary" icon="check" kbd="Ctrl S" type="submit" loading={isSubmitting} disabled={isSubmitting} onClick={() => { addAnother.current = false }} data-testid="save-customer">
+          {mode === 'edit' ? 'Save changes' : 'Save customer'}
+        </Button>
+      </div>
+
+      {confirm === 'leave' && (
+        <Dialog title="Discard unsaved changes?" description="Your edits to this customer have not been saved." tone="warning" onClose={() => setConfirm(null)}
+          footer={<><Button variant="ghost" onClick={() => setConfirm(null)}>Keep editing</Button>
+            <Button variant="danger" onClick={() => navigate(mode === 'edit' && party ? `/customers/${party.id}` : '/customers')}>Discard changes</Button></>} />
+      )}
+      {confirm === 'delete' && party && (
+        <Dialog title={`Delete ${party.name}?`} description="Only customers without any transactions can be deleted. This cannot be undone." tone="negative" onClose={() => setConfirm(null)}
+          footer={<><Button variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button>
+            <Button variant="danger" disabled={deleteText.trim() !== party.name || action.isPending} loading={action.isPending} onClick={() => void runAction('delete')}>Delete customer</Button></>}>
+          <Field label="Type the customer name to confirm">
+            <Input value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder={party.name} aria-label="Type the customer name to confirm" />
+          </Field>
+        </Dialog>
+      )}
+    </form>
+  )
+}
