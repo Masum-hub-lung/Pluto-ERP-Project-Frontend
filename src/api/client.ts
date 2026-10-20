@@ -39,7 +39,8 @@ export interface RequestOptions {
   headers?: Record<string, string>
   /** Sent as Idempotency-Key; reuse the same value when retrying the same user action (BR-050). */
   idempotencyKey?: string
-  /** Sent as If-Match (BR-049); usually `W/"<version>"`. */
+  /** Version check (BR-049), usually `W/"<version>"`. Sent as X-If-Match: Vercel's edge would turn a standard If-Match
+   *  into 412 once the edit succeeds (new ETag); the backend reads X-If-Match as If-Match. */
   ifMatch?: string
   /** Company-scoped call: sends X-Company-Id (default true when a company is selected). */
   company?: boolean
@@ -125,7 +126,7 @@ export class ApiClient {
     if (this.accessToken) headers.Authorization = `Bearer ${this.accessToken}`
     if ((opts.company ?? true) && this.companyId !== null) headers['X-Company-Id'] = String(this.companyId)
     if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
-    if (opts.ifMatch) headers['If-Match'] = opts.ifMatch
+    if (opts.ifMatch) headers['X-If-Match'] = opts.ifMatch
     let body: string | undefined
     if (opts.body !== undefined) {
       headers['Content-Type'] = 'application/json'

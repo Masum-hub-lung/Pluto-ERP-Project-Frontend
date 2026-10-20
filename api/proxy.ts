@@ -11,7 +11,7 @@ export const config = { runtime: 'edge' }
 
 /** Request headers never forwarded as sent: hop-by-hop, and the ones only this proxy may set. */
 const DROP_REQUEST = ['host', 'connection', 'content-length', 'x-lf-proxy-secret', 'x-forwarded-for', 'x-forwarded-host',
-  'x-forwarded-proto', 'x-forwarded-port', 'forwarded', 'x-real-ip']
+  'x-forwarded-proto', 'x-forwarded-port', 'forwarded', 'x-real-ip', 'x-vercel-trusted-oidc-idp-token']
 /** fetch() already decoded the body, so these would make the browser decode it a second time. */
 const DROP_RESPONSE = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
 

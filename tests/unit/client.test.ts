@@ -18,7 +18,7 @@ function client(handler: (c: Call, n: number) => Response | Promise<Response>) {
 }
 const header = (c: Call, h: string) => (c.init.headers as Record<string, string>)[h]
 
-test('sends bearer token, company, idempotency key and If-Match', async () => {
+test('sends bearer token, company, idempotency key and the version as X-If-Match', async () => {
   const { c, calls } = client(() => json(200, { data: { id: 1 } }, { ETag: 'W/"2"' }))
   c.setAccessToken('tok')
   c.setCompany(7)
@@ -28,7 +28,8 @@ test('sends bearer token, company, idempotency key and If-Match', async () => {
   assert.equal(calls[0]!.url, '/api/v1/parties/1?type=customer') // empty q dropped
   assert.equal(header(calls[0]!, 'Authorization'), 'Bearer tok')
   assert.equal(header(calls[0]!, 'X-Company-Id'), '7')
-  assert.equal(header(calls[0]!, 'If-Match'), 'W/"1"')
+  assert.equal(header(calls[0]!, 'X-If-Match'), 'W/"1"')
+  assert.equal(header(calls[0]!, 'If-Match'), undefined) // Vercel would answer 412 to a standard If-Match
   assert.equal(header(calls[0]!, 'Idempotency-Key'), 'k-1')
   assert.equal(calls[0]!.init.body, '{"name":"x"}')
 })

@@ -63,7 +63,7 @@ docs/                      SYNCED specs (02 UI, 05 API, 06, 08, 09, 01) — neve
 - One hooks file per module: `src/api/<module>.ts`. Query keys are hierarchical and company-scoped: `['company', cid, '<resource>', …]` (copy `keys` from `parties.ts`).
 - Lists: filters/sort/page live in the **URL search params** (copy `set()` from `CustomerList.tsx`); `placeholderData: keepPreviousData`.
 - Lookups (payment terms, units, tax rules, warehouses…): `staleTime: 5 * 60_000`.
-- Mutations: generate the `Idempotency-Key` **once per user action** with `useIdempotencyKey()` (P1.2) and reuse it on retry; send `ifMatch: W/"<version>"` for updates; after success **invalidate** every affected key (08 §8 table).
+- Mutations: generate the `Idempotency-Key` **once per user action** with `useIdempotencyKey()` (P1.2) and reuse it on retry; send `ifMatch: W/"<version>"` for updates (the client sends it as `X-If-Match`, never a raw `If-Match` header: Vercel would turn the successful edit into 412); after success **invalidate** every affected key (08 §8 table).
 - Never use optimistic updates for financial data.
 
 ### 5.4 UI rules
