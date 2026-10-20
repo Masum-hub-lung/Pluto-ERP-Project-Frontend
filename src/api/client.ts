@@ -11,7 +11,8 @@ export interface Problem {
   type?: string
   title: string
   status: number
-  code: ErrorCode | 'network_error'
+  /** Plus the Vercel /api proxy's own answers when the backend is unreachable or not configured (api/proxy.ts). */
+  code: ErrorCode | 'network_error' | 'backend_unreachable' | 'backend_unconfigured'
   detail?: string
   request_id?: string
   errors?: Record<string, string[]>

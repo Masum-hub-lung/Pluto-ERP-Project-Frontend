@@ -2,7 +2,7 @@
 
 React 19 + TypeScript (strict) SPA for **LedgerFlow ERP** (the product name used in code and the design system), built with Vite, TanStack Query and React Hook Form + zod, rendering the LedgerFlow design-system components (`public/ds/ledgerflow`). It talks only to `/api/*` on its own origin: locally the Vite dev server proxies that to the backend, live the Vercel `/api` proxy does (backlog P0.6).
 
-> The full README, CONTRIBUTING and CLAUDE.md for this repo come with backlog task P0.9-FE-01. Work is planned in Jira project **PEP**; see the backend repo's `CONTRIBUTING.md` for branches, commits and the Definition of Done.
+> **Team docs:** [CONTRIBUTING.md](CONTRIBUTING.md) (Jira, branches, PRs, Definition of Done) · [CLAUDE.md](CLAUDE.md) (rules and the frontend recipe for AI sessions). Work is planned in Jira project **PEP**.
 
 ## Run locally
 Prerequisites: **Docker**, **git**, **Node.js 20+** (npm 10+).
@@ -38,6 +38,13 @@ To work without Docker, set `VITE_DEV_API_TARGET` in `.env.local` to the live tu
 | `npm test` | unit tests (`tests/unit`, node:test via esbuild) |
 | `E2E_PASSWORD=<10+ chars> ./scripts/e2e.sh` | end-to-end tests: resets the backend's E2E stack (`../backend/scripts/e2e-prepare.sh`, API on :8081), builds, serves on :4173 and runs `tests/e2e` with Playwright. One-time: `npx playwright install chromium` |
 
+## Sync the API contract
+Field names come only from the backend's contract. Run after any backend PR marked **Contract changed**:
+```bash
+./scripts/sync-contract.sh          # copies from ../backend (BACKEND_DIR to change); --pull updates the backend first
+```
+It copies `contract/contract.gen.ts` → `src/api/contract.gen.ts`, and `openapi.yaml`, `VERSION` and specs 01, 02, 05, 06, 08, 09 → `docs/`, then runs the type check. Commit the synced files in your feature branch with the message `<PEP-KEY>: sync contract <VERSION>`. Never edit `src/api/contract.gen.ts` or `docs/*` by hand.
+
 ## Environment variables
 Only `VITE_*` values reach the browser, so never put secrets in them. `.env.local` is git-ignored.
 
@@ -47,3 +54,11 @@ Only `VITE_*` values reach the browser, so never put secrets in them. `.env.loca
 | `VITE_DEV_API_TARGET` | where `npm run dev` / `preview` proxy `/api` | `http://localhost:8080` |
 
 The API base in the code is always the relative `/api/v1` (`src/api/client.ts`); never add an absolute API URL.
+
+## Deploy (Vercel)
+- Project `pluto-erp-frontend` imports this repo: framework Vite, build `npm run build`, output `dist`. `main` deploys to production; every PR gets a preview URL.
+- `vercel.json`: `/api/*` → `api/proxy.ts` (Edge Function that forwards to the backend with `X-LF-Proxy-Secret`), every other path → `index.html`, security headers (CSP etc.), long cache for `/assets`.
+- Vercel environment variables (Production and Preview): `BACKEND_ORIGIN` (current tunnel URL), `PROXY_SHARED_SECRET` (same as the backend's `.env.live`, from the password manager), `VITE_APP_ENV` = `production` / `preview`.
+- **Tunnel URL changed?** `./scripts/point-backend.sh https://<words>.trycloudflare.com` (one-time: `npm i -g vercel && vercel login && vercel link`) updates `BACKEND_ORIGIN` and redeploys. Full runbook: backend repo `docs/runbooks/tunnel-url-changed.md`.
+- If the backend is down, API calls answer `backend_unreachable` ("The LedgerFlow server is offline…") instead of crashing the app.
+
