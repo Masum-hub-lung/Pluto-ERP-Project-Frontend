@@ -1,6 +1,8 @@
 /**
  * Vercel Edge Function: forwards /api/* from the Vercel domain to the backend (backlog P0.6-FE-02).
- * vercel.json rewrites /api/:path* → /api/proxy?__path=:path*. The backend address comes from BACKEND_ORIGIN
+ * vercel.json rewrites /api/:__path* → /api/proxy?__path=:__path*. Vercel also appends every captured segment as a
+ * query parameter under its own name, so the segment is called __path and removed here (the API rejects unknown
+ * query parameters with 422). The backend address comes from BACKEND_ORIGIN
  * (the current Cloudflare tunnel URL; scripts/point-backend.sh changes it), so a new tunnel needs no code change.
  * The browser only ever talks to the Vercel domain: the refresh cookie stays first-party (SameSite=Strict).
  * X-LF-Proxy-Secret proves to the backend that this proxy set X-Forwarded-For/-Host (backend P0.3-BE-02).
@@ -19,7 +21,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   const inUrl = new URL(req.url)
   const path = (inUrl.searchParams.get('__path') ?? '').replace(/^\/+/, '')
-  inUrl.searchParams.delete('__path')
+  inUrl.searchParams.delete('__path') // removes every copy Vercel added
   const target = `${origin.replace(/\/+$/, '')}/api/${path}${inUrl.search}`
 
   const headers = new Headers()
