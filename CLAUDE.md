@@ -72,7 +72,7 @@ docs/                      SYNCED specs (02 UI, 05 API, 06, 08, 09, 01) — neve
 - Hide buttons the user lacks permission for with `can('<perm>')` from `useSession()`. Wrap routes in `<RequirePermission permission="…">`.
 - Every page handles: **loading** (skeleton / `loading` prop), **empty** (`EmptyState` with the design copy), **error** (`ProblemBanner` with request id), **403** (Forbidden page), **404** (NotFound page). Forms also handle **422** (field errors + summary banner via `applyProblemToForm`), **409** (`ConflictBanner`, keep user input) and **unsaved changes** (`useUnsavedChangesBlocker`).
 - Copy text (titles, helper text, toasts) from `docs/02` for the page. Toast after every successful mutation saying what happened (L12).
-- Responsive: must work at 1440 px and 390 px without sideways page scroll (tables may scroll inside their card).
+- Responsive: must work at **390, 768, 1024 and 1440 px** without sideways page scroll (tables may scroll inside their card; phones get stacked cards via `ListCard`), and navigation must be reachable at every width (drawer < 900 px, icon rail 900–1199 px; Jira PEP-421). Check with `assertNoPageScroll` in E2E.
 - Accessibility: every input has a label (`Field label`), buttons have text or `aria-label`, focus moves to the first error on submit.
 
 ### 5.5 Routes and navigation

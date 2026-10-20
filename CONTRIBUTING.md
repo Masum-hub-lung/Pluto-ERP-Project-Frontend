@@ -31,6 +31,7 @@ The frontend dev may start FE tasks **before** BE is merged only against a BE br
 ## 5. Definition of Done (every task)
 - All **Done when** boxes ticked.
 - Track checks pass: backend `make test` (PHPUnit in Docker) · frontend `npm run typecheck && npm test && npm run build`.
+- Pages checked at 390, 768, 1024 and 1440 px: no sideways page scroll, navigation reachable (PEP-421).
 - No secrets committed; no generated file edited by hand.
 - PR reviewed by the other developer and merged.
 - If behaviour differs from the docs: the doc source (`docs/source/*.py` or the `.md`) is updated in the same PR, or a "Deviation" note is added to the task and to `docs/15`-style implementation notes.
