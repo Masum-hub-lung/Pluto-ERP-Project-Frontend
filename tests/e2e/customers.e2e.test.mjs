@@ -49,6 +49,9 @@ test('customer workflow: validate, create, warn on duplicate, search, edit, conf
   await page.getByLabel('District').selectOption('Dhaka')
   await page.getByLabel('Area or thana').fill('Moulvibazar')
   await page.getByLabel('Credit limit').fill('500000.00')
+  // The terms load asynchronously (slower on the Docker E2E stack): wait for them, then the default must be chosen.
+  await page.getByLabel('Payment terms').locator('option').nth(1).waitFor({ state: 'attached' })
+  for (let i = 0; i < 50 && (await page.getByLabel('Payment terms').inputValue()) === ''; i++) await page.waitForTimeout(100)
   assert.equal(await page.getByLabel('Payment terms').inputValue() !== '', true, 'default payment term preselected')
   await page.getByTestId('save-customer').click()
 

@@ -4,9 +4,12 @@ import { useSession } from '../auth/session'
 import { lf } from '../ds'
 import { useToast } from './toast'
 
+/** VITE_APP_ENV: local | preview | production (backlog P0.5-FE-02); anything but production shows a badge. */
+const APP_ENV: string = import.meta.env.VITE_APP_ENV || 'local'
+
 /** App shell from the design (Parties.dc.html / Shell.dc.html): sidebar navigation, top bar, page area. */
 export function Shell() {
-  const { Sidebar, NavSection, NavItem, NavSubItem, Topbar, Menu } = lf()
+  const { Sidebar, NavSection, NavItem, NavSubItem, Topbar, Menu, Badge } = lf()
   const { me, signOut, companyId } = useSession()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -56,6 +59,11 @@ export function Shell() {
         </Sidebar>
       </div>
       <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        {APP_ENV !== 'production' && (
+          <div data-testid="env-badge" style={{ display: 'flex', justifyContent: 'center', padding: '3px 0', background: 'var(--surface-sunken)', borderBottom: '1px solid var(--line)' }}>
+            <Badge tone={APP_ENV === 'preview' ? 'info' : 'warning'}>{APP_ENV.toUpperCase()} · not the live site</Badge>
+          </div>
+        )}
         <div className="lf-shell-top" style={{ position: 'relative' }}>
           <Topbar breadcrumbs={crumbs(pathname)} company={company?.company_name} fy={fyLabel(new Date())} notifications={0} user={me?.name}
             onCreateItem={(label) => (label === 'Customer or supplier' ? navigate('/customers/new') : toast({ tone: 'info', title: `${label}: not in this release yet` }))} />

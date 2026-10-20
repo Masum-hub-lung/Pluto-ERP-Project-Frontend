@@ -1,3 +1,8 @@
 node_modules/
 dist/
 test-results/
+.env.local
+.env.*.local
+.vercel
+.unit-build/
+playwright-report/

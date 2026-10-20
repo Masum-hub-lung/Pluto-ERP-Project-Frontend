@@ -59,7 +59,7 @@ declare global {
 
 let loading: Promise<LedgerFlowLibrary> | null = null
 
-export function loadDesignSystem(src = '/app/ds/ledgerflow/components/bundle.js'): Promise<LedgerFlowLibrary> {
+export function loadDesignSystem(src = '/ds/ledgerflow/components/bundle.js'): Promise<LedgerFlowLibrary> {
   if (window.LedgerFlow) return Promise.resolve(window.LedgerFlow)
   window.React = React
   loading ??= new Promise((resolve, reject) => {

@@ -1,11 +1,11 @@
-/** Shared helpers for the end-to-end tests (run by scripts/run-e2e.sh). */
+/** Shared helpers for the end-to-end tests (run by scripts/e2e.sh against the backend's E2E stack on :8081). */
 import { execFileSync } from 'node:child_process'
 import { createHmac } from 'node:crypto'
 import { chromium } from 'playwright'
 
 export const BASE = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8000'
 export const PASSWORD = process.env.E2E_PASSWORD
-if (!PASSWORD) throw new Error('Set E2E_PASSWORD (the password scripts/run-e2e.sh gave the test users)')
+if (!PASSWORD) throw new Error('Set E2E_PASSWORD (the password scripts/e2e.sh gave the test users)')
 export const OWNER = 'owner@e2e.ledgerflow.test'
 export const VIEWER = 'viewer@e2e.ledgerflow.test'
 export const STORE = 'store@e2e.ledgerflow.test'
@@ -56,10 +56,12 @@ export function totp(base32Secret, offset = 0) {
 }
 
 /**
- * Runs one SQL statement on the E2E database (DB_* come from scripts/run-e2e.sh). Only for state the UI of this
- * release cannot set, such as the company-wide 2-step requirement (K14 Owner switch, Settings module).
+ * Runs one SQL statement on the E2E database, inside the backend's MySQL container (no PHP or MySQL client needed
+ * here). Only for state the UI of this release cannot set, such as the company-wide 2-step requirement (K14 Owner
+ * switch, Settings module). BACKEND_DIR is set by scripts/e2e.sh (default ../backend).
  */
 export function sql(statement) {
-  const php = '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE"),getenv("DB_USERNAME"),getenv("DB_PASSWORD"));$p->exec($argv[1]);'
-  execFileSync('php', ['-r', php, statement], { stdio: 'inherit' })
+  const backend = process.env.BACKEND_DIR ?? '../backend'
+  execFileSync('docker', ['compose', '--project-directory', backend, 'exec', '-T', 'mysql', 'sh', '-c',
+    'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot ledgerflow_e2e -e "$1"', 'sh', statement], { stdio: 'inherit' })
 }

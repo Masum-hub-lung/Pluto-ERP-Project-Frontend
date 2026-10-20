@@ -71,6 +71,9 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
     if (mode === 'add' && terms.data) d.payment_term_id = String(terms.data.find((t) => t.is_default)?.id ?? '')
     return d
   }, [party, mode, terms.data])
+  // The latest defaults, for resets that happen after an await (the terms may have arrived in the meantime).
+  const latestDefaults = useRef(defaults)
+  latestDefaults.current = defaults
   const { register, handleSubmit, setError, reset, formState: { errors, isDirty, isSubmitting, submitCount } } =
     useForm<CustomerFormValues, unknown, CustomerFormParsed>({ resolver: zodResolver(customerSchema), defaultValues: defaults, mode: 'onSubmit' })
   // New server data (record refetched, payment terms arrived): update the untouched fields, never what the user typed.
@@ -89,7 +92,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
         idemKey.current = newKey()
         toast({ tone: 'positive', title: `${r.data.name} added as ${r.data.code}`, description: `Ledger ${r.data.ledger_code} created under Sundry debtors.` })
         for (const w of r.warnings ?? []) toast({ tone: 'warning', title: w.message })
-        if (addAnother.current) { reset({ ...emptyCustomer, payment_term_id: defaults.payment_term_id }); return }
+        if (addAnother.current) { reset({ ...emptyCustomer, payment_term_id: latestDefaults.current.payment_term_id }); return }
         reset(toForm(r.data))
         navigate(`/customers/${r.data.id}`)
       } else if (party) {

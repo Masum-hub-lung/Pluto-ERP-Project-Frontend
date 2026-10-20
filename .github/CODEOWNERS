@@ -1,0 +1,6 @@
+# Reviews are requested from these owners automatically (backlog P0.1-SETUP-03).
+# TODO: replace MASUM_GITHUB_USERNAME with Masum Billah's GitHub username, then uncomment.
+# *            @MASUM_GITHUB_USERNAME
+# The synced contract and specs come from the backend repo.
+/docs/                 @Samin1362
+/src/api/contract.gen.ts @Samin1362
