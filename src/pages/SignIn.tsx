@@ -12,7 +12,8 @@ export function SignIn() {
   const { Logo, Field, Input, Button, Banner } = lf()
   const { status, signIn, completeTwoFactor } = useSession()
   const navigate = useNavigate()
-  const from = (useLocation().state as { from?: string } | null)?.from ?? '/customers'
+  // After sign-in: back to the page that needed it, else the role's landing page (R-35, router '/').
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})

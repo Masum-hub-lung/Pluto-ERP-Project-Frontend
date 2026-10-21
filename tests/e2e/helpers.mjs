@@ -25,14 +25,14 @@ export async function newPage(browser, contextOptions = {}) {
   return { context, page, errors }
 }
 
-/** Step 1 of sign-in; waits for the customer list unless `expect2fa` (then the code step must appear). */
+/** Step 1 of sign-in; waits for the role's landing page (R-35: Owner/Viewer → customers, Store keeper → inventory) unless `expect2fa`. */
 export async function signIn(page, email, { expect2fa = false } = {}) {
   await page.goto('/sign-in')
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
   if (expect2fa) await page.getByRole('heading', { name: '2-step verification' }).waitFor()
-  else await page.waitForURL(/\/customers/)
+  else await page.waitForURL((url) => !url.pathname.startsWith('/sign-in') && url.pathname !== '/')
 }
 
 export async function signOut(page) {

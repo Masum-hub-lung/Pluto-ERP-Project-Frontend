@@ -13,7 +13,7 @@ export function ActivityTimeline({ type, id }: { type: AuditableType; id: number
   if (q.error) return <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
   if (q.isPending) return <div role="status" aria-label="Loading activity" style={{ display: 'grid', gap: 10 }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={44} />)}</div>
   const entries = q.data.pages.flatMap((p) => p.data)
-  if (entries.length === 0) return <EmptyState icon="history" title="No activity yet" description="Changes to this record will appear here." />
+  if (entries.length === 0) return <EmptyState icon="clock" title="No activity yet" description="Changes to this record will appear here." />
   return (
     <div>
       <ol data-testid="activity-timeline" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid' }}>

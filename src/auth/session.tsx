@@ -26,6 +26,8 @@ interface SessionValue {
   /** After turning 2-step on or off: new access token (carries the second factor) and fresh /me. */
   reload: () => Promise<void>
   signOut: () => Promise<void>
+  /** Make another company active (02 S0): remembers it and reloads the app at the landing page. */
+  switchCompany: (companyId: number) => Promise<void>
 }
 
 const SessionContext = createContext<SessionValue | null>(null)
@@ -129,11 +131,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [endSession])
 
+  // Switching company reloads all data (02 S0): remember the choice and start the app again at the landing page, so
+  // no cached query, open form or page state of the previous company can survive. The session restores silently
+  // from the refresh cookie and picks the remembered company.
+  const switchCompany = useCallback(async (companyId: number) => {
+    rememberCompany(companyId)
+    window.location.assign('/')
+  }, [])
+
   const value = useMemo<SessionValue>(() => ({
     status, me, companyId: api.getCompany(), twoFactorBlocked, signedOutByUser,
     can: (p) => (me?.permissions ?? []).includes(p),
-    signIn, completeTwoFactor, reload, signOut,
-  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, reload, signOut])
+    signIn, completeTwoFactor, reload, signOut, switchCompany,
+  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, reload, signOut, switchCompany])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

@@ -1,0 +1,77 @@
+/*
+ * App-shell layout (backlog P1.6-FE-01): the window never scrolls. The sidebar and the top bar stay in place and
+ * only the page area (.lf-shell-scroll) scrolls; the sidebar's own menu scrolls inside it when it is long.
+ */
+.lf-shell { height: 100vh; height: 100dvh; display: flex; overflow: hidden; }
+.lf-shell .lf-shell-side { height: 100%; }
+.lf-shell .lf-shell-side .lf-sidebar { height: 100%; min-height: 0; }
+.lf-shell-main { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; }
+.lf-shell-main > .lf-shell-top { flex: none; position: relative; z-index: 10; transition: box-shadow .2s ease; }
+.lf-shell-main > .lf-shell-top[data-scrolled="true"] { box-shadow: 0 1px 0 var(--line), 0 6px 16px -10px rgb(19 32 47 / .28); }
+.lf-shell-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.lf-shell-scroll:focus { outline: none; }
+.lf-shell-sentinel { height: 1px; margin-bottom: -1px; }
+
+/* Collapse/expand control (P1.6-FE-04): our round handle replaces the design system's small toggle. */
+.lf-shell .lf-sidebar-top .lf-sidebar-toggle { display: none; }
+.lf-sidebar-handle {
+  all: unset; box-sizing: border-box; position: absolute; top: 22px; right: -14px; z-index: 40;
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--surface); color: var(--ink-muted); border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgb(0 0 0 / .12);
+  transition: transform .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+.lf-sidebar-handle::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; } /* 40 × 40 hit area */
+.lf-sidebar-handle:hover { transform: scale(1.08); border-color: var(--brand); color: var(--brand); box-shadow: 0 4px 14px rgb(15 123 108 / .22); }
+.lf-sidebar-handle:active { transform: scale(.96); }
+.lf-sidebar-handle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.lf-sidebar-handle .lf-handle-icon { display: inline-flex; transition: transform .24s cubic-bezier(.2, 0, 0, 1); }
+.lf-sidebar-handle[aria-expanded="false"] .lf-handle-icon { transform: rotate(180deg); }
+@media (max-width: 900px) { .lf-sidebar-handle { display: none; } }
+
+/*
+ * Sidebar look (P1.6-FE-02): navy-to-teal gradient with a soft glow behind the logo, a clear active pill and frosted
+ * company/user cards. All colours come from theme tokens, so dark mode follows. Contrast of the muted menu text
+ * (--on-navy-muted) stays ≥ 4.5:1 at every point: 4.98 at the light gradient's lightest end, 4.88 in dark mode
+ * (that is why dark mode mixes less teal).
+ */
+.lf-shell { --lf-side-teal: 18%; }
+.lf-shell[data-theme="dark"] { --lf-side-teal: 12%; }
+.lf-shell .lf-sidebar {
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--brand) var(--lf-side-teal), transparent), transparent 60%),
+    linear-gradient(180deg, var(--navy-900) 0%, var(--navy-800) 55%, color-mix(in srgb, var(--navy-800), var(--brand) var(--lf-side-teal)) 100%);
+  border-right: 1px solid var(--navy-line);
+}
+.lf-shell .lf-nav-item:hover, .lf-shell .lf-nav-subitem:hover { background: rgb(255 255 255 / .06); }
+.lf-shell .lf-nav-item.is-active { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+.lf-shell .lf-nav-item.is-active::before { background: var(--brand); }
+.lf-shell .lf-nav-subitem.is-active { background: color-mix(in srgb, var(--brand) 16%, transparent); }
+.lf-shell .lf-nav-item:focus-visible, .lf-shell .lf-nav-subitem:focus-visible, .lf-shell .lf-company:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.lf-shell .lf-company {
+  background: rgb(255 255 255 / .06); border: 1px solid var(--navy-line); border-radius: 12px;
+  backdrop-filter: blur(6px); transition: border-color .16s ease, background-color .16s ease;
+}
+.lf-shell .lf-company:hover { background: rgb(255 255 255 / .09); border-color: color-mix(in srgb, var(--brand) 55%, var(--navy-line)); }
+.lf-shell .lf-sidebar-user { border-top-color: var(--navy-line); }
+@media (prefers-contrast: more) {
+  .lf-shell .lf-sidebar { background: var(--navy-900); }
+  .lf-shell .lf-company { background: var(--navy-800); backdrop-filter: none; }
+}
+
+/*
+ * Motion (P1.6-FE-03): the sidebar width slides (the page area follows smoothly because it is the flexible column);
+ * labels fade in when it expands. The phone drawer slide is added with the drawer (P1.5-FE-01).
+ */
+.lf-shell .lf-sidebar { transition: width 240ms cubic-bezier(.2, 0, 0, 1), padding 240ms cubic-bezier(.2, 0, 0, 1); }
+.lf-shell .lf-sidebar:not(.is-compact) :is(.lf-nav-label, .lf-company-text, .lf-nav-section-label, .lf-nav-sub, .lf-nav-caret) {
+  animation: lf-label-in 160ms cubic-bezier(.2, 0, 0, 1) both;
+}
+.lf-shell .lf-sidebar:not(.is-compact) .lf-nav-section:nth-child(2) .lf-nav-label { animation-delay: 20ms; }
+.lf-shell .lf-sidebar:not(.is-compact) .lf-nav-section:nth-child(3) .lf-nav-label { animation-delay: 40ms; }
+.lf-shell .lf-sidebar:not(.is-compact) .lf-nav-section:nth-child(n+4) .lf-nav-label { animation-delay: 60ms; }
+@keyframes lf-label-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .lf-shell .lf-sidebar, .lf-sidebar-handle, .lf-sidebar-handle .lf-handle-icon { transition: none; }
+  .lf-shell .lf-sidebar * { animation: none !important; }
+}
