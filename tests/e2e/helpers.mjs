@@ -6,11 +6,25 @@ import { chromium } from 'playwright'
 export const BASE = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8000'
 export const PASSWORD = process.env.E2E_PASSWORD
 if (!PASSWORD) throw new Error('Set E2E_PASSWORD (the password scripts/e2e.sh gave the test users)')
-export const OWNER = 'owner@e2e.ledgerflow.test'
-export const VIEWER = 'viewer@e2e.ledgerflow.test'
-export const STORE = 'store@e2e.ledgerflow.test'
+export const OWNER = 'owner@e2e.pluto.test'
+export const VIEWER = 'viewer@e2e.pluto.test'
+export const STORE = 'store@e2e.pluto.test'
 
 export const launch = () => chromium.launch()
+
+/** The four widths every page must work at (backlog P1.5-FE-05; CLAUDE.md §5.4). Below 900 px the shell uses the phone bar + drawer. */
+export const VIEWPORTS = {
+  phone: { width: 390, height: 844 },
+  tablet: { width: 768, height: 1024 },
+  laptop: { width: 1024, height: 768 },
+  desktop: { width: 1440, height: 900 },
+}
+
+/** Fails when the page itself scrolls sideways (document wider than the viewport); tables may still scroll inside their card. */
+export async function assertNoPageScroll(page, where = page.url()) {
+  const extra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  if (extra > 0) throw new Error(`${where} scrolls sideways by ${extra}px`)
+}
 
 /** A fresh browser context; collects page errors, console errors and (for diagnosis) non-2xx API answers. */
 export async function newPage(browser, contextOptions = {}) {
@@ -36,7 +50,9 @@ export async function signIn(page, email, { expect2fa = false } = {}) {
 }
 
 export async function signOut(page) {
-  await page.getByTestId('profile-menu').click()
+  // Phone layout (< 900 px) has its own profile button in the phone bar.
+  const phone = await page.getByTestId('mobile-profile-menu').isVisible()
+  await page.getByTestId(phone ? 'mobile-profile-menu' : 'profile-menu').click()
   await page.getByRole('menuitem', { name: /Sign out/ }).click()
   await page.waitForURL(/\/sign-in/)
 }
@@ -62,6 +78,7 @@ export function totp(base32Secret, offset = 0) {
  */
 export function sql(statement) {
   const backend = process.env.BACKEND_DIR ?? '../backend'
-  execFileSync('docker', ['compose', '--project-directory', backend, 'exec', '-T', 'mysql', 'sh', '-c',
-    'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot ledgerflow_e2e -e "$1"', 'sh', statement], { stdio: 'inherit' })
+  // cwd = the backend repo, so its .env (including a relative COMPOSE_FILE list) resolves as it does there.
+  execFileSync('docker', ['compose', 'exec', '-T', 'mysql', 'sh', '-c',
+    'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot pluto_e2e -e "$1"', 'sh', statement], { stdio: 'inherit', cwd: backend })
 }

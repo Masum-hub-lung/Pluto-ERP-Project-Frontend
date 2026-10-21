@@ -5,7 +5,7 @@
  */
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { launch, newPage as open, signIn, signOut, OWNER, PASSWORD, STORE, VIEWER } from './helpers.mjs'
+import { assertNoPageScroll, launch, newPage as open, signIn, signOut, OWNER, PASSWORD, STORE, VIEWER, VIEWPORTS } from './helpers.mjs'
 
 let browser
 before(async () => { browser = await launch() })
@@ -103,7 +103,7 @@ test('customer workflow: validate, create, warn on duplicate, search, edit, conf
     const r = await fetch('/api/v1/auth/refresh', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } })
     return (await r.json()).data.access_token
   })
-  const company = await page.evaluate(() => localStorage.getItem('lf.lastCompany'))
+  const company = await page.evaluate(() => localStorage.getItem('pluto.lastCompany'))
   const other = await page.request.patch(`/api/v1/parties/${id}`, {
     headers: { Authorization: `Bearer ${token}`, 'X-Company-Id': company, 'If-Match': 'W/"2"', Accept: 'application/json' },
     data: { notes: 'Changed by a colleague' },
@@ -245,21 +245,48 @@ test('reactivate an inactive customer and delete one without history', async () 
   await context.close()
 })
 
-test('phone width: list, details and form fit the screen', async () => {
-  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
-  await signIn(page, OWNER)
-  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-  await page.getByRole('cell', { name: /CUS-0001/ }).waitFor()
-  assert.ok(await overflow() <= 0, `customer list scrolls sideways by ${await overflow()}px`)
-  await page.getByRole('cell', { name: /CUS-0001/ }).click()
-  await page.getByTestId('customer-code').waitFor()
-  assert.ok(await overflow() <= 0, `customer details scroll sideways by ${await overflow()}px`)
-  await page.goto('/customers/new')
-  await page.getByLabel('Customer name').waitFor()
-  assert.ok(await overflow() <= 0, `customer form scrolls sideways by ${await overflow()}px`)
-  // The form is usable: validation shows at this width too
-  await page.getByTestId('save-customer').click()
-  await page.getByText('Enter the customer or supplier name').waitFor()
-  assert.deepEqual(errors, [])
-  await context.close()
-})
+// Responsive (P1.5-FE-05): the shell, the customer list, details and form at every width the team checks (CLAUDE.md §5.4).
+for (const [name, viewport] of Object.entries(VIEWPORTS)) {
+  test(`${name} ${viewport.width} px: shell, customer list, details and form fit the screen`, async () => {
+    const narrow = viewport.width < 900 // phone bar + drawer instead of sidebar + top bar
+    const phone = viewport.width < 640 // list rows become cards
+    const { context, page, errors } = await newPage({ viewport, isMobile: phone, hasTouch: narrow })
+    await signIn(page, OWNER)
+    await assertNoPageScroll(page, `${name} landing page`)
+
+    if (narrow) {
+      const menu = page.getByRole('dialog', { name: 'Main menu' })
+      await page.getByTestId('open-menu').click()
+      await menu.waitFor()
+      await assertNoPageScroll(page, `${name} drawer open`)
+      await menu.locator('.lf-nav-item', { hasText: 'Settings' }).click()
+      await page.waitForURL(/\/settings\/security$/)
+      assert.ok(!(await menu.isVisible()), 'the drawer closes after navigating')
+      await page.getByTestId('open-menu').click()
+      await menu.waitFor()
+      await menu.locator('.lf-nav-item', { hasText: 'Customers' }).click() // expands its sub-pages
+      await menu.getByText('All customers', { exact: true }).click()
+    } else {
+      assert.ok(await page.locator('.lf-shell-side').isVisible(), 'sidebar shown from 900 px')
+      await page.goto('/customers')
+    }
+    await page.waitForURL(/\/customers$/)
+
+    const first = phone ? page.locator('.lf-cardrow', { hasText: 'CUS-0001' }) : page.getByRole('cell', { name: /CUS-0001/ })
+    await first.waitFor()
+    await assertNoPageScroll(page, `${name} customer list`)
+    await first.click()
+    await page.getByTestId('customer-code').waitFor()
+    await assertNoPageScroll(page, `${name} customer details`)
+
+    await page.goto('/customers/new')
+    await page.getByLabel('Customer name').waitFor()
+    await assertNoPageScroll(page, `${name} customer form`)
+    await page.getByTestId('save-customer').click() // validation shows at this width too
+    await page.getByText('Enter the customer or supplier name').waitFor()
+
+    await signOut(page)
+    assert.deepEqual(errors, [])
+    await context.close()
+  })
+}

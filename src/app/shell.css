@@ -75,3 +75,54 @@
   .lf-shell .lf-sidebar, .lf-sidebar-handle, .lf-sidebar-handle .lf-handle-icon { transition: none; }
   .lf-shell .lf-sidebar * { animation: none !important; }
 }
+
+/*
+ * Phone layout (< 900 px, P1.5-FE-01): lf-theme.css swaps the sidebar and top bar for .lf-mobilebar; the menu button
+ * opens the navigation drawer. Touch targets are 44 px.
+ */
+.lf-mobilebar {
+  flex: none; position: relative; z-index: 10; align-items: center; gap: 4px; height: 52px; padding: 0 6px;
+  background: var(--surface); border-bottom: 1px solid var(--line); transition: box-shadow .2s ease;
+}
+.lf-mobilebar[data-scrolled="true"] { box-shadow: 0 6px 16px -10px color-mix(in srgb, var(--navy-900) 30%, transparent); }
+.lf-mobilebar-btn {
+  all: unset; box-sizing: border-box; width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  border-radius: 10px; color: var(--ink); cursor: pointer;
+}
+.lf-mobilebar-btn:hover { background: var(--surface-sunken); }
+.lf-mobilebar-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.lf-mobilebar-title { flex: 1 1 0; min-width: 0; font: 600 16px/22px var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lf-mobilebar-profile { position: relative; flex: none; }
+
+/* Navigation drawer (P1.5-FE-01) and its motion (P1.6-FE-03): transform/opacity only, so it stays at 60 fps. */
+.lf-navdrawer { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+.lf-navdrawer[data-open="true"] { pointer-events: auto; }
+.lf-navdrawer-backdrop {
+  position: absolute; inset: 0; background: color-mix(in srgb, var(--navy-900) 40%, transparent);
+  opacity: 0; transition: opacity 200ms ease;
+}
+.lf-navdrawer[data-open="true"] .lf-navdrawer-backdrop { opacity: 1; }
+.lf-navdrawer-panel {
+  position: absolute; top: 0; bottom: 0; left: 0; width: min(304px, 86vw); display: flex; flex-direction: column;
+  background: var(--navy-900); box-shadow: var(--shadow-3); transform: translateX(-100%); visibility: hidden;
+  transition: transform 260ms cubic-bezier(.2, 0, 0, 1), visibility 0s linear 260ms; will-change: transform;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.lf-navdrawer[data-open="true"] .lf-navdrawer-panel { transform: none; visibility: visible; transition: transform 260ms cubic-bezier(.2, 0, 0, 1), visibility 0s; }
+.lf-navdrawer-head {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 12px;
+  border-bottom: 1px solid var(--navy-line); color: var(--on-navy);
+}
+.lf-navdrawer-head .lf-iconbtn { color: var(--on-navy); }
+.lf-navdrawer-create { position: relative; }
+.lf-navdrawer-fy { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; overflow: hidden; }
+.lf-navdrawer-body { flex: 1 1 0; min-height: 0; display: flex; }
+.lf-navdrawer-company { position: relative; flex: 1 1 0; min-width: 0; display: flex; }
+.lf-navdrawer .lf-sidebar { width: 100%; height: auto; min-height: 0; flex: 1 1 0; border-right: 0; }
+.lf-navdrawer .lf-sidebar-nav { overflow-y: auto; overscroll-behavior: contain; }
+.lf-navdrawer .lf-nav-item { height: 44px; }
+.lf-navdrawer .lf-nav-subitem { display: flex; align-items: center; height: 44px; line-height: 20px; }
+:root.lf-scroll-locked, :root.lf-scroll-locked body, :root.lf-scroll-locked .lf-shell-scroll { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .lf-navdrawer-panel, .lf-navdrawer-backdrop, .lf-mobilebar { transition: none !important; }
+}

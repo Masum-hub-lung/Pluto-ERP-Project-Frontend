@@ -58,7 +58,7 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
       ...unbuiltRoutes(),
-      { path: 'not-in-release', handle: crumbs('LedgerFlow'), element: <NotInRelease /> },
+      { path: 'not-in-release', handle: crumbs('Pluto'), element: <NotInRelease /> },
       // Development-only demo of the async pickers (P1.2-FE-07); not part of production builds.
       ...(PickersDemo ? [{ path: 'dev/pickers', handle: crumbs('Development', 'Pickers'), element: lazyPage(<PickersDemo />, 'form') }] : []),
       { path: '*', handle: crumbs('Not found'), element: <NotFound /> },

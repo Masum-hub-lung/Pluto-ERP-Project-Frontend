@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 
 /** L15 "not found" (States.dc.html). Also used for another company's record (the API answers 404, BR-037). */
 export function NotFound({ what = 'this page', back = '/customers', backLabel = 'Customers' }: { what?: string; back?: string; backLabel?: string }) {
-  const { Button } = lf()
+  const { Button } = ds()
   const navigate = useNavigate()
   return (
     <section data-testid="state-notfound" style={{ maxWidth: 560, margin: '64px auto', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>

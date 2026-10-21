@@ -7,7 +7,7 @@ import type { Party } from '../../api/contract.gen'
 import { useCreateCustomer, useCustomer, useCustomerAction, useCustomerGroups, usePaymentTerms, useUpdateCustomer } from '../../api/parties'
 import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 import { customerSchema, emptyCustomer, serverFieldMap, toPartyInput, type CustomerFormParsed, type CustomerFormValues } from '../../lib/customerSchema'
 import { formatTaka, termLabel } from '../../lib/format'
 import { applyProblemToForm } from '../../lib/forms'
@@ -52,7 +52,7 @@ function toForm(p: Party | null): CustomerFormValues {
 }
 
 function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
-  const L = lf()
+  const L = ds()
   const { Card, Field, Input, Select, Button, Banner, Badge, Icon, PageHeader } = L
   const navigate = useNavigate()
   const toast = useToast()
@@ -233,7 +233,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
 
           <Card title="Accounting" subtitle="How this customer is posted to your books">
             <div style={grid}>
-              <Field label="Opening balance" term="What this customer already owed you on the day you started using LedgerFlow."
+              <Field label="Opening balance" term="What this customer already owed you on the day you started using Pluto."
                 hint="Entered with the accounting module (next release)">
                 <Input prefix="৳" align="right" readOnly value={formatTaka(party?.opening_balance ?? '0.00')} aria-label="Opening balance" />
               </Field>
@@ -273,7 +273,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
           )}
         </div>
 
-        <aside className="lf-c4" style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
+        <aside className="lf-c4 lf-form-aside" style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
           <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span className="lf-label">Before you save</span>
             {checklist.map((c) => (
@@ -299,7 +299,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
         </aside>
       </div>
 
-      <div style={{ position: 'sticky', bottom: 0, zIndex: 5, margin: '0 -24px -48px', padding: '12px 24px', background: 'var(--surface)', borderTop: '1px solid var(--line)', boxShadow: '0 -4px 12px rgba(19,32,47,.05)', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+      <div className="lf-form-footer" style={{ position: 'sticky', bottom: 0, zIndex: 5, margin: '0 -24px -48px', padding: '12px 24px', background: 'var(--surface)', borderTop: '1px solid var(--line)', boxShadow: '0 -4px 12px rgba(19,32,47,.05)', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
         {mode === 'edit' && isDirty && <Badge tone="accent" dot>Unsaved changes</Badge>}
         <span style={{ flex: 1 }} />
         <Button variant="ghost" onClick={cancel}>Cancel</Button>

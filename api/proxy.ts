@@ -5,12 +5,12 @@
  * query parameters with 422). The backend address comes from BACKEND_ORIGIN
  * (the current Cloudflare tunnel URL; scripts/point-backend.sh changes it), so a new tunnel needs no code change.
  * The browser only ever talks to the Vercel domain: the refresh cookie stays first-party (SameSite=Strict).
- * X-LF-Proxy-Secret proves to the backend that this proxy set X-Forwarded-For/-Host (backend P0.3-BE-02).
+ * X-Pluto-Proxy-Secret proves to the backend that this proxy set X-Forwarded-For/-Host (backend P0.3-BE-02).
  */
 export const config = { runtime: 'edge' }
 
 /** Request headers never forwarded as sent: hop-by-hop, and the ones only this proxy may set. */
-const DROP_REQUEST = ['host', 'connection', 'content-length', 'x-lf-proxy-secret', 'x-forwarded-for', 'x-forwarded-host',
+const DROP_REQUEST = ['host', 'connection', 'content-length', 'x-pluto-proxy-secret', 'x-lf-proxy-secret', 'x-forwarded-for', 'x-forwarded-host',
   'x-forwarded-proto', 'x-forwarded-port', 'forwarded', 'x-real-ip', 'x-vercel-trusted-oidc-idp-token']
 /** fetch() already decoded the body, so these would make the browser decode it a second time. */
 const DROP_RESPONSE = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
@@ -30,7 +30,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (clientIp) headers.set('x-forwarded-for', clientIp)
   headers.set('x-forwarded-host', inUrl.host)
   headers.set('x-forwarded-proto', 'https')
-  headers.set('x-lf-proxy-secret', process.env.PROXY_SHARED_SECRET ?? '')
+  headers.set('x-pluto-proxy-secret', process.env.PROXY_SHARED_SECRET ?? '')
 
   let res: Response
   try {
@@ -43,11 +43,11 @@ export default async function handler(req: Request): Promise<Response> {
       duplex: 'half',
     })
   } catch {
-    return problem(502, 'backend_unreachable', 'The LedgerFlow server is offline. Try again in a minute.')
+    return problem(502, 'backend_unreachable', 'The Pluto server is offline. Try again in a minute.')
   }
   // Cloudflare answers 530 (or 502–504) when the tunnel behind BACKEND_ORIGIN is gone.
   if ([502, 503, 504, 530].includes(res.status) && !(res.headers.get('content-type') ?? '').includes('json')) {
-    return problem(502, 'backend_unreachable', 'The LedgerFlow server is offline. Try again in a minute.')
+    return problem(502, 'backend_unreachable', 'The Pluto server is offline. Try again in a minute.')
   }
 
   const out = new Headers()

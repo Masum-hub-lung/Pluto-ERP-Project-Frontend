@@ -1,6 +1,6 @@
 # Pluto-ERP-Project · Frontend (`Pluto-ERP-Project-Frontend`)
 
-React 19 + TypeScript (strict) SPA for **LedgerFlow ERP** (the product name used in code and the design system), built with Vite, TanStack Query and React Hook Form + zod, rendering the LedgerFlow design-system components (`public/ds/ledgerflow`). It talks only to `/api/*` on its own origin: locally the Vite dev server proxies that to the backend, live the Vercel `/api` proxy does (backlog P0.6).
+React 19 + TypeScript (strict) SPA for **Pluto ERP**, built with Vite, TanStack Query and React Hook Form + zod, rendering the prebuilt Pluto design-system components (`public/ds/pluto`, notes in `public/ds/README.md`). It talks only to `/api/*` on its own origin: locally the Vite dev server proxies that to the backend, live the Vercel `/api` proxy does (backlog P0.6).
 
 > **Team docs:** [CONTRIBUTING.md](CONTRIBUTING.md) (Jira, branches, PRs, Definition of Done) · [CLAUDE.md](CLAUDE.md) (rules and the frontend recipe for AI sessions). Work is planned in Jira project **PEP**.
 
@@ -16,7 +16,7 @@ Prerequisites: **Docker**, **git**, **Node.js 20+** (npm 10+).
    ```bash
    cd backend && ./scripts/setup.sh
    ```
-   API on `http://localhost:8080`; sign-in `owner@ledgerflow.local` with the password you chose.
+   API on `http://localhost:8080`; sign-in `owner@pluto.local` with the password you chose.
 3. Start the frontend:
    ```bash
    cd ../frontend
@@ -57,8 +57,8 @@ The API base in the code is always the relative `/api/v1` (`src/api/client.ts`);
 
 ## Deploy (Vercel)
 - Project `pluto-erp-frontend` imports this repo: framework Vite, build `npm run build`, output `dist`. `main` deploys to production; every PR gets a preview URL.
-- `vercel.json`: `/api/*` → `api/proxy.ts` (Edge Function that forwards to the backend with `X-LF-Proxy-Secret`), every other path → `index.html`, security headers (CSP etc.), long cache for `/assets`.
+- `vercel.json`: `/api/*` → `api/proxy.ts` (Edge Function that forwards to the backend with `X-Pluto-Proxy-Secret`), every other path → `index.html`, security headers (CSP etc.), long cache for `/assets`.
 - Vercel environment variables (Production and Preview): `BACKEND_ORIGIN` (current tunnel URL), `PROXY_SHARED_SECRET` (same as the backend's `.env.live`, from the password manager), `VITE_APP_ENV` = `production` / `preview`.
 - **Tunnel URL changed?** `./scripts/point-backend.sh https://<words>.trycloudflare.com` (one-time: `npm i -g vercel && vercel login && vercel link`) updates `BACKEND_ORIGIN` and redeploys. Full runbook: backend repo `docs/runbooks/tunnel-url-changed.md`.
-- If the backend is down, API calls answer `backend_unreachable` ("The LedgerFlow server is offline…") instead of crashing the app.
+- If the backend is down, API calls answer `backend_unreachable` ("The Pluto server is offline…") instead of crashing the app.
 

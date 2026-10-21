@@ -1,5 +1,5 @@
 import { ApiError } from '../api/client'
-import { lf } from '../ds'
+import { ds } from '../ds'
 
 /**
  * L11 error state (02 #page-l11, 08 §7): any API failure as one negative banner — the problem title and detail,
@@ -7,7 +7,7 @@ import { lf } from '../ds'
  * plain words instead of codes. Renders nothing when there is no error.
  */
 export function ProblemBanner({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const { Banner, Button } = lf()
+  const { Banner, Button } = ds()
   if (!error) return null
   const p = error instanceof ApiError ? error.problem : null
   let title = p?.title ?? 'Something went wrong'
@@ -16,7 +16,7 @@ export function ProblemBanner({ error, onRetry }: { error: unknown; onRetry?: ()
     title = 'You seem to be offline'
     body = 'Check your internet connection, then try again.'
   } else if (p?.code === 'backend_unreachable') {
-    title = 'The LedgerFlow server is offline'
+    title = 'The Pluto server is offline'
     body = 'Try again in a minute. Nothing you typed has been lost.'
   } else if (p?.status === 429) {
     const wait = error instanceof ApiError ? error.retryAfter : null

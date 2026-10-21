@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
-import { lf } from '../ds'
+import { ds } from '../ds'
 
 /** Toasts using the design's Toast component (L-states), stacked bottom-right, auto-dismissed after 6 s. */
 interface ToastItem { id: number; tone: 'positive' | 'negative' | 'info' | 'warning'; title: string; description?: string }
@@ -14,7 +14,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setItems((xs) => [...xs, { ...t, id }])
     setTimeout(() => dismiss(id), 6000)
   }, [dismiss])
-  const { Toast } = lf()
+  const { Toast } = ds()
   return (
     <ToastContext.Provider value={push}>
       {children}

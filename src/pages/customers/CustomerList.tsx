@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCustomerCounts, useCustomers } from '../../api/parties'
 import type { Party } from '../../api/contract.gen'
 import { useSession } from '../../auth/session'
-import { lf, type DataColumn } from '../../ds'
+import { ds, type DataColumn } from '../../ds'
 import { initials, termLabel } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
 import { ListCard } from '../../components/ListCard'
@@ -15,7 +15,7 @@ const SORTS = [{ value: '-balance', label: 'Sort: balance, high to low' }, { val
 const PER_PAGE = 25
 
 export function CustomerList() {
-  const { PageHeader, Button, Input, Segmented, Select, DataTable, EmptyState, Badge, IconButton } = lf()
+  const { PageHeader, Button, Input, Segmented, Select, DataTable, EmptyState, Badge, IconButton } = ds()
   const { can } = useSession()
   const navigate = useNavigate()
   // Filters, sort and page live in the URL (shareable, survive reload); the search box writes q after 300 ms.
@@ -52,6 +52,11 @@ export function CustomerList() {
     { key: 'status', label: 'Status', render: (v) => <Badge tone={v === 'active' ? 'positive' : 'neutral'} dot>{v === 'active' ? 'Active' : v === 'inactive' ? 'Inactive' : 'Prospect'}</Badge> },
   ]
   const meta = list.data?.meta
+  const empty = q || status !== 'all'
+    ? <EmptyState icon="search" title={`No customers match${q ? ` “${q}”` : ' these filters'}`} description="Check the spelling, or search by code or mobile number."
+        action={<Button variant="secondary" onClick={() => { setSearch(''); set({ q: null, status: null }) }}>Clear search</Button>} />
+    : <EmptyState icon="users" title="No customers yet" description="Add the people and businesses you sell to. Each gets its own ledger under Sundry debtors."
+        action={can('parties.create') ? <Button variant="primary" icon="plus" onClick={() => navigate('/customers/new')}>New customer</Button> : undefined} />
 
   return (
     <>
@@ -63,24 +68,21 @@ export function CustomerList() {
       </div>
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <ListCard label="Customers" meta={meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
+        cards={{ columns, rows, loading: list.isPending, onOpen: (r) => navigate(`/customers/${r.id}`), mobileColumns: ['name', 'person', 'phone', 'bal'], badgeKey: 'status', empty }}
         toolbar={<>
           <div style={{ flex: '1 1 280px', maxWidth: 380 }}>
             <Input icon="search" placeholder="Search name, code or phone" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search" />
           </div>
           <Segmented key={status} options={STATUS} value={status} onChange={(v) => set({ status: v === 'all' ? null : v })} />
-          <span style={{ flex: 1 }} />
+        </>}
+        filters={
           <div style={{ width: 210 }}>
             <Select options={SORTS} value={sort} onChange={(e) => set({ sort: e.target.value })} aria-label="Sort" />
           </div>
-        </>}>
+        }>
         <DataTable caption="Customers" columns={columns} rows={rows} loading={list.isPending}
           onRowClick={(r) => navigate(`/customers/${r.id}`)}
-          rowActions={can('parties.edit') ? (r) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/customers/${r.id}/edit`) }} /> : undefined}
-          emptyState={q || status !== 'all'
-            ? <EmptyState icon="search" title={`No customers match${q ? ` “${q}”` : ' these filters'}`} description="Check the spelling, or search by code or mobile number."
-                action={<Button variant="secondary" onClick={() => { setSearch(''); set({ q: null, status: null }) }}>Clear search</Button>} />
-            : <EmptyState icon="users" title="No customers yet" description="Add the people and businesses you sell to. Each gets its own ledger under Sundry debtors."
-                action={can('parties.create') ? <Button variant="primary" icon="plus" onClick={() => navigate('/customers/new')}>New customer</Button> : undefined} />} />
+          rowActions={can('parties.edit') ? (r) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/customers/${r.id}/edit`) }} /> : undefined} />
       </ListCard>
     </>
   )

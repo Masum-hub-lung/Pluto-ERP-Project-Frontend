@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../auth/session'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 
 /** L-state "denied" (States.dc.html): the page's permission is missing for this role. */
 export function Forbidden({ permission, what = 'this page' }: { permission?: string; what?: string }) {
-  const { Icon, Button } = lf()
+  const { Icon, Button } = ds()
   const navigate = useNavigate()
   const { me, companyId } = useSession()
   const role = me?.companies.find((c) => c.company_id === companyId)?.role

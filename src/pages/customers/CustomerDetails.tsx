@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useCustomer } from '../../api/parties'
 import { useSession } from '../../auth/session'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 import { formatTaka, initials, termLabel } from '../../lib/format'
+import { PHONE, useMediaQuery } from '../../lib/useMediaQuery'
 import { ActivityTimeline } from '../../components/ActivityTimeline'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { ProblemBanner } from '../../components/ProblemBanner'
@@ -16,7 +18,9 @@ import { NotFound } from '../../components/states'
  * slice; they are not shown yet.
  */
 export function CustomerDetails() {
-  const { Badge, Button, Icon, Tabs } = lf()
+  const { Badge, Button, Icon, Tabs, IconButton, Menu } = ds()
+  const phone = useMediaQuery(PHONE)
+  const [more, setMore] = useState(false)
   const id = Number(useParams().id)
   const navigate = useNavigate()
   const { can } = useSession()
@@ -48,7 +52,7 @@ export function CustomerDetails() {
 
   return (
     <>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 24px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 24px', alignItems: 'flex-end', justifyContent: 'space-between', position: 'relative', paddingRight: phone ? 52 : 0 }}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', minWidth: 0 }}>
           <span style={{ width: 56, height: 56, borderRadius: 14, flex: 'none', display: 'grid', placeItems: 'center', background: 'var(--brand-soft)', color: 'var(--brand-ink)', font: '600 20px/1 var(--font-sans)' }}>{initials(p.name)}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
@@ -64,10 +68,22 @@ export function CustomerDetails() {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <Button variant="ghost" icon="arrow-left" onClick={() => navigate('/customers')}>All customers</Button>
-          {can('parties.edit') && <Button variant="secondary" icon="pencil" onClick={() => navigate(`/customers/${p.id}/edit`)} data-testid="edit-customer">Edit</Button>}
-        </div>
+        {phone ? (
+          // Phone (P1.5-FE-04): header actions collapse into a More menu.
+          <div style={{ position: 'absolute', top: 12, right: 12 }} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setMore(false) }}>
+            <IconButton icon="ellipsis" label="More actions" onClick={() => setMore((o) => !o)} />
+            {more && (
+              <Menu style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', minWidth: 200, zIndex: 20 }}
+                items={[...(can('parties.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/customers/${p.id}/edit`) }] : []),
+                  { icon: 'users', label: 'All customers', onClick: () => navigate('/customers') }]} />
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <Button variant="ghost" icon="arrow-left" onClick={() => navigate('/customers')}>All customers</Button>
+            {can('parties.edit') && <Button variant="secondary" icon="pencil" onClick={() => navigate(`/customers/${p.id}/edit`)} data-testid="edit-customer">Edit</Button>}
+          </div>
+        )}
       </div>
 
       <div className="lf-grid">

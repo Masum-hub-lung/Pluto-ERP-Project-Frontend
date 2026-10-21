@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { lf, type DataColumn } from '../ds'
+import { ds, type DataColumn } from '../ds'
 
 type Row = Record<string, unknown> & { id: number }
 
 /**
- * DataTable with row selection (lf().DataTable has none): a checkbox column and, while rows are selected, a bar
+ * DataTable with row selection (ds().DataTable has none): a checkbox column and, while rows are selected, a bar
  * "N selected · <actions>" — used for bulk actions such as "Deactivate selected" (B1/C1). `actions` gets the ids
  * and a `clear()` to call after the action succeeded. Selection is per page.
  */
@@ -12,7 +12,7 @@ export function SelectableTable({ columns, rows, actions, ...table }: {
   columns: DataColumn[]; rows: Row[]; actions: (ids: number[], clear: () => void) => React.ReactNode
   onRowClick?: (row: any) => void; rowActions?: (row: any) => React.ReactNode; emptyState?: React.ReactNode; loading?: boolean; caption?: string
 }) {
-  const { DataTable, Button } = lf()
+  const { DataTable, Button } = ds()
   const [selected, setSelected] = useState<number[]>([])
   const visible = selected.filter((id) => rows.some((r) => r.id === id))
   const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))

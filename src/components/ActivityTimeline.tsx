@@ -1,5 +1,5 @@
 import { useAuditLog, type AuditableType } from '../api/audit'
-import { lf } from '../ds'
+import { ds } from '../ds'
 import { actionLabel, changes, timeAgo } from '../lib/activity'
 import { ProblemBanner } from './ProblemBanner'
 
@@ -8,7 +8,7 @@ import { ProblemBanner } from './ProblemBanner'
  * fields. Relative time with the exact time in the tooltip; "Show more" loads older entries.
  */
 export function ActivityTimeline({ type, id }: { type: AuditableType; id: number }) {
-  const { Skeleton, Button, EmptyState, Icon } = lf()
+  const { Skeleton, Button, EmptyState, Icon } = ds()
   const q = useAuditLog(type, id)
   if (q.error) return <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
   if (q.isPending) return <div role="status" aria-label="Loading activity" style={{ display: 'grid', gap: 10 }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={44} />)}</div>

@@ -1,0 +1,48 @@
+/* List card (P1.2-FE-05) and its responsive pattern (P1.5-FE-03). Tokens only. */
+.lf-listcard {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-1);
+  display: flex; flex-direction: column; min-width: 0;
+}
+.lf-listcard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.lf-listcard-spacer { flex: 1; }
+.lf-listcard-scroll { overflow-x: auto; min-width: 0; }
+.lf-listcard-empty { display: flex; justify-content: center; }
+.lf-listcard-sheet-filters { display: flex; flex-direction: column; gap: 12px; }
+.lf-listcard-sheet-filters > * { width: 100% !important; max-width: none !important; }
+
+/* 640-1199 px: the table scrolls inside the card; the first column stays put. */
+@media (max-width: 1199px) {
+  .lf-listcard .lf-table th:first-child, .lf-listcard .lf-table td:first-child {
+    position: sticky; left: 0; background-color: var(--surface); box-shadow: inset -1px 0 0 var(--line);
+  }
+  .lf-listcard .lf-table th:first-child { z-index: 2; background-color: var(--surface-sunken); }
+  .lf-listcard .lf-table td:first-child { z-index: 1; }
+  .lf-listcard .lf-table tbody tr:hover td:first-child { background-color: var(--surface-hover); }
+}
+
+/* Phone (< 640 px): toolbar stacks, status control scrolls inside itself, rows are cards. */
+@media (max-width: 639px) {
+  .lf-listcard-toolbar { padding: 12px; }
+  .lf-listcard-toolbar > * { min-width: 0; }
+  .lf-listcard-toolbar > :first-child { flex: 1 1 100% !important; max-width: none !important; }
+  .lf-listcard-toolbar .lf-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; }
+  .lf-listcard-toolbar .lf-seg::-webkit-scrollbar { display: none; }
+  .lf-listcard-toolbar .lf-seg-item { flex: none; height: 36px; }
+  .lf-listcard-toolbar .lf-btn { min-height: 40px; }
+  .lf-listcard .lf-empty { padding: var(--space-8) var(--space-4); }
+}
+.lf-cardlist { list-style: none; margin: 0; padding: 0; }
+.lf-cardlist > li + li { border-top: 1px solid var(--line); }
+.lf-cardrow { display: block; padding: 14px 16px; cursor: pointer; outline: none; }
+.lf-cardrow:hover { background: var(--surface-hover); }
+.lf-cardrow:focus-visible { box-shadow: inset 0 0 0 2px var(--brand); }
+.lf-cardrow-top { display: flex; align-items: flex-start; gap: 10px; }
+.lf-cardrow-title { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.lf-cardrow-title * { overflow-wrap: anywhere; }
+.lf-cardrow-badge { flex: none; }
+.lf-cardrow-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 10px 0 0; font-size: 13px; line-height: 18px; }
+.lf-cardrow-lines > div { display: contents; }
+.lf-cardrow-lines dt { color: var(--ink-muted); }
+.lf-cardrow-lines dd { margin: 0; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+.lf-pager-compact { justify-content: space-between; border-top: 1px solid var(--line); }
+.lf-pager-compact .lf-iconbtn { width: 44px; height: 44px; }

@@ -1,11 +1,11 @@
-import { lf } from '../ds'
+import { ds } from '../ds'
 
 /**
  * L8 validation summary (02 #page-l8): "Fix N fields to save this <noun>" above the form. Field messages stay next
  * to their inputs; `messages` lists only errors that have no input on this form (from applyProblemToForm).
  */
 export function FormErrorSummary({ count, noun, messages = [] }: { count: number; noun: string; messages?: string[] }) {
-  const { Banner } = lf()
+  const { Banner } = ds()
   if (count === 0 && messages.length === 0) return null
   const n = count + messages.length
   return (

@@ -2,14 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { useSession } from '../auth/session'
-import { lf } from '../ds'
+import { Logo } from '../components/Logo'
+import { ds } from '../ds'
 
 /**
  * S1 Sign in (02: centered card with Logo, Field, Input, Button; generic error, throttle message with retry time).
  * When 2-step is on, a second step asks for the authenticator code, or a recovery code instead (07 §5).
  */
 export function SignIn() {
-  const { Logo, Field, Input, Button, Banner } = lf()
+  const { Field, Input, Button, Banner } = ds()
   const { status, signIn, completeTwoFactor } = useSession()
   const navigate = useNavigate()
   // After sign-in: back to the page that needed it, else the role's landing page (R-35, router '/').
