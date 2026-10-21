@@ -1,26 +1,32 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useCustomer } from '../../api/parties'
 import { useSession } from '../../auth/session'
 import { lf } from '../../ds'
 import { formatTaka, initials, termLabel } from '../../lib/format'
-import { NotFound } from '../states/NotFound'
-import { ErrorBanner } from './shared'
+import { ActivityTimeline } from '../../components/ActivityTimeline'
+import { PageSkeleton } from '../../components/PageSkeleton'
+import { ProblemBanner } from '../../components/ProblemBanner'
+import { SummaryTile } from '../../components/SummaryTile'
+import { NotFound } from '../../components/states'
 
 /**
- * B4 Customer details, Overview tab (Parties.dc.html party header + details). The Transactions, Ledger and
- * Statement tabs need posted documents, which arrive with the sales slice; they are not shown yet.
+ * B4 Customer details (Parties.dc.html party header + details): Overview and Activity tabs (tab in the URL,
+ * ?tab=activity). The Transactions, Ledger and Statement tabs need posted documents, which arrive with the sales
+ * slice; they are not shown yet.
  */
 export function CustomerDetails() {
-  const { Badge, Button, Icon, Skeleton } = lf()
+  const { Badge, Button, Icon, Tabs } = lf()
   const id = Number(useParams().id)
   const navigate = useNavigate()
   const { can } = useSession()
   const q = useCustomer(id)
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'activity' ? 'activity' : 'overview'
 
   if (q.error instanceof ApiError && q.error.status === 404) return <NotFound what="this customer" />
-  if (q.error) return <ErrorBanner error={q.error} />
-  if (!q.data) return <div role="status" aria-label="Loading" style={{ display: 'grid', gap: 12, maxWidth: 480 }}><Skeleton width="50%" height={28} /><Skeleton height={14} /></div>
+  if (q.error) return <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
+  if (!q.data) return <PageSkeleton template="detail" />
   const p = q.data.party
   if (p.party_type !== 'customer') return <NotFound what="this customer" />
   const place = [p.area, p.district].filter(Boolean).join(', ')
@@ -65,19 +71,22 @@ export function CustomerDetails() {
       </div>
 
       <div className="lf-grid">
-        <div className="lf-c3" style={{ ...panel, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ font: '600 13px/18px var(--font-sans)', color: 'var(--ink-muted)' }}>Balance</span>
-          <span className="lf-num" data-testid="customer-balance" style={{ font: '500 26px/32px var(--font-serif)' }}>{formatTaka(p.balance, { symbol: true })} {p.balance_side === 'cr' ? 'Cr' : 'Dr'}</span>
-          <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>{p.balance_side === 'cr' && p.balance !== '0.00' ? 'Advance received' : 'Receivable today'}</span>
-        </div>
-        <div className="lf-c3" style={{ ...panel, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ font: '600 13px/18px var(--font-sans)', color: 'var(--ink-muted)' }}>Overdue</span>
-          <span className="lf-num" style={{ font: '500 26px/32px var(--font-serif)', color: p.overdue !== '0.00' ? 'var(--negative)' : undefined }}>{formatTaka(p.overdue, { symbol: true })}</span>
-          <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Posted invoices past their due date</span>
-        </div>
+        <SummaryTile label="Balance" testId="customer-balance" value={`${formatTaka(p.balance, { symbol: true })} ${p.balance_side === 'cr' ? 'Cr' : 'Dr'}`}
+          sub={p.balance_side === 'cr' && p.balance !== '0.00' ? 'Advance received' : 'Receivable today'} />
+        <SummaryTile label="Overdue" value={formatTaka(p.overdue, { symbol: true })} tone={p.overdue !== '0.00' ? 'negative' : undefined}
+          sub="Posted invoices past their due date" />
       </div>
 
-      <div className="lf-grid" style={{ alignItems: 'start' }}>
+      <Tabs items={[{ value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity' }]} value={tab}
+        onChange={(v) => setParams(v === 'activity' ? { tab: 'activity' } : {}, { replace: true })} />
+
+      {tab === 'activity' && (
+        <section style={{ ...panel, padding: '16px 20px' }} aria-label="Activity">
+          <ActivityTimeline type="party" id={p.id} />
+        </section>
+      )}
+
+      {tab === 'overview' && <div className="lf-grid" style={{ alignItems: 'start' }}>
         <section className="lf-c4" style={{ ...panel, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <h2 style={{ margin: 0, font: '650 16px/24px var(--font-sans)' }}>Contact</h2>
           {contact.length === 0 && <span style={{ color: 'var(--ink-muted)' }}>No contact details yet.</span>}
@@ -106,7 +115,7 @@ export function CustomerDetails() {
             <span style={{ whiteSpace: 'pre-wrap' }}>{p.notes}</span>
           </section>
         )}
-      </div>
+      </div>}
     </>
   )
 }

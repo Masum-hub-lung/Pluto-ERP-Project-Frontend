@@ -23,8 +23,32 @@ React 19 + TypeScript SPA for **LedgerFlow ERP** (product name in code, docs and
 11. The API base is always the relative `/api/v1`; never add an absolute API URL. Only `VITE_*` variables reach the browser — never put secrets in them.
 12. Keep code identifiers named LedgerFlow; only the repos, Jira, Vercel and Docker use "Pluto".
 
-## Shared components (update this list as P1.2 adds them)
-Design system through `lf()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `LedgerFlowLibrary`). App pieces today: `src/app/Shell.tsx` (sidebar, top bar, environment strip), `src/app/guards.tsx` (RequireAuth, RequirePermission), `src/app/toast.tsx` (`useToast`), `src/pages/customers/shared.tsx` (problem banner with request id), `src/lib/format.ts`, `src/lib/customerSchema.ts`. `src/components/` arrives with P1.2 (ProblemBanner, ConflictBanner, applyProblemToForm, useIdempotencyKey, useListParams, ConfirmDialog, DeleteDialog, useUnsavedChangesBlocker, PageSkeleton, ListCard, SummaryTile, SelectableTable, ActivityTimeline, AsyncSelect / PartyPicker / LedgerPicker).
+## Shared components (keep this catalogue current)
+Design system through `lf()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `LedgerFlowLibrary`). App shell: `src/app/Shell.tsx`, guards `src/app/guards.tsx` (RequireAuth, RequirePermission), toasts `src/app/toast.tsx` (`useToast`). Pattern pages: `src/pages/customers/*`.
+
+| Use | Component / hook | File | Example |
+|---|---|---|---|
+| Any API error on a page (title, detail, "Reference: …"; offline/429 in plain words) | `ProblemBanner` | `components/ProblemBanner.tsx` | `<ProblemBanner error={q.error} onRetry={() => void q.refetch()} />` (renders nothing without an error) |
+| 409 `version_conflict` on save | `ConflictBanner` | `components/ConflictBanner.tsx` | `{conflict && <ConflictBanner onReload={reloadLatest} loading={reloading} />}` — keep the user's input |
+| 422 field errors → inputs | `applyProblemToForm` | `lib/forms.ts` | `const r = applyProblemToForm(e, setError, serverFieldMap); if (r) setUnmatched(r.unmatched)` (focuses the first field; `lines.*.qty` patterns) |
+| "Fix N fields to save this …" | `FormErrorSummary` | `components/FormErrorSummary.tsx` | `<FormErrorSummary count={submitCount > 0 ? errorCount : 0} noun="supplier" messages={unmatched} />` |
+| Idempotency-Key per user action (BR-050) | `useIdempotencyKey` | `lib/useIdempotencyKey.ts` | `const idem = useIdempotencyKey(); await create({ idempotencyKey: idem.key }); idem.reset()` (reset only on success) |
+| List filters/sort/page in the URL + debounced search | `useListParams` | `lib/useListParams.ts` | `const { get, set, search, setSearch, page } = useListParams(); set({ status: 'active' })` (resets page) |
+| Yes/no question (L6) | `ConfirmDialog` | `components/ConfirmDialog.tsx` | `<ConfirmDialog title="Post this bill?" confirmLabel="Post" tone="info" onConfirm={post} onClose={close} />` |
+| Delete with typed name (L7) | `DeleteDialog` | `components/DeleteDialog.tsx` | `<DeleteDialog name={p.name} what="supplier" loading={pending} onConfirm={del} onClose={close} />` |
+| Unsaved changes (L13) | `useUnsavedChangesBlocker` | `lib/useUnsavedChangesBlocker.tsx` | `const guard = useUnsavedChangesBlocker(isDirty); … guard.allowNavigation(); navigate(...)`; render `{guard.dialog}` |
+| Page loading (L9, L10 after 8 s) | `PageSkeleton`, `StillLoading` | `components/PageSkeleton.tsx`, `components/StillLoading.tsx` | `if (!q.data) return <PageSkeleton template="list|form|detail|report" />` |
+| One widget failed | `WidgetError` | `components/WidgetError.tsx` | `<WidgetError title="Could not load sales" onRetry={refetch} />` |
+| 403 / 404 / not built yet | `Forbidden`, `NotFound`, `NotInRelease` | `components/states.ts` | `return <NotFound what="this supplier" back="/suppliers" backLabel="Suppliers" />` |
+| List page card (toolbar, table, pagination) | `ListCard` | `components/ListCard.tsx` | `<ListCard toolbar={…} meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}><DataTable … /></ListCard>` |
+| Stat tile | `SummaryTile` | `components/SummaryTile.tsx` | `<SummaryTile label="Suppliers" value={n} sub="12 active" testId="tile-suppliers" />` |
+| Bulk selection + action bar | `SelectableTable` | `components/SelectableTable.tsx` | `<SelectableTable columns={cols} rows={rows} actions={(ids, clear) => <Button onClick={() => bulk(ids).then(clear)}>Deactivate</Button>} />` |
+| Activity tab (who/what/when, old → new) | `ActivityTimeline`, `useAuditLog` | `components/ActivityTimeline.tsx`, `api/audit.ts` | `<ActivityTimeline type="party" id={p.id} />` (types: party, product, purchase_bill, sales_invoice, …) |
+| Search-as-you-type select (big lists) | `AsyncSelect` | `components/AsyncSelect.tsx` | `<AsyncSelect value={v} onChange={setV} search={(q, s) => …} itemKey={x => x.id} itemLabel={x => x.name} />` |
+| Pick a customer/supplier | `PartyPicker` | `components/pickers/PartyPicker.tsx` | `<PartyPicker type="supplier" value={party} onChange={setParty} aria-label="Supplier" />` |
+| Pick a ledger (send the form's purpose, R-26) | `LedgerPicker` | `components/pickers/LedgerPicker.tsx` | `<LedgerPicker purpose="purchase_for_supplier" value={l} onChange={setL} aria-label="Purchase ledger" />` |
+
+Try the pickers on the dev-only page `/dev/pickers` (`npm run dev`; not in production builds).
 
 ## Commands
 ```bash
@@ -61,7 +85,7 @@ docs/                      SYNCED specs (02 UI, 05 API, 06, 08, 09, 01) — neve
 
 ### 5.3 Data access rules
 - One hooks file per module: `src/api/<module>.ts`. Query keys are hierarchical and company-scoped: `['company', cid, '<resource>', …]` (copy `keys` from `parties.ts`).
-- Lists: filters/sort/page live in the **URL search params** (copy `set()` from `CustomerList.tsx`); `placeholderData: keepPreviousData`.
+- Lists: filters/sort/page live in the **URL search params** via `useListParams()`; `placeholderData: keepPreviousData`.
 - Lookups (payment terms, units, tax rules, warehouses…): `staleTime: 5 * 60_000`.
 - Mutations: generate the `Idempotency-Key` **once per user action** with `useIdempotencyKey()` (P1.2) and reuse it on retry; send `ifMatch: W/"<version>"` for updates (the client sends it as `X-If-Match`, never a raw `If-Match` header: Vercel would turn the successful edit into 412); after success **invalidate** every affected key (08 §8 table).
 - Never use optimistic updates for financial data.

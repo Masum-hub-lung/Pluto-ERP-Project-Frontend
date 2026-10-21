@@ -10,15 +10,19 @@ import { useSession } from '../../auth/session'
 import { lf } from '../../ds'
 import { customerSchema, emptyCustomer, serverFieldMap, toPartyInput, type CustomerFormParsed, type CustomerFormValues } from '../../lib/customerSchema'
 import { formatTaka, termLabel } from '../../lib/format'
-import { Forbidden } from '../states/Forbidden'
-import { NotFound } from '../states/NotFound'
-import { ErrorBanner } from './shared'
+import { applyProblemToForm } from '../../lib/forms'
+import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
+import { useUnsavedChangesBlocker } from '../../lib/useUnsavedChangesBlocker'
+import { ConflictBanner } from '../../components/ConflictBanner'
+import { DeleteDialog } from '../../components/DeleteDialog'
+import { FormErrorSummary } from '../../components/FormErrorSummary'
+import { PageSkeleton } from '../../components/PageSkeleton'
+import { ProblemBanner } from '../../components/ProblemBanner'
+import { Forbidden, NotFound } from '../../components/states'
 
 /** Districts offered by the design (Parties.dc.html districtOptions). */
 const DISTRICTS = ['Dhaka', 'Chattogram', 'Gazipur', 'Narayanganj', 'Cumilla', 'Sylhet', 'Rajshahi', 'Khulna', 'Bogura', 'Naogaon']
 const TYPES = [{ value: '', label: 'Choose…' }, { value: 'business', label: 'Business' }, { value: 'individual', label: 'Individual' }, { value: 'walk_in', label: 'Walk-in counter' }]
-
-const newKey = () => crypto.randomUUID()
 
 /** B2 Add customer / B3 Edit customer (Cust-Add.dc.html, Cust-Edit.dc.html). */
 export function CustomerForm({ mode }: { mode: 'add' | 'edit' }) {
@@ -29,8 +33,8 @@ export function CustomerForm({ mode }: { mode: 'add' | 'edit' }) {
   if (mode === 'edit' && !can('parties.edit')) return <Forbidden permission="parties.edit" what="editing customers" />
   if (mode === 'edit') {
     if (existing.error instanceof ApiError && existing.error.status === 404) return <NotFound what="this customer" />
-    if (existing.error) return <ErrorBanner error={existing.error} />
-    if (!existing.data) return null
+    if (existing.error) return <ProblemBanner error={existing.error} onRetry={() => void existing.refetch()} />
+    if (!existing.data) return <PageSkeleton template="form" />
     if (existing.data.party.party_type !== 'customer') return <NotFound what="this customer" />
   }
   return <Form key={mode === 'edit' ? `${id}` : 'add'} mode={mode} party={existing.data?.party ?? null} />
@@ -49,7 +53,7 @@ function toForm(p: Party | null): CustomerFormValues {
 
 function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   const L = lf()
-  const { Card, Field, Input, Select, Button, Banner, Badge, Icon, PageHeader, Dialog } = L
+  const { Card, Field, Input, Select, Button, Banner, Badge, Icon, PageHeader } = L
   const navigate = useNavigate()
   const toast = useToast()
   const { can } = useSession()
@@ -58,12 +62,13 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   const create = useCreateCustomer()
   const update = useUpdateCustomer(party?.id ?? 0)
   const action = useCustomerAction(party?.id ?? 0)
-  const idemKey = useRef(newKey())
+  const idem = useIdempotencyKey()
   const [version, setVersion] = useState(party?.version ?? 0)
   const [conflict, setConflict] = useState(false)
+  const [reloading, setReloading] = useState(false)
   const [formError, setFormError] = useState<unknown>(null)
-  const [confirm, setConfirm] = useState<null | 'leave' | 'delete'>(null)
-  const [deleteText, setDeleteText] = useState('')
+  const [unmatched, setUnmatched] = useState<string[]>([])
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const addAnother = useRef(false)
 
   const defaults = useMemo(() => {
@@ -78,37 +83,38 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
     useForm<CustomerFormValues, unknown, CustomerFormParsed>({ resolver: zodResolver(customerSchema), defaultValues: defaults, mode: 'onSubmit' })
   // New server data (record refetched, payment terms arrived): update the untouched fields, never what the user typed.
   useEffect(() => { reset(defaults, { keepDirtyValues: true, keepErrors: true, keepSubmitCount: true, keepTouched: true }) }, [defaults]) // eslint-disable-line react-hooks/exhaustive-deps
+  const guard = useUnsavedChangesBlocker(isDirty, 'Your edits to this customer have not been saved.')
 
   const errorCount = Object.keys(errors).length
   const err = (k: keyof CustomerFormValues) => errors[k]?.message as string | undefined
 
   async function onValid(values: CustomerFormParsed) {
     setFormError(null)
+    setUnmatched([])
     setConflict(false)
     const input = toPartyInput(values)
     try {
       if (mode === 'add') {
-        const r = await create.mutateAsync({ input, idempotencyKey: idemKey.current })
-        idemKey.current = newKey()
+        const r = await create.mutateAsync({ input, idempotencyKey: idem.key })
+        idem.reset()
         toast({ tone: 'positive', title: `${r.data.name} added as ${r.data.code}`, description: `Ledger ${r.data.ledger_code} created under Sundry debtors.` })
         for (const w of r.warnings ?? []) toast({ tone: 'warning', title: w.message })
         if (addAnother.current) { reset({ ...emptyCustomer, payment_term_id: latestDefaults.current.payment_term_id }); return }
         reset(toForm(r.data))
+        guard.allowNavigation()
         navigate(`/customers/${r.data.id}`)
       } else if (party) {
         const updated = await update.mutateAsync({ input, version })
         setVersion(updated.version)
         reset(toForm(updated))
         toast({ tone: 'positive', title: 'Changes saved', description: `${updated.name} · version ${updated.version}` })
+        guard.allowNavigation()
         navigate(`/customers/${party.id}`)
       }
     } catch (e) {
-      if (e instanceof ApiError && (e.status === 422)) {
-        for (const [field, msgs] of Object.entries(e.fieldErrors)) {
-          const target = serverFieldMap[field]
-          if (target) setError(target, { type: 'server', message: msgs[0] })
-        }
-        if (!Object.keys(e.fieldErrors).some((f) => serverFieldMap[f])) setFormError(e)
+      const placed = applyProblemToForm(e, setError, serverFieldMap)
+      if (placed) {
+        setUnmatched(placed.unmatched)
       } else if (e instanceof ApiError && e.code === 'version_conflict') {
         setConflict(true)
       } else {
@@ -119,15 +125,23 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
 
   async function reloadLatest() {
     if (!party) return
-    const fresh = await api.request<{ data: Party }>('GET', `/parties/${party.id}`)
-    setVersion(fresh.data.data.version)
-    setConflict(false)
-    toast({ tone: 'info', title: 'Loaded the latest version', description: 'Your edits are kept; save again to apply them.' })
+    setReloading(true)
+    try {
+      const fresh = await api.request<{ data: Party }>('GET', `/parties/${party.id}`)
+      setVersion(fresh.data.data.version)
+      setConflict(false)
+      toast({ tone: 'info', title: 'Loaded the latest version', description: 'Your edits are kept; save again to apply them.' })
+    } catch (e) {
+      setFormError(e)
+    } finally {
+      setReloading(false)
+    }
   }
 
   async function runAction(a: 'deactivate' | 'reactivate' | 'delete') {
     try {
       await action.mutateAsync(a)
+      guard.allowNavigation()
       if (a === 'delete') {
         toast({ tone: 'positive', title: `${party?.name} deleted` })
         navigate('/customers')
@@ -136,13 +150,14 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
         navigate(`/customers/${party?.id}`)
       }
     } catch (e) {
-      setConfirm(null)
+      setConfirmDelete(false)
       if (e instanceof ApiError && e.code === 'has_history') toast({ tone: 'warning', title: 'This customer has transactions', description: 'Make it inactive instead.' })
       else setFormError(e)
     }
   }
 
-  const cancel = () => (isDirty ? setConfirm('leave') : navigate(mode === 'edit' && party ? `/customers/${party.id}` : '/customers'))
+  // Leaving with unsaved edits asks first (useUnsavedChangesBlocker shows "Discard unsaved changes?").
+  const cancel = () => navigate(mode === 'edit' && party ? `/customers/${party.id}` : '/customers')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); void handleSubmit(onValid)() }
@@ -163,9 +178,9 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
     <form onSubmit={handleSubmit(onValid)} noValidate data-testid="customer-form">
       <PageHeader eyebrow="Customers" title={mode === 'edit' ? `Edit ${party?.name}` : 'New customer'}
         description={mode === 'edit' ? `${party?.code}${party?.area || party?.district ? ` · ${[party.area, party.district].filter(Boolean).join(', ')}` : ''}` : 'Fields marked * are required. Everything else can be added later.'} />
-      {submitCount > 0 && errorCount > 0 && <Banner tone="negative" title={`Fix ${errorCount} ${errorCount === 1 ? 'field' : 'fields'} to save this customer`}>Fields that need attention are marked below.</Banner>}
-      {conflict && <Banner tone="warning" title="Someone else changed this record" action={<Button size="sm" variant="secondary" onClick={() => void reloadLatest()}>Reload</Button>}>Your changes are kept below. Reload to see the latest version, then save again.</Banner>}
-      {formError ? <ErrorBanner error={formError} /> : null}
+      <FormErrorSummary count={submitCount > 0 ? errorCount : 0} noun="customer" messages={unmatched} />
+      {conflict && <ConflictBanner onReload={() => void reloadLatest()} loading={reloading} />}
+      <ProblemBanner error={formError} />
       {mode === 'edit' && party?.status === 'inactive' && <Banner tone="info" title="This customer is inactive">It is hidden from new invoices. Reactivate it below.</Banner>}
       {mode === 'edit' && party?.status !== 'inactive' && <Banner tone="info" title={`Editing ${party?.code}`}>Changes apply to new invoices. Posted invoices keep the details they were issued with.</Banner>}
 
@@ -252,7 +267,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
                 {party.status === 'inactive'
                   ? <Button variant="secondary" icon="check" onClick={() => void runAction('reactivate')} loading={action.isPending}>Reactivate</Button>
                   : <Button variant="secondary" icon="x" onClick={() => void runAction('deactivate')} loading={action.isPending}>Make inactive</Button>}
-                {can('parties.delete') && !party.opening_locked && <Button variant="ghost" icon="trash-2" onClick={() => { setDeleteText(''); setConfirm('delete') }}>Delete</Button>}
+                {can('parties.delete') && !party.opening_locked && <Button variant="ghost" icon="trash-2" onClick={() => setConfirmDelete(true)}>Delete</Button>}
               </div>
             </section>
           )}
@@ -294,19 +309,10 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
         </Button>
       </div>
 
-      {confirm === 'leave' && (
-        <Dialog title="Discard unsaved changes?" description="Your edits to this customer have not been saved." tone="warning" onClose={() => setConfirm(null)}
-          footer={<><Button variant="ghost" onClick={() => setConfirm(null)}>Keep editing</Button>
-            <Button variant="danger" onClick={() => navigate(mode === 'edit' && party ? `/customers/${party.id}` : '/customers')}>Discard changes</Button></>} />
-      )}
-      {confirm === 'delete' && party && (
-        <Dialog title={`Delete ${party.name}?`} description="Only customers without any transactions can be deleted. This cannot be undone." tone="negative" onClose={() => setConfirm(null)}
-          footer={<><Button variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button>
-            <Button variant="danger" disabled={deleteText.trim() !== party.name || action.isPending} loading={action.isPending} onClick={() => void runAction('delete')}>Delete customer</Button></>}>
-          <Field label="Type the customer name to confirm">
-            <Input value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder={party.name} aria-label="Type the customer name to confirm" />
-          </Field>
-        </Dialog>
+      {guard.dialog}
+      {confirmDelete && party && (
+        <DeleteDialog name={party.name} what="customer" description="Only customers without any transactions can be deleted. This cannot be undone."
+          loading={action.isPending} onConfirm={() => void runAction('delete')} onClose={() => setConfirmDelete(false)} />
       )}
     </form>
   )
