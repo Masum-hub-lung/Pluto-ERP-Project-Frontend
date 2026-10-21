@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { lf } from '../ds'
+import { ds } from '../ds'
 import { comboKey, type ComboKey } from '../lib/combobox'
 
 export interface AsyncSelectProps<T> {
@@ -22,7 +22,7 @@ export interface AsyncSelectProps<T> {
  * aria-activedescendant) so screen readers announce the highlighted option.
  */
 export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, renderItem, placeholder = 'Type to search', invalid, disabled, id, ...rest }: AsyncSelectProps<T>) {
-  const { Input, Icon } = lf()
+  const { Input, Icon } = ds()
   const listId = useId()
   const [text, setText] = useState(value ? itemLabel(value) : '')
   const [items, setItems] = useState<T[]>([])

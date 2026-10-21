@@ -1,9 +1,9 @@
-import { lf } from '../ds'
+import { ds } from '../ds'
 import { StillLoading } from './StillLoading'
 
 /** L9 loading (02 #page-l9): placeholder shapes of the page that is on its way, so the layout does not jump. */
 export function PageSkeleton({ template }: { template: 'list' | 'form' | 'detail' | 'report' }) {
-  const { Skeleton } = lf()
+  const { Skeleton } = ds()
   const card = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: '16px 20px', display: 'grid', gap: 12 } as const
   const rows = (n: number) => Array.from({ length: n }, (_, i) => <Skeleton key={i} height={14} width={`${90 - (i % 3) * 15}%`} />)
   return (

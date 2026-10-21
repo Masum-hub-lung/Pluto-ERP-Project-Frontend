@@ -2,7 +2,7 @@
 # End-to-end tests against a fresh backend (backlog P0.5-FE-05). Needs Docker, Node and the backend repo cloned
 # next to this one (../backend, or set BACKEND_DIR) and set up once with its ./scripts/setup.sh.
 #   E2E_PASSWORD=<any 10+ chars> ./scripts/e2e.sh
-# Steps: backend ./scripts/e2e-prepare.sh (API on :8081, database ledgerflow_e2e wiped, test users created) →
+# Steps: backend ./scripts/e2e-prepare.sh (API on :8081, database pluto_e2e wiped, test users created) →
 # npm run build → vite preview on :4173 proxying /api to :8081 → the Playwright tests in tests/e2e.
 # One-time: npx playwright install chromium
 set -euo pipefail

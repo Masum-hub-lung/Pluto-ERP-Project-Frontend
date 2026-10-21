@@ -1,4 +1,4 @@
-/* LedgerFlow components — reads tokens.css custom properties only. */
+/* Pluto design-system components — reads tokens.css custom properties only. */
 .lf-root, body { font-family: var(--font-sans); color: var(--ink); }
 body { background: var(--paper); margin: 0; font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; }
 .lf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

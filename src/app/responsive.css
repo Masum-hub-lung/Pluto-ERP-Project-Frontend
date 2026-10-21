@@ -1,0 +1,33 @@
+/*
+ * Phone rules for forms, details pages and dialogs (backlog P1.5-FE-04), app-wide. Tokens only.
+ * Lists have their own in components/listcard.css, the shell in app/shell.css.
+ */
+@media (max-width: 639px) {
+  /* 16 px text in fields stops iOS zooming in on focus; 44 px touch targets. */
+  .lf-input input, .lf-input textarea, .lf-select select, input.lf-input, select, textarea { font-size: 16px !important; }
+  .lf-input, .lf-select { min-height: 44px; }
+  .lf-btn { min-height: 44px; }
+  .lf-iconbtn { min-width: 44px; min-height: 44px; }
+  .lf-seg-item, .lf-tab { min-height: 44px; }
+  .lf-switch { min-height: 44px; }
+
+  /* Tabs scroll sideways inside their bar instead of widening the page. */
+  .lf-tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  .lf-tabs::-webkit-scrollbar { display: none; }
+  .lf-tab { flex: none; }
+
+  /* Forms: the side panel stops being sticky once it sits under the fields. */
+  .lf-form-aside { position: static !important; }
+
+  /* Sticky action footer: clear of the home indicator; primary action full width on its own row, at the bottom. */
+  .lf-form-footer {
+    margin: 0 -16px -40px !important; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important; gap: 8px !important;
+  }
+  .lf-form-footer > span:empty { display: none; }
+  .lf-form-footer > .lf-btn { flex: 1 1 0; justify-content: center; }
+  .lf-form-footer > .lf-btn-primary { flex: 1 1 100%; order: 10; }
+  .lf-form-footer .lf-kbd, .lf-form-footer .lf-btn-kbd { display: none; }
+
+  /* Page titles wrap instead of pushing the page wider. */
+  .lf-page h1 { overflow-wrap: anywhere; }
+}

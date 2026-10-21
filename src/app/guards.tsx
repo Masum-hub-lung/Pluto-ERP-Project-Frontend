@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useSession } from '../auth/session'
-import { lf } from '../ds'
+import { ds } from '../ds'
 import { Forbidden } from '../pages/states/Forbidden'
 
 /** Signed-in routes; while the session restores from the refresh cookie a skeleton is shown. */
@@ -23,7 +23,7 @@ export function RequirePermission({ permission, children }: { permission: string
 }
 
 function Restoring() {
-  const { Skeleton } = lf()
+  const { Skeleton } = ds()
   return (
     <div role="status" aria-label="Loading" style={{ padding: 48, display: 'grid', gap: 12, maxWidth: 480 }}>
       <Skeleton width="60%" height={20} /><Skeleton height={12} /><Skeleton width="80%" height={12} />

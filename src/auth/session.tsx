@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../api/client'
 import type { LoginResponse, Me } from '../api/contract.gen'
+import { readPref, writePref } from '../lib/prefs'
 
 /**
  * Session state (07 §1): sign in, silent restore after reload via the refresh cookie, active company, effective
@@ -31,13 +32,14 @@ interface SessionValue {
 }
 
 const SessionContext = createContext<SessionValue | null>(null)
-const LAST_COMPANY = 'lf.lastCompany' // a remembered preference only; never a credential
+const LAST_COMPANY = 'pluto.lastCompany' // a remembered preference only; never a credential
 
 function rememberCompany(id: number) {
-  try { localStorage.setItem(LAST_COMPANY, String(id)) } catch { /* storage unavailable */ }
+  writePref(LAST_COMPANY, String(id))
 }
 function rememberedCompany(): number | null {
-  try { const v = localStorage.getItem(LAST_COMPANY); return v ? Number(v) : null } catch { return null }
+  const v = readPref(LAST_COMPANY, 'lf.lastCompany')
+  return v ? Number(v) : null
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {

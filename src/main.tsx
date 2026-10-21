@@ -3,8 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { loadDesignSystem } from './ds'
+import './app/responsive.css'
 
-/** Boot: load the existing LedgerFlow design-system bundle (it uses this app's React), then render. */
+/** Boot: load the prebuilt Pluto design-system bundle (it uses this app's React), then render. */
 const root = createRoot(document.getElementById('root')!)
 
 loadDesignSystem().then(async () => {
@@ -26,5 +27,5 @@ loadDesignSystem().then(async () => {
     </StrictMode>,
   )
 }).catch((e: Error) => {
-  root.render(<p role="alert" style={{ padding: 24, fontFamily: 'system-ui' }}>LedgerFlow could not start: {e.message}</p>)
+  root.render(<p role="alert" style={{ padding: 24, fontFamily: 'system-ui' }}>Pluto could not start: {e.message}</p>)
 })

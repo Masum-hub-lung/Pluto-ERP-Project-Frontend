@@ -1,6 +1,6 @@
 # CLAUDE.md · Pluto-ERP-Project frontend
 
-React 19 + TypeScript SPA for **LedgerFlow ERP** (product name in code, docs and the design system; project name Pluto-ERP-Project): a multi-company ERP for Bangladeshi trading firms — customers, suppliers, inventory, sales, purchases, LC, cash and bank, accounting and reports. Money is BDT with lakh/crore formatting; the financial year runs July–June. The backend (Laravel, separate repo `Pluto-ERP-Project-Backend`, cloned at `../backend`) owns every calculation; this app shows and edits what the API returns. Live it runs on Vercel and reaches the API through `api/proxy.ts`; locally Vite proxies `/api` to the Docker backend.
+React 19 + TypeScript SPA for **Pluto ERP** (repos, Jira project PEP and Vercel are named Pluto-ERP-Project): a multi-company ERP for Bangladeshi trading firms — customers, suppliers, inventory, sales, purchases, LC, cash and bank, accounting and reports. Money is BDT with lakh/crore formatting; the financial year runs July–June. The backend (Laravel, separate repo `Pluto-ERP-Project-Backend`, cloned at `../backend`) owns every calculation; this app shows and edits what the API returns. Live it runs on Vercel and reaches the API through `api/proxy.ts`; locally Vite proxies `/api` to the Docker backend.
 
 **This file keeps every AI session (Opus first, then Sonnet) consistent. Update it in the same PR whenever a convention changes or a shared component is added.**
 
@@ -21,10 +21,10 @@ React 19 + TypeScript SPA for **LedgerFlow ERP** (product name in code, docs and
 9. **Never compute money, tax, stock or balances here**: no `parseFloat`/`Number()` on money, no adding or multiplying amounts; totals come from the API (`/calculate` endpoints) and are shown with `<Amount>` or `formatTaka()`.
 10. **Never edit synced or generated files**: `src/api/contract.gen.ts` and everything in `docs/` (refresh them with `./scripts/sync-contract.sh`).
 11. The API base is always the relative `/api/v1`; never add an absolute API URL. Only `VITE_*` variables reach the browser — never put secrets in them.
-12. Keep code identifiers named LedgerFlow; only the repos, Jira, Vercel and Docker use "Pluto".
+12. The product is **Pluto** (owner decision, 21 Oct 2026; Jira PEP-440): use Pluto in UI text, code identifiers, storage keys (`pluto.*` via `lib/prefs.ts`) and docs. The old product name must not come back (PEP-446 checks). Only the hidden design-system CSS prefix `lf-` stays (decision C17).
 
 ## Shared components (keep this catalogue current)
-Design system through `lf()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `LedgerFlowLibrary`). App shell: `src/app/Shell.tsx`, guards `src/app/guards.tsx` (RequireAuth, RequirePermission), toasts `src/app/toast.tsx` (`useToast`). Pattern pages: `src/pages/customers/*`.
+Design system through `ds()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `PlutoLibrary`; the prebuilt bundle and its patches are described in `public/ds/README.md`). Place the logo yourself with `components/Logo.tsx`, not the bundle's `Logo`. App shell: `src/app/Shell.tsx`, guards `src/app/guards.tsx` (RequireAuth, RequirePermission), toasts `src/app/toast.tsx` (`useToast`). Pattern pages: `src/pages/customers/*`.
 
 | Use | Component / hook | File | Example |
 |---|---|---|---|
@@ -40,7 +40,11 @@ Design system through `lf()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amo
 | Page loading (L9, L10 after 8 s) | `PageSkeleton`, `StillLoading` | `components/PageSkeleton.tsx`, `components/StillLoading.tsx` | `if (!q.data) return <PageSkeleton template="list|form|detail|report" />` |
 | One widget failed | `WidgetError` | `components/WidgetError.tsx` | `<WidgetError title="Could not load sales" onRetry={refetch} />` |
 | 403 / 404 / not built yet | `Forbidden`, `NotFound`, `NotInRelease` | `components/states.ts` | `return <NotFound what="this supplier" back="/suppliers" backLabel="Suppliers" />` |
-| List page card (toolbar, table, pagination) | `ListCard` | `components/ListCard.tsx` | `<ListCard toolbar={…} meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}><DataTable … /></ListCard>` |
+| List page card (toolbar, table, pagination; phone cards < 640 px, sticky first column 640–1199 px) | `ListCard` | `components/ListCard.tsx` | `<ListCard toolbar={search + status} filters={sort + extra filters} cards={{ columns, rows, mobileColumns: ['name', 'phone', 'bal'], badgeKey: 'status', onOpen, loading, empty: <EmptyState … /> }} meta={list.data?.meta} onPage={…}><DataTable … /></ListCard>` (pattern: `CustomerList.tsx`; `filters` become a "Filters" bottom sheet on phones) |
+| Any dialog (full-width bottom sheet < 640 px) | `ResponsiveDialog` | `components/ResponsiveDialog.tsx` | same props as the design system's `Dialog`; never use `ds().Dialog` directly. `ConfirmDialog`/`DeleteDialog` already use it |
+| Phone bottom sheet (filters, pickers) | `BottomSheet` | `components/BottomSheet.tsx` | `<BottomSheet title="Filters" onClose={close} footer={<Button variant="primary" block>Show results</Button>}>…</BottomSheet>` |
+| Phone vs wide markup | `useMediaQuery(PHONE)` | `lib/useMediaQuery.ts` | `const phone = useMediaQuery(PHONE)` (< 640 px); prefer CSS when only styles differ |
+| Form action footer / side panel | `lf-form-footer`, `lf-form-aside` classes | `app/responsive.css` | put them on the sticky footer and the `lf-c4` aside (pattern: `CustomerForm.tsx`): footer clears the home indicator, primary full width on phones |
 | Stat tile | `SummaryTile` | `components/SummaryTile.tsx` | `<SummaryTile label="Suppliers" value={n} sub="12 active" testId="tile-suppliers" />` |
 | Bulk selection + action bar | `SelectableTable` | `components/SelectableTable.tsx` | `<SelectableTable columns={cols} rows={rows} actions={(ids, clear) => <Button onClick={() => bulk(ids).then(clear)}>Deactivate</Button>} />` |
 | Activity tab (who/what/when, old → new) | `ActivityTimeline`, `useAuditLog` | `components/ActivityTimeline.tsx`, `api/audit.ts` | `<ActivityTimeline type="party" id={p.id} />` (types: party, product, purchase_bill, sales_invoice, …) |
@@ -58,11 +62,11 @@ npm run typecheck && npm test && npm run build
 E2E_PASSWORD=<10+ chars> ./scripts/e2e.sh   # Playwright E2E against the backend's E2E stack (:8081)
 ./scripts/point-backend.sh <url>    # point Vercel at a new tunnel URL (runbook in the backend repo)
 ```
-Backend once: `cd ../backend && ./scripts/setup.sh` (demo sign-in `owner@ledgerflow.local`).
+Backend once: `cd ../backend && ./scripts/setup.sh` (demo sign-in `owner@pluto.local`).
 
 ## Frontend recipe
 ### 5.1 Stack and folders
-React 19 · TypeScript strict · Vite · React Router 6 · TanStack Query 5 · React Hook Form + zod · **LedgerFlow design system** (prebuilt bundle at `public/ds/ledgerflow/components/bundle.js`, typed in `src/ds.ts`, used through `lf()`).
+React 19 · TypeScript strict · Vite · React Router 6 · TanStack Query 5 · React Hook Form + zod · **Pluto design system** (prebuilt bundle at `public/ds/pluto/components/bundle.js`, typed in `src/ds.ts`, used through `ds()`).
 ```
 src/
   api/client.ts            fetch wrapper (token in memory, refresh, X-Company-Id, Idempotency-Key, If-Match, ApiError)
@@ -91,12 +95,12 @@ docs/                      SYNCED specs (02 UI, 05 API, 06, 08, 09, 01) — neve
 - Never use optimistic updates for financial data.
 
 ### 5.4 UI rules
-- Use only design-system components from `lf()` and the shared components in `src/components/`. Styling: CSS variables (`var(--ink)`, `var(--line)`, …) as in existing pages; **no hard-coded colours**.
+- Use only design-system components from `ds()` and the shared components in `src/components/`. Styling: CSS variables (`var(--ink)`, `var(--line)`, …) as in existing pages; **no hard-coded colours**.
 - Money: display with `<Amount>` or `formatTaka()`. **Never** `parseFloat`/`Number()` on money; never add or multiply money. Totals come from the API (`/calculate` endpoints).
 - Hide buttons the user lacks permission for with `can('<perm>')` from `useSession()`. Wrap routes in `<RequirePermission permission="…">`.
 - Every page handles: **loading** (skeleton / `loading` prop), **empty** (`EmptyState` with the design copy), **error** (`ProblemBanner` with request id), **403** (Forbidden page), **404** (NotFound page). Forms also handle **422** (field errors + summary banner via `applyProblemToForm`), **409** (`ConflictBanner`, keep user input) and **unsaved changes** (`useUnsavedChangesBlocker`).
 - Copy text (titles, helper text, toasts) from `docs/02` for the page. Toast after every successful mutation saying what happened (L12).
-- Responsive: must work at **390, 768, 1024 and 1440 px** without sideways page scroll (tables may scroll inside their card; phones get stacked cards via `ListCard`), and navigation must be reachable at every width (drawer < 900 px, icon rail 900–1199 px; Jira PEP-421). Check with `assertNoPageScroll` in E2E.
+- Responsive: check every page at **390, 768, 1024 and 1440 px**: no sideways page scroll (tables may scroll inside their card; phones get stacked cards via `ListCard`), navigation reachable (drawer < 900 px, icon rail 900–1199 px; Jira PEP-421). Phones (< 640 px): fields 16 px text, touch targets ≥ 44 px, dialogs through `ResponsiveDialog`, details-page header actions in a More menu (pattern: `CustomerDetails.tsx`). In E2E loop over `VIEWPORTS` and call `assertNoPageScroll(page)` (`tests/e2e/helpers.mjs`).
 - Accessibility: every input has a label (`Field label`), buttons have text or `aria-label`, focus moves to the first error on submit.
 
 ### 5.5 Routes and navigation

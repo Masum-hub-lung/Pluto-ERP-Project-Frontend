@@ -2,11 +2,11 @@ import { useState } from 'react'
 import type { Ledger, Party } from '../../api/contract.gen'
 import { LedgerPicker } from '../../components/pickers/LedgerPicker'
 import { PartyPicker } from '../../components/pickers/PartyPicker'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 
 /** Development-only page (/dev/pickers, registered only when import.meta.env.DEV): try the async pickers. */
 export function PickersDemo() {
-  const { PageHeader, Card, Field } = lf()
+  const { PageHeader, Card, Field } = ds()
   const [party, setParty] = useState<Party | null>(null)
   const [ledger, setLedger] = useState<Ledger | null>(null)
   return (

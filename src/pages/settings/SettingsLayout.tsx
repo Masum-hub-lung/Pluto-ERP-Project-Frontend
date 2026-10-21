@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 
 /** The section rail of the Settings design (Settings.dc.html). Only Security is built; the rest say so honestly. */
 const RAIL: Array<{ title: string; items: Array<{ label: string; icon: string; path?: string }> }> = [
@@ -15,7 +15,7 @@ const RAIL: Array<{ title: string; items: Array<{ label: string; icon: string; p
 
 export function SettingsLayout({ current, eyebrow, title, description, children }:
   { current: string; eyebrow: string; title: string; description: string; children: ReactNode }) {
-  const { PageHeader, Icon } = lf()
+  const { PageHeader, Icon } = ds()
   const navigate = useNavigate()
   return (
     <>

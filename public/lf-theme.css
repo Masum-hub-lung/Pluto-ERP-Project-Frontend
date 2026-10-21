@@ -1,8 +1,8 @@
-/* LedgerFlow token variables (from ds/ledgerflow/tokens.json) + font faces */
-@font-face { font-family: "Hanken Grotesk"; src: url("ds/ledgerflow/fonts/hanken-grotesk-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "Newsreader"; src: url("ds/ledgerflow/fonts/newsreader-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
-@font-face { font-family: "Newsreader"; src: url("ds/ledgerflow/fonts/newsreader-latin-wght-italic.woff2") format("woff2"); font-weight: 200 800; font-style: italic; font-display: swap; }
-@font-face { font-family: "JetBrains Mono"; src: url("ds/ledgerflow/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+/* Pluto token variables (from ds/pluto/tokens.json) + font faces */
+@font-face { font-family: "Hanken Grotesk"; src: url("ds/pluto/fonts/hanken-grotesk-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Newsreader"; src: url("ds/pluto/fonts/newsreader-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Newsreader"; src: url("ds/pluto/fonts/newsreader-latin-wght-italic.woff2") format("woff2"); font-weight: 200 800; font-style: italic; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("ds/pluto/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 
 :root, [data-theme="light"] {
   --paper: #f6f4ef; --surface: #ffffff; --surface-sunken: #efece5; --surface-raised: #ffffff;

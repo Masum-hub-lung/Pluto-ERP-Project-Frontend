@@ -1,13 +1,13 @@
 import * as React from 'react'
 
 /**
- * The existing LedgerFlow design system (ds/ledgerflow/components/bundle.js) is a React component library that
- * reads `window.React` and publishes `window.LedgerFlow`. The app shares its React instance with the bundle,
+ * The Pluto design system (public/ds/pluto/components/bundle.js, prebuilt; see public/ds/README.md) is a React
+ * component library that reads `window.React` and publishes `window.Pluto`. The app shares its React instance with the bundle,
  * loads the bundle once, then renders the designed components directly.
  */
 type C<P = Record<string, unknown>> = React.ComponentType<P & { children?: React.ReactNode }>
 
-export interface LedgerFlowLibrary {
+export interface PlutoLibrary {
   Button: C<{ variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md'; icon?: string; iconRight?: string; loading?: boolean;
     kbd?: string; block?: boolean; type?: 'button' | 'submit'; disabled?: boolean; onClick?: (e: React.MouseEvent) => void; 'data-testid'?: string }>
   IconButton: C<{ icon: string; label: string; variant?: string; size?: 'sm' | 'md'; onClick?: (e: React.MouseEvent) => void }>
@@ -54,26 +54,26 @@ export interface DataColumn {
 export interface MenuItem { icon?: string; label: string; description?: string; danger?: boolean; onClick?: () => void; heading?: string }
 
 declare global {
-  interface Window { React: typeof React; LedgerFlow?: LedgerFlowLibrary }
+  interface Window { React: typeof React; Pluto?: PlutoLibrary }
 }
 
-let loading: Promise<LedgerFlowLibrary> | null = null
+let loading: Promise<PlutoLibrary> | null = null
 
-export function loadDesignSystem(src = '/ds/ledgerflow/components/bundle.js'): Promise<LedgerFlowLibrary> {
-  if (window.LedgerFlow) return Promise.resolve(window.LedgerFlow)
+export function loadDesignSystem(src = '/ds/pluto/components/bundle.js'): Promise<PlutoLibrary> {
+  if (window.Pluto) return Promise.resolve(window.Pluto)
   window.React = React
   loading ??= new Promise((resolve, reject) => {
     const s = document.createElement('script')
     s.src = src
-    s.onload = () => (window.LedgerFlow ? resolve(window.LedgerFlow) : reject(new Error('LedgerFlow design system did not load')))
-    s.onerror = () => reject(new Error('LedgerFlow design system could not be fetched'))
+    s.onload = () => (window.Pluto ? resolve(window.Pluto) : reject(new Error('Pluto design system did not load')))
+    s.onerror = () => reject(new Error('Pluto design system could not be fetched'))
     document.head.appendChild(s)
   })
   return loading
 }
 
 /** The loaded component library (main.tsx renders only after loadDesignSystem() resolved). */
-export function lf(): LedgerFlowLibrary {
-  if (!window.LedgerFlow) throw new Error('Design system not loaded')
-  return window.LedgerFlow
+export function ds(): PlutoLibrary {
+  if (!window.Pluto) throw new Error('Design system not loaded')
+  return window.Pluto
 }

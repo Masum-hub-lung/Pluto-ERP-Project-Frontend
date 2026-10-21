@@ -1,0 +1,20 @@
+/* Bottom sheet (P1.5-FE-03/04). Tokens only; motion is off under prefers-reduced-motion (global rule in lf-theme.css). */
+.lf-sheet-scrim {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end;
+  background: color-mix(in srgb, var(--navy-900) 40%, transparent); animation: lf-sheet-fade 200ms ease;
+}
+.lf-sheet {
+  width: 100%; max-height: min(88dvh, 88vh); display: flex; flex-direction: column; box-sizing: border-box;
+  background: var(--surface-raised); border-radius: 16px 16px 0 0; box-shadow: var(--shadow-3);
+  padding-bottom: env(safe-area-inset-bottom); animation: lf-sheet-up 260ms cubic-bezier(.2, 0, 0, 1);
+}
+.lf-sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: 8px auto 0; flex: none; }
+.lf-sheet-head { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px 20px; flex: none; }
+.lf-sheet-title { margin: 6px 0 0; font: 650 17px/24px var(--font-sans); color: var(--ink); }
+.lf-sheet-desc { margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+.lf-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 16px; }
+.lf-sheet-foot { flex: none; display: flex; flex-direction: column-reverse; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.lf-sheet-foot > * { width: 100%; }
+.lf-sheet-foot .lf-btn { width: 100%; justify-content: center; min-height: 44px; }
+@keyframes lf-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes lf-sheet-fade { from { opacity: 0; } to { opacity: 1; } }

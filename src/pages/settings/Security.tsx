@@ -4,7 +4,8 @@ import { useConfirmTwoFactor, useDisableTwoFactor, useStartTwoFactor } from '../
 import type { TwoFactorSetup } from '../../api/contract.gen'
 import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
-import { lf } from '../../ds'
+import { ResponsiveDialog } from '../../components/ResponsiveDialog'
+import { ds } from '../../ds'
 import { SettingsLayout } from './SettingsLayout'
 
 type Step = null | { kind: 'setup'; setup: TwoFactorSetup } | { kind: 'codes'; codes: string[] } | { kind: 'disable' }
@@ -14,7 +15,7 @@ type Step = null | { kind: 'setup'; setup: TwoFactorSetup } | { kind: 'codes'; c
  * requirement, idle sign-out, sessions) belong to the Settings module and are not in this release.
  */
 export function Security() {
-  const { Card, Switch, Button, Banner, Dialog, Field, Input, Badge } = lf()
+  const { Card, Switch, Button, Banner, Field, Input, Badge } = ds()
   const { me, twoFactorBlocked, reload } = useSession()
   const toast = useToast()
   const start = useStartTwoFactor()
@@ -101,7 +102,7 @@ export function Security() {
       </Card>
 
       {step?.kind === 'setup' && (
-        <Dialog title="Turn on 2-step verification" description="Scan the code with an authenticator app (for example Google Authenticator or Microsoft Authenticator), then enter the 6-digit code it shows."
+        <ResponsiveDialog testId="two-factor-setup" title="Turn on 2-step verification" description="Scan the code with an authenticator app (for example Google Authenticator or Microsoft Authenticator), then enter the 6-digit code it shows."
           onClose={close} width={520}
           footer={<><Button variant="ghost" onClick={close}>Cancel</Button>
             <Button variant="primary" loading={confirm.isPending} disabled={confirm.isPending} onClick={(e) => void submitCode(e as unknown as FormEvent)}>Turn on</Button></>}>
@@ -119,11 +120,11 @@ export function Security() {
               <Input id="tfa-code" inputMode="numeric" autoComplete="one-time-code" mono value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" maxLength={7} autoFocus />
             </Field>
           </form>
-        </Dialog>
+        </ResponsiveDialog>
       )}
 
       {step?.kind === 'codes' && (
-        <Dialog title="Save your recovery codes" description="If you lose your phone, each of these codes signs you in once. They are shown only now."
+        <ResponsiveDialog title="Save your recovery codes" description="If you lose your phone, each of these codes signs you in once. They are shown only now."
           width={520} footer={<Button variant="primary" onClick={() => void finishSetup()}>I’ve saved them</Button>}>
           <ol data-testid="recovery-codes" style={{ margin: 0, padding: '12px 16px 12px 36px', columns: 2, font: '500 14px/24px var(--font-mono)', background: 'var(--surface-sunken, var(--paper))', borderRadius: 'var(--radius-sm)' }}>
             {step.codes.map((c) => <li key={c}>{c}</li>)}
@@ -131,11 +132,11 @@ export function Security() {
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             <Button size="sm" icon="download" onClick={() => download(step.codes)}>Download as text</Button>
           </div>
-        </Dialog>
+        </ResponsiveDialog>
       )}
 
       {step?.kind === 'disable' && (
-        <Dialog title="Turn off 2-step verification?" tone="warning" description="Signing in will need only your password. Enter it to confirm."
+        <ResponsiveDialog title="Turn off 2-step verification?" tone="warning" description="Signing in will need only your password. Enter it to confirm."
           onClose={close}
           footer={<><Button variant="ghost" onClick={close}>Keep it on</Button>
             <Button variant="danger" loading={disable.isPending} disabled={disable.isPending} onClick={(e) => void submitDisable(e as unknown as FormEvent)}>Turn off</Button></>}>
@@ -145,7 +146,7 @@ export function Security() {
               <Input id="tfa-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
             </Field>
           </form>
-        </Dialog>
+        </ResponsiveDialog>
       )}
     </SettingsLayout>
   )
@@ -156,10 +157,10 @@ function secretOf(uri: string): string {
 }
 
 function download(codes: string[]) {
-  const blob = new Blob([`LedgerFlow recovery codes\n\n${codes.join('\n')}\n\nEach code works once.\n`], { type: 'text/plain' })
+  const blob = new Blob([`Pluto recovery codes\n\n${codes.join('\n')}\n\nEach code works once.\n`], { type: 'text/plain' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
-  a.download = 'ledgerflow-recovery-codes.txt'
+  a.download = 'pluto-recovery-codes.txt'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }

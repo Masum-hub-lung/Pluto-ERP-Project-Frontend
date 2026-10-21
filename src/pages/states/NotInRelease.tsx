@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { lf } from '../../ds'
+import { ds } from '../../ds'
 
 /** Modules outside the first vertical slice: shown honestly instead of a mock screen. */
 export function NotInRelease({ label: fixed }: { label?: string }) {
-  const { EmptyState, Button } = lf()
+  const { EmptyState, Button } = ds()
   const navigate = useNavigate()
   const label = fixed ?? (useLocation().state as { label?: string } | null)?.label ?? 'This module'
   return (
