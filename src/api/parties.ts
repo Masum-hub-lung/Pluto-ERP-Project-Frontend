@@ -1,32 +1,41 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { PageMeta, Party, PartyGroup, PartyInput, PaymentTerm, Warning } from './contract.gen'
+import type { BulkResult, PageMeta, Party, PartyGroup, PartyGroupInput, PartyInput, PaymentTerm, Warning } from './contract.gen'
 
-/** Customer workflow data access (05 Parties tag). Query keys are hierarchical per company (08 §8). */
-export interface PartyListFilters { q?: string; status?: string; balance?: string; area?: string; sort?: string; page?: number; per_page?: number }
+/**
+ * Customer and supplier data access (05 Parties tag; generalised for suppliers in P2.2-FE-01). Query keys are
+ * hierarchical per company (08 §8): every parties query sits under ['company', cid, 'parties', …], so invalidating
+ * keys.all refreshes lists, counts and details of both types after any change.
+ */
+export type PartyType = 'customer' | 'supplier'
+export interface PartyListFilters {
+  q?: string; status?: string; balance?: string; area?: string; country_code?: string; group_id?: number; sort?: string; page?: number; per_page?: number
+}
 
 const keys = {
   all: (cid: number | null) => ['company', cid, 'parties'] as const,
-  list: (cid: number | null, f: PartyListFilters) => ['company', cid, 'parties', 'list', f] as const,
+  list: (cid: number | null, type: PartyType, f: PartyListFilters) => ['company', cid, 'parties', 'list', { type, ...f }] as const,
+  counts: (cid: number | null, type: PartyType) => ['company', cid, 'parties', 'counts', type] as const,
   one: (cid: number | null, id: number) => ['company', cid, 'parties', id] as const,
+  groups: (cid: number | null, type: PartyType) => ['company', cid, 'party-groups', type] as const,
 }
 
-export function useCustomers(f: PartyListFilters) {
+export function useParties(type: PartyType, f: PartyListFilters) {
   const cid = api.getCompany()
   return useQuery({
-    queryKey: keys.list(cid, f),
-    queryFn: async ({ signal }) => (await api.request<{ data: Party[]; meta: PageMeta }>('GET', '/parties', { query: { type: 'customer', ...f }, signal })).data,
+    queryKey: keys.list(cid, type, f),
+    queryFn: async ({ signal }) => (await api.request<{ data: Party[]; meta: PageMeta }>('GET', '/parties', { query: { type, ...f }, signal })).data,
     placeholderData: keepPreviousData,
   })
 }
 
-/** Counts for the summary tile, from list totals (no summary endpoint exists in the contract yet). */
-export function useCustomerCounts() {
+/** Counts for the summary tile, from list totals (no summary endpoint exists in the contract, docs 15 D5). */
+export function usePartyCounts(type: PartyType) {
   const cid = api.getCompany()
   return useQuery({
-    queryKey: [...keys.all(cid), 'counts'],
+    queryKey: keys.counts(cid, type),
     queryFn: async () => {
-      const total = (s?: string) => api.request<{ meta: PageMeta }>('GET', '/parties', { query: { type: 'customer', status: s, per_page: 1 } })
+      const total = (s?: string) => api.request<{ meta: PageMeta }>('GET', '/parties', { query: { type, status: s, per_page: 1 } })
         .then((r) => r.data.meta.total)
       const [all, active, inactive] = await Promise.all([total(), total('active'), total('inactive')])
       return { all, active, inactive }
@@ -34,7 +43,7 @@ export function useCustomerCounts() {
   })
 }
 
-export function useCustomer(id: number) {
+export function useParty(id: number) {
   const cid = api.getCompany()
   return useQuery({
     queryKey: keys.one(cid, id),
@@ -55,15 +64,25 @@ export function usePaymentTerms() {
   })
 }
 
-export function useCustomerGroups() {
+export function usePartyGroups(type: PartyType) {
   return useQuery({
-    queryKey: ['company', api.getCompany(), 'party-groups', 'customer'],
-    queryFn: async () => (await api.request<{ data: PartyGroup[] }>('GET', '/party-groups', { query: { type: 'customer' } })).data.data,
+    queryKey: keys.groups(api.getCompany(), type),
+    queryFn: async () => (await api.request<{ data: PartyGroup[] }>('GET', '/party-groups', { query: { type } })).data.data,
     staleTime: 5 * 60_000,
   })
 }
 
-export function useCreateCustomer() {
+/** "Add group…" in the B2/C2 group select (P2.1-BE-02): the new group appears in the select straight away. */
+export function useCreatePartyGroup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, idempotencyKey }: { input: PartyGroupInput; idempotencyKey: string }) =>
+      (await api.request<{ data: PartyGroup }>('POST', '/party-groups', { body: input, idempotencyKey })).data.data,
+    onSuccess: (_g, { input }) => qc.invalidateQueries({ queryKey: keys.groups(api.getCompany(), input.party_type) }),
+  })
+}
+
+export function useCreateParty() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ input, idempotencyKey }: { input: PartyInput; idempotencyKey: string }) =>
@@ -72,7 +91,7 @@ export function useCreateCustomer() {
   })
 }
 
-export function useUpdateCustomer(id: number) {
+export function useUpdateParty(id: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ input, version }: { input: Partial<PartyInput>; version: number }) =>
@@ -81,7 +100,7 @@ export function useUpdateCustomer(id: number) {
   })
 }
 
-export function useCustomerAction(id: number) {
+export function usePartyAction(id: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (action: 'deactivate' | 'reactivate' | 'delete') => action === 'delete'
@@ -90,3 +109,22 @@ export function useCustomerAction(id: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }),
   })
 }
+
+/** B1/C1 "Deactivate selected" (P2.1-BE-03): per-item results, never all-or-nothing. */
+export function useBulkDeactivate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: number[]) =>
+      (await api.request<{ data: BulkResult }>('POST', '/parties/bulk-deactivate', { body: { ids } })).data.data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }),
+  })
+}
+
+// Customer pages (B1–B4) keep their original hook names.
+export const useCustomers = (f: PartyListFilters) => useParties('customer', f)
+export const useCustomerCounts = () => usePartyCounts('customer')
+export const useCustomer = useParty
+export const useCustomerGroups = () => usePartyGroups('customer')
+export const useCreateCustomer = useCreateParty
+export const useUpdateCustomer = useUpdateParty
+export const useCustomerAction = usePartyAction

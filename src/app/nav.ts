@@ -28,7 +28,9 @@ export const NAV: NavSection[] = [
       { ...page('Customers', '/customers', 'parties.view', true), icon: 'users', children: [
         page('All customers', '/customers', 'parties.view', true), page('Add customer', '/customers/new', 'parties.create', true),
       ] },
-      { ...page('Suppliers', '/suppliers', 'parties.view'), icon: 'truck' },
+      { ...page('Suppliers', '/suppliers', 'parties.view', true), icon: 'truck', children: [
+        page('All suppliers', '/suppliers', 'parties.view', true), page('Add supplier', '/suppliers/new', 'parties.create', true),
+      ] },
       { ...page('Inventory', '/inventory', 'inventory.view'), icon: 'package', children: [
         page('Products', '/inventory/products', 'inventory.view'), page('Categories', '/inventory/categories', 'inventory.view'),
         page('Stock groups', '/inventory/stock-groups', 'inventory.view'), page('Warehouses', '/inventory/warehouses', 'inventory.view'),
@@ -103,7 +105,7 @@ export function landingPath(can: Can, links: NavLink[] = allLinks()): string {
 export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   'Customer or supplier': { path: '/customers/new', built: true },
   Customer: { path: '/customers/new', built: true },
-  Supplier: { path: '/suppliers/new', built: false },
+  Supplier: { path: '/suppliers/new', built: true },
   Product: { path: '/inventory/products/new', built: false },
   'Sales invoice': { path: '/sales/invoices/new', built: false },
   'Purchase bill': { path: '/purchases/bills/new', built: false },

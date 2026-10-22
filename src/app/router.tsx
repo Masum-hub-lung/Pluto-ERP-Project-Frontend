@@ -19,6 +19,10 @@ const customers = () => import('../pages/customers')
 const CustomerList = lazy(() => customers().then((m) => ({ default: m.CustomerList })))
 const CustomerForm = lazy(() => customers().then((m) => ({ default: m.CustomerForm })))
 const CustomerDetails = lazy(() => customers().then((m) => ({ default: m.CustomerDetails })))
+const suppliers = () => import('../pages/suppliers')
+const SupplierList = lazy(() => suppliers().then((m) => ({ default: m.SupplierList })))
+const SupplierForm = lazy(() => suppliers().then((m) => ({ default: m.SupplierForm })))
+const SupplierDetails = lazy(() => suppliers().then((m) => ({ default: m.SupplierDetails })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
@@ -55,6 +59,10 @@ export const router = createBrowserRouter([
       { path: 'customers/new', handle: crumbs('Customers', 'New customer'), element: guarded('parties.view', lazyPage(<CustomerForm mode="add" />, 'form')) },
       { path: 'customers/:id', handle: crumbs('Customers', 'Customer'), element: guarded('parties.view', lazyPage(<CustomerDetails />, 'detail')) },
       { path: 'customers/:id/edit', handle: crumbs('Customers', 'Edit customer'), element: guarded('parties.view', lazyPage(<CustomerForm mode="edit" />, 'form')) },
+      { path: 'suppliers', handle: crumbs('Suppliers'), element: guarded('parties.view', lazyPage(<SupplierList />, 'list')) },
+      { path: 'suppliers/new', handle: crumbs('Suppliers', 'New supplier'), element: guarded('parties.create', lazyPage(<SupplierForm mode="add" />, 'form')) },
+      { path: 'suppliers/:id', handle: crumbs('Suppliers', 'Supplier'), element: guarded('parties.view', lazyPage(<SupplierDetails />, 'detail')) },
+      { path: 'suppliers/:id/edit', handle: crumbs('Suppliers', 'Edit supplier'), element: guarded('parties.edit', lazyPage(<SupplierForm mode="edit" />, 'form')) },
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
       ...unbuiltRoutes(),
