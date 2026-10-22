@@ -9,6 +9,8 @@ if (!PASSWORD) throw new Error('Set E2E_PASSWORD (the password scripts/e2e.sh ga
 export const OWNER = 'owner@e2e.pluto.test'
 export const VIEWER = 'viewer@e2e.pluto.test'
 export const STORE = 'store@e2e.pluto.test'
+export const ACCOUNTANT = 'accountant@e2e.pluto.test'
+export const SALES = 'sales@e2e.pluto.test'
 
 export const launch = () => chromium.launch()
 
@@ -81,4 +83,12 @@ export function sql(statement) {
   // cwd = the backend repo, so its .env (including a relative COMPOSE_FILE list) resolves as it does there.
   execFileSync('docker', ['compose', 'exec', '-T', 'mysql', 'sh', '-c',
     'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot pluto_e2e -e "$1"', 'sh', statement], { stdio: 'inherit', cwd: backend })
+}
+
+/** Like sql(), but returns the result rows as arrays of strings (tab-separated output, no header) - for DB checks. */
+export function sqlRows(statement) {
+  const backend = process.env.BACKEND_DIR ?? '../backend'
+  const out = execFileSync('docker', ['compose', 'exec', '-T', 'mysql', 'sh', '-c',
+    'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot -N -B pluto_e2e -e "$1"', 'sh', statement], { cwd: backend, encoding: 'utf8' })
+  return out.split('\n').filter(Boolean).map((line) => line.split('\t'))
 }

@@ -5,8 +5,10 @@ import { useSession } from '../../auth/session'
 import { ds, type DataColumn } from '../../ds'
 import { initials, termLabel } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
+import { BulkDeactivate } from '../../components/BulkDeactivate'
 import { ListCard } from '../../components/ListCard'
 import { ProblemBanner } from '../../components/ProblemBanner'
+import { SelectableTable } from '../../components/SelectableTable'
 import { SummaryTile } from '../../components/SummaryTile'
 
 /** B1 Customer list (Parties.dc.html list view): header, summary tile, toolbar, table, pagination. */
@@ -52,6 +54,7 @@ export function CustomerList() {
     { key: 'status', label: 'Status', render: (v) => <Badge tone={v === 'active' ? 'positive' : 'neutral'} dot>{v === 'active' ? 'Active' : v === 'inactive' ? 'Inactive' : 'Prospect'}</Badge> },
   ]
   const meta = list.data?.meta
+  const table = { caption: 'Customers', columns, rows, loading: list.isPending, onRowClick: (r: { id: number }) => navigate(`/customers/${r.id}`) }
   const empty = q || status !== 'all'
     ? <EmptyState icon="search" title={`No customers match${q ? ` “${q}”` : ' these filters'}`} description="Check the spelling, or search by code or mobile number."
         action={<Button variant="secondary" onClick={() => { setSearch(''); set({ q: null, status: null }) }}>Clear search</Button>} />
@@ -80,9 +83,11 @@ export function CustomerList() {
             <Select options={SORTS} value={sort} onChange={(e) => set({ sort: e.target.value })} aria-label="Sort" />
           </div>
         }>
-        <DataTable caption="Customers" columns={columns} rows={rows} loading={list.isPending}
-          onRowClick={(r) => navigate(`/customers/${r.id}`)}
-          rowActions={can('parties.edit') ? (r) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/customers/${r.id}/edit`) }} /> : undefined} />
+        {can('parties.edit') ? (
+          <SelectableTable {...table}
+            rowActions={(r) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/customers/${r.id}/edit`) }} />}
+            actions={(ids, clear, names) => <BulkDeactivate ids={ids} clear={clear} noun="customer" names={names} />} />
+        ) : <DataTable {...table} />}
       </ListCard>
     </>
   )

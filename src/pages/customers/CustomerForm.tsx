@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import type { Party } from '../../api/contract.gen'
-import { useCreateCustomer, useCustomer, useCustomerAction, useCustomerGroups, usePaymentTerms, useUpdateCustomer } from '../../api/parties'
+import { useCreateCustomer, useCustomer, useCustomerAction, usePaymentTerms, useUpdateCustomer } from '../../api/parties'
 import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { ds } from '../../ds'
@@ -17,6 +17,7 @@ import { ConflictBanner } from '../../components/ConflictBanner'
 import { DeleteDialog } from '../../components/DeleteDialog'
 import { FormErrorSummary } from '../../components/FormErrorSummary'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { PartyGroupField } from '../../components/PartyGroupField'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { Forbidden, NotFound } from '../../components/states'
 
@@ -58,7 +59,6 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   const toast = useToast()
   const { can } = useSession()
   const terms = usePaymentTerms()
-  const groups = useCustomerGroups()
   const create = useCreateCustomer()
   const update = useUpdateCustomer(party?.id ?? 0)
   const action = useCustomerAction(party?.id ?? 0)
@@ -79,7 +79,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   // The latest defaults, for resets that happen after an await (the terms may have arrived in the meantime).
   const latestDefaults = useRef(defaults)
   latestDefaults.current = defaults
-  const { register, handleSubmit, setError, reset, formState: { errors, isDirty, isSubmitting, submitCount } } =
+  const { register, handleSubmit, setError, reset, watch, setValue, formState: { errors, isDirty, isSubmitting, submitCount } } =
     useForm<CustomerFormValues, unknown, CustomerFormParsed>({ resolver: zodResolver(customerSchema), defaultValues: defaults, mode: 'onSubmit' })
   // New server data (record refetched, payment terms arrived): update the untouched fields, never what the user typed.
   useEffect(() => { reset(defaults, { keepDirtyValues: true, keepErrors: true, keepSubmitCount: true, keepTouched: true }) }, [defaults]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -197,9 +197,8 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
               <Field label="Type" htmlFor="f-category">
                 <Select id="f-category" options={TYPES} {...register('category')} />
               </Field>
-              <Field label="Customer group" hint="Used to filter lists and reports" htmlFor="f-group">
-                <Select id="f-group" options={[{ value: '', label: 'No group' }, ...(groups.data ?? []).map((g) => ({ value: String(g.id), label: g.name }))]} {...register('party_group_id')} />
-              </Field>
+              <PartyGroupField type="customer" id="f-group" value={watch('party_group_id')} error={err('party_group_id')}
+                onChange={(v) => setValue('party_group_id', v, { shouldDirty: true })} />
             </div>
           </Card>
 
