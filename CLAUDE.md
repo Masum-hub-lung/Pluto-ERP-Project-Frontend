@@ -52,8 +52,16 @@ Design system through `ds()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amo
 | Search-as-you-type select (big lists) | `AsyncSelect` | `components/AsyncSelect.tsx` | `<AsyncSelect value={v} onChange={setV} search={(q, s) => …} itemKey={x => x.id} itemLabel={x => x.name} />` |
 | Pick a customer/supplier | `PartyPicker` | `components/pickers/PartyPicker.tsx` | `<PartyPicker type="supplier" value={party} onChange={setParty} aria-label="Supplier" />` |
 | Pick a ledger (send the form's purpose, R-26) | `LedgerPicker` | `components/pickers/LedgerPicker.tsx` | `<LedgerPicker purpose="purchase_for_supplier" value={l} onChange={setL} aria-label="Purchase ledger" />` |
+| Pick a product (code/name/barcode search) | `ProductPicker` | `components/pickers/ProductPicker.tsx` | `<ProductPicker value={p} onChange={setP} aria-label="Product" />` |
+| Debounced (300 ms) document calculate | `useCalculate` | `components/document/useCalculate.ts` | `const calc = useCalculate(input /* null = not ready */, calculateBill)` → `{ result, pending, error }`; stale answers are dropped |
+| Document totals (skeletons while pending, amount in words, warnings) | `TotalsPanel`, `totalsRows` | `components/document/TotalsPanel.tsx`, `totals.ts` | `<TotalsPanel {...calc} />` |
+| Document lines (product, qty, unit, price, discount, tax, line total; phone cards; Enter on the last row adds one) | `LineGrid` + `lines.ts` helpers | `components/document/LineGrid.tsx`, `lines.ts` | `<LineGrid control={control} register={register} watch={watch} setValue={setValue} errors={errors} side="purchase" results={mapResults(calc.result?.lines, completeIndexes(lines))} taxRules={rules} />`; send only `completeIndexes`, map 422 `lines.N.*` back with `remapLineErrors` |
+| Document party (picker + balance, overdue, credit limit, balance after) | `PartyPanel` | `components/document/PartyPanel.tsx` | `<PartyPanel type="supplier" party={party} onChange={setParty} calc={calc.result} error={errors.party_id?.message} />` |
+| Document header (date, due date, warehouse + slot for references) | `DocumentHeader` | `components/document/DocumentHeader.tsx` | `<DocumentHeader register={register} errors={msgs} warehouses={wh}><Field label="Supplier bill no.">…</Field></DocumentHeader>` |
+| "Post this …?" with effects; period locked, insufficient stock, back-dated confirm stay in the dialog | `PostDialog` | `components/document/PostDialog.tsx` | `<PostDialog title="Post this bill?" number={b.number} calc={calc.result} total={b.total} loading={post.isPending} onPost={async (c) => { await post.mutateAsync({ body: { confirm_backdated: c }, idempotencyKey: idem.key }) }} onClose={close} />` (onPost must throw the ApiError) |
+| Sticky document footer (Cancel · Save draft · Preview · primary; one request per double click) | `DocumentFooter` | `components/document/DocumentFooter.tsx` | `<DocumentFooter onCancel={back} onSaveDraft={saveDraft} primary={{ label: 'Save and post', onClick: saveAndPost }} busy={saving} />` |
 
-Try the pickers on the dev-only page `/dev/pickers` (`npm run dev`; not in production builds).
+Try the pickers on the dev-only page `/dev/pickers` and the document editor parts on `/dev/document` (`npm run dev`; not in production builds).
 
 ## Commands
 ```bash

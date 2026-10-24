@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Ledger, Lookup, LookupInput, PageMeta, Product, ProductInput, TaxRule, UnitInput, Warehouse, WarehouseInput } from './contract.gen'
+import type { Ledger, Lookup, LookupInput, PageMeta, Product, ProductInput, StockMovement, TaxRule, UnitInput, Warehouse, WarehouseInput } from './contract.gen'
 
 /**
  * Inventory masters data access (05 Inventory tag, backlog P3.2-FE-01): units, tax rules, product categories, stock
@@ -9,6 +9,9 @@ import type { Ledger, Lookup, LookupInput, PageMeta, Product, ProductInput, TaxR
  * list every warehouse), tree mutations refresh their tree.
  */
 export type TreeKind = 'product-categories' | 'stock-groups'
+export interface StockMovementFilters {
+  q?: string; movement_type?: string; warehouse_id?: number; product_id?: number; date_from?: string; date_to?: string; sort?: string; page?: number; per_page?: number
+}
 export interface ProductListFilters {
   q?: string; item_type?: string; category_id?: number; warehouse_id?: number; stock_status?: string; active?: string
   sort?: string; page?: number; per_page?: number
@@ -212,5 +215,16 @@ export function useDeleteProduct(id: number) {
   return useMutation({
     mutationFn: async () => { await api.request<void>('DELETE', `/products/${id}`) },
     onSuccess: refresh,
+  })
+}
+
+// ---------------------------------------------------------------- stock ledger
+
+/** GET /stock-movements (D9): newest first; unit cost and value only come back with inventory.view_costs (BR-052). */
+export function useStockMovements(f: StockMovementFilters) {
+  return useQuery({
+    queryKey: ['company', api.getCompany(), 'stock-movements', f],
+    queryFn: async ({ signal }) => (await api.request<{ data: StockMovement[]; meta: PageMeta }>('GET', '/stock-movements', { query: { ...f }, signal })).data,
+    placeholderData: keepPreviousData,
   })
 }

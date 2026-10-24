@@ -14,5 +14,5 @@ export function ResponsiveDialog({ title, description, tone, footer, onClose, wi
   const { Dialog } = ds()
   const phone = useMediaQuery(PHONE)
   if (phone) return <BottomSheet title={title} description={description} onClose={onClose} footer={footer} testId={testId}>{children}</BottomSheet>
-  return <Dialog title={title} description={description} tone={tone} footer={footer} onClose={onClose} width={width}>{children}</Dialog>
+  return <Dialog title={title} description={description} tone={tone} footer={footer} onClose={onClose} width={width}><div data-testid={testId}>{children}</div></Dialog>
 }

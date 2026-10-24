@@ -12,7 +12,7 @@
 
 /* Selection column (SelectableTable): exactly 44 px, so the sticky name column below can sit right next to it. */
 .lf-listcard .lf-selectable .lf-table th:first-child, .lf-listcard .lf-selectable .lf-table td:first-child {
-  width: 44px; min-width: 44px; max-width: 44px; box-sizing: border-box; padding: 0 14px;
+  width: 44px; min-width: 44px; max-width: 44px; box-sizing: border-box; pad
 }
 
 /* 640-1199 px: the table scrolls inside the card; the first column stays put. */
