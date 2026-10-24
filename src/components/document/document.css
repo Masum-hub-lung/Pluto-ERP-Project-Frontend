@@ -1,0 +1,3 @@
+/* Document line grid (LineGrid): inputs fill their fixed-width cells instead of forcing the table wider. */
+.lf-linegrid td input, .lf-linegrid td select, .lf-linegrid td .lf-input { min-width: 0; width: 100%; box-sizing: border-box; }
+.lf-linegrid td > div, .lf-linegrid td > span { min-width: 0; }

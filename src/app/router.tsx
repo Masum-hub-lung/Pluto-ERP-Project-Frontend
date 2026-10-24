@@ -28,10 +28,16 @@ const ProductList = lazy(() => inventory().then((m) => ({ default: m.ProductList
 const ProductForm = lazy(() => inventory().then((m) => ({ default: m.ProductForm })))
 const WarehouseList = lazy(() => inventory().then((m) => ({ default: m.WarehouseList })))
 const CategoryList = lazy(() => inventory().then((m) => ({ default: m.CategoryList })))
+const MovementList = lazy(() => inventory().then((m) => ({ default: m.MovementList })))
 const StockGroupList = lazy(() => inventory().then((m) => ({ default: m.StockGroupList })))
+const purchases = () => import('../pages/purchases')
+const BillList = lazy(() => purchases().then((m) => ({ default: m.BillList })))
+const BillDetails = lazy(() => purchases().then((m) => ({ default: m.BillDetails })))
+const BillEditor = lazy(() => purchases().then((m) => ({ default: m.BillEditor })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
+const DocumentDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/DocumentDemo').then((m) => ({ default: m.DocumentDemo }))) : null
 
 const lazyPage = (el: ReactNode, template: 'list' | 'form' | 'detail' | 'report') => <Suspense fallback={<PageSkeleton template={template} />}>{el}</Suspense>
 const guarded = (permission: string | null, el: ReactNode) => (permission ? <RequirePermission permission={permission}>{el}</RequirePermission> : el)
@@ -77,12 +83,18 @@ export const router = createBrowserRouter([
       { path: 'inventory/categories', handle: crumbs('Inventory', 'Categories'), element: guarded('inventory.view', lazyPage(<CategoryList />, 'list')) },
       { path: 'inventory/stock-groups', handle: crumbs('Inventory', 'Stock groups'), element: guarded('inventory.view', lazyPage(<StockGroupList />, 'list')) },
       { path: 'inventory/warehouses', handle: crumbs('Inventory', 'Warehouses'), element: guarded('inventory.view', lazyPage(<WarehouseList />, 'list')) },
+      { path: 'purchases/bills', handle: crumbs('Purchases', 'Bills'), element: guarded('purchases.view', lazyPage(<BillList />, 'list')) },
+      { path: 'purchases/bills/new', handle: crumbs('Purchases', 'New bill'), element: guarded('purchases.create', lazyPage(<BillEditor mode="new" />, 'form')) },
+      { path: 'purchases/bills/:id', handle: crumbs('Purchases', 'Bill'), element: guarded('purchases.view', lazyPage(<BillDetails />, 'detail')) },
+      { path: 'purchases/bills/:id/edit', handle: crumbs('Purchases', 'Edit bill'), element: guarded('purchases.edit', lazyPage(<BillEditor mode="edit" />, 'form')) },
+      { path: 'inventory/movements', handle: crumbs('Inventory', 'Movements'), element: guarded('inventory.view', lazyPage(<MovementList />, 'list')) },
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
       ...unbuiltRoutes(),
       { path: 'not-in-release', handle: crumbs('Pluto'), element: <NotInRelease /> },
       // Development-only demo of the async pickers (P1.2-FE-07); not part of production builds.
       ...(PickersDemo ? [{ path: 'dev/pickers', handle: crumbs('Development', 'Pickers'), element: lazyPage(<PickersDemo />, 'form') }] : []),
+      ...(DocumentDemo ? [{ path: 'dev/document', handle: crumbs('Development', 'Document editor'), element: lazyPage(<DocumentDemo />, 'form') }] : []),
       { path: '*', handle: crumbs('Not found'), element: <NotFound /> },
     ],
   },

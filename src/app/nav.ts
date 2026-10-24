@@ -20,7 +20,7 @@ export const NAV: NavSection[] = [
         page('Reports', '/reports/sales', 'reports.view'),
       ] },
       { ...page('Purchases', '/purchases', 'purchases.view'), icon: 'shopping-cart', children: [
-        page('Overview', '/purchases', 'purchases.view'), page('Bills', '/purchases/bills', 'purchases.view'), page('Purchase orders', '/purchases/orders', 'purchases.view'),
+        page('Overview', '/purchases', 'purchases.view'), page('Bills', '/purchases/bills', 'purchases.view', true), page('Purchase orders', '/purchases/orders', 'purchases.view'),
         page('Payments made', '/purchases/payments', 'purchases.view'), page('Returns and debit notes', '/purchases/returns', 'purchases.view'),
         page('Reports', '/reports/purchases', 'reports.view'),
       ] },
@@ -34,7 +34,7 @@ export const NAV: NavSection[] = [
       { ...page('Inventory', '/inventory', 'inventory.view', true), icon: 'package', children: [
         page('Products', '/inventory/products', 'inventory.view', true), page('Categories', '/inventory/categories', 'inventory.view', true),
         page('Stock groups', '/inventory/stock-groups', 'inventory.view', true), page('Warehouses', '/inventory/warehouses', 'inventory.view', true),
-        page('Movements', '/inventory/movements', 'inventory.view'), page('Adjustments', '/inventory/adjustments', 'inventory.view'),
+        page('Movements', '/inventory/movements', 'inventory.view', true), page('Adjustments', '/inventory/adjustments', 'inventory.view'),
         page('Transfers', '/inventory/transfers', 'inventory.view'), page('Low stock', '/inventory/low-stock', 'inventory.view'),
         page('Valuation', '/inventory/valuation', 'inventory.view'),
       ] },
@@ -110,7 +110,7 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   Supplier: { path: '/suppliers/new', built: true },
   Product: { path: '/inventory/products/new', built: true },
   'Sales invoice': { path: '/sales/invoices/new', built: false },
-  'Purchase bill': { path: '/purchases/bills/new', built: false },
+  'Purchase bill': { path: '/purchases/bills/new', built: true },
   Receipt: { path: '/sales/payments/new', built: false },
   Payment: { path: '/purchases/payments/new', built: false },
   Journal: { path: '/accounting/vouchers/new/journal', built: false },

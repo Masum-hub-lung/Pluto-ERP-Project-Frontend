@@ -100,7 +100,10 @@ export function ProductList() {
           </div>
         </>}>
         <DataTable caption="Products" columns={columns} rows={rows} loading={list.isPending} onRowClick={open}
-          rowActions={open ? (r) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); open(r) }} /> : undefined} />
+          rowActions={(r) => <>
+            <IconButton icon="history" label={`Movements of ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/inventory/movements?product_id=${r.id}`) }} />
+            {open && <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); open(r) }} />}
+          </>} />
       </ListCard>
     </>
   )
