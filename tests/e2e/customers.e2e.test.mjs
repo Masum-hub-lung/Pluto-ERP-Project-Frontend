@@ -151,10 +151,10 @@ test('roles: viewer can read but not create; store keeper cannot open customers'
   await page.getByText('You don’t have access to adding customers').waitFor()
   await signOut(page)
 
-  // R-35: a Store keeper lands on Inventory (not built yet), not on a 403; the sidebar shows only what the role may view.
+  // R-35: a Store keeper lands on Inventory (its product list since P3), not on a 403; the sidebar shows only what the role may view.
   await signIn(page, STORE)
-  assert.match(page.url(), /\/inventory$/)
-  await page.getByTestId('state-not-in-release').waitFor()
+  await page.waitForURL(/\/inventory\/products$/)
+  await page.getByRole('heading', { name: 'Products and services' }).waitFor()
   assert.equal(await page.getByRole('button', { name: 'Sales' }).count(), 0, 'no Sales in the Store keeper sidebar')
   assert.equal(await page.getByRole('button', { name: 'Customers' }).count(), 0, 'no Customers in the Store keeper sidebar')
   await page.getByRole('button', { name: 'Inventory' }).first().waitFor()

@@ -31,9 +31,9 @@ export const NAV: NavSection[] = [
       { ...page('Suppliers', '/suppliers', 'parties.view', true), icon: 'truck', children: [
         page('All suppliers', '/suppliers', 'parties.view', true), page('Add supplier', '/suppliers/new', 'parties.create', true),
       ] },
-      { ...page('Inventory', '/inventory', 'inventory.view'), icon: 'package', children: [
-        page('Products', '/inventory/products', 'inventory.view'), page('Categories', '/inventory/categories', 'inventory.view'),
-        page('Stock groups', '/inventory/stock-groups', 'inventory.view'), page('Warehouses', '/inventory/warehouses', 'inventory.view'),
+      { ...page('Inventory', '/inventory', 'inventory.view', true), icon: 'package', children: [
+        page('Products', '/inventory/products', 'inventory.view', true), page('Categories', '/inventory/categories', 'inventory.view', true),
+        page('Stock groups', '/inventory/stock-groups', 'inventory.view', true), page('Warehouses', '/inventory/warehouses', 'inventory.view', true),
         page('Movements', '/inventory/movements', 'inventory.view'), page('Adjustments', '/inventory/adjustments', 'inventory.view'),
         page('Transfers', '/inventory/transfers', 'inventory.view'), page('Low stock', '/inventory/low-stock', 'inventory.view'),
         page('Valuation', '/inventory/valuation', 'inventory.view'),
@@ -98,7 +98,9 @@ const LANDING = ['/dashboard', '/sales', '/inventory', '/purchases', '/banking',
 export function landingPath(can: Can, links: NavLink[] = allLinks()): string {
   const byPath = new Map(links.map((l) => [l.path, l]))
   const permitted = LANDING.map((p) => byPath.get(p)).filter((l): l is NavLink => !!l && allowed(can, l))
-  return permitted.find((l) => l.built)?.path ?? (can('parties.view') ? '/customers' : permitted[0]?.path ?? '/settings/security')
+  // Inventory is the Store keeper's home (R-35); roles that see parties keep Customers until Dashboard or Sales exist.
+  const home = permitted.find((l) => l.built && (l.path !== '/inventory' || !can('parties.view')))
+  return home?.path ?? (can('parties.view') ? '/customers' : permitted[0]?.path ?? '/settings/security')
 }
 
 /** Topbar quick-create labels (02 L5) → the page that creates it; unbuilt ones answer "not in this release yet". */
@@ -106,7 +108,7 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   'Customer or supplier': { path: '/customers/new', built: true },
   Customer: { path: '/customers/new', built: true },
   Supplier: { path: '/suppliers/new', built: true },
-  Product: { path: '/inventory/products/new', built: false },
+  Product: { path: '/inventory/products/new', built: true },
   'Sales invoice': { path: '/sales/invoices/new', built: false },
   'Purchase bill': { path: '/purchases/bills/new', built: false },
   Receipt: { path: '/sales/payments/new', built: false },
