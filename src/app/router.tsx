@@ -23,6 +23,12 @@ const suppliers = () => import('../pages/suppliers')
 const SupplierList = lazy(() => suppliers().then((m) => ({ default: m.SupplierList })))
 const SupplierForm = lazy(() => suppliers().then((m) => ({ default: m.SupplierForm })))
 const SupplierDetails = lazy(() => suppliers().then((m) => ({ default: m.SupplierDetails })))
+const inventory = () => import('../pages/inventory')
+const ProductList = lazy(() => inventory().then((m) => ({ default: m.ProductList })))
+const ProductForm = lazy(() => inventory().then((m) => ({ default: m.ProductForm })))
+const WarehouseList = lazy(() => inventory().then((m) => ({ default: m.WarehouseList })))
+const CategoryList = lazy(() => inventory().then((m) => ({ default: m.CategoryList })))
+const StockGroupList = lazy(() => inventory().then((m) => ({ default: m.StockGroupList })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
@@ -63,6 +69,14 @@ export const router = createBrowserRouter([
       { path: 'suppliers/new', handle: crumbs('Suppliers', 'New supplier'), element: guarded('parties.create', lazyPage(<SupplierForm mode="add" />, 'form')) },
       { path: 'suppliers/:id', handle: crumbs('Suppliers', 'Supplier'), element: guarded('parties.view', lazyPage(<SupplierDetails />, 'detail')) },
       { path: 'suppliers/:id/edit', handle: crumbs('Suppliers', 'Edit supplier'), element: guarded('parties.edit', lazyPage(<SupplierForm mode="edit" />, 'form')) },
+      // Products is the module's main page until the Inventory summary (D14) arrives in P11.
+      { path: 'inventory', element: <Navigate to="/inventory/products" replace /> },
+      { path: 'inventory/products', handle: crumbs('Inventory', 'Products'), element: guarded('inventory.view', lazyPage(<ProductList />, 'list')) },
+      { path: 'inventory/products/new', handle: crumbs('Inventory', 'New item'), element: guarded('inventory.create', lazyPage(<ProductForm mode="add" />, 'form')) },
+      { path: 'inventory/products/:id/edit', handle: crumbs('Inventory', 'Edit item'), element: guarded('inventory.edit', lazyPage(<ProductForm mode="edit" />, 'form')) },
+      { path: 'inventory/categories', handle: crumbs('Inventory', 'Categories'), element: guarded('inventory.view', lazyPage(<CategoryList />, 'list')) },
+      { path: 'inventory/stock-groups', handle: crumbs('Inventory', 'Stock groups'), element: guarded('inventory.view', lazyPage(<StockGroupList />, 'list')) },
+      { path: 'inventory/warehouses', handle: crumbs('Inventory', 'Warehouses'), element: guarded('inventory.view', lazyPage(<WarehouseList />, 'list')) },
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
       ...unbuiltRoutes(),

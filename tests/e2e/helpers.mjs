@@ -92,3 +92,20 @@ export function sqlRows(statement) {
     'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot -N -B pluto_e2e -e "$1"', 'sh', statement], { cwd: backend, encoding: 'utf8' })
   return out.split('\n').filter(Boolean).map((line) => line.split('\t'))
 }
+
+/**
+ * Direct API calls with the app's own access token (read from its requests). Calling /auth/refresh here instead
+ * would rotate the refresh cookie under the app. Call it before signIn() so the first token is seen.
+ */
+export function apiFor(page) {
+  let token = null
+  page.on('request', (r) => { const h = r.headers().authorization; if (h?.startsWith('Bearer ')) token = h.slice(7) })
+  return async (method, path, body, headers = {}) => {
+    const company = await page.evaluate(() => localStorage.getItem('pluto.lastCompany'))
+    const r = await page.request.fetch(`/api/v1${path}`, {
+      method, data: body,
+      headers: { Authorization: `Bearer ${token}`, 'X-Company-Id': company, Accept: 'application/json', 'Idempotency-Key': crypto.randomUUID(), ...headers },
+    })
+    return { status: r.status(), body: await r.json().catch(() => null) }
+  }
+}

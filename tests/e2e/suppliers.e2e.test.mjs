@@ -4,29 +4,12 @@
  */
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { assertNoPageScroll, launch, newPage as open, signIn, signOut, sqlRows, ACCOUNTANT, OWNER, SALES, STORE, VIEWER, VIEWPORTS } from './helpers.mjs'
+import { apiFor, assertNoPageScroll, launch, newPage as open, signIn, signOut, sqlRows, ACCOUNTANT, OWNER, SALES, STORE, VIEWER, VIEWPORTS } from './helpers.mjs'
 
 let browser
 before(async () => { browser = await launch() })
 after(async () => { await browser?.close() })
 const newPage = (options) => open(browser, options)
-
-/**
- * Direct API calls with the app's own access token (read from its requests). Calling /auth/refresh here instead
- * would rotate the refresh cookie under the app. Call it before signIn() so the first token is seen.
- */
-function apiFor(page) {
-  let token = null
-  page.on('request', (r) => { const h = r.headers().authorization; if (h?.startsWith('Bearer ')) token = h.slice(7) })
-  return async (method, path, body, headers = {}) => {
-    const company = await page.evaluate(() => localStorage.getItem('pluto.lastCompany'))
-    const r = await page.request.fetch(`/api/v1${path}`, {
-      method, data: body,
-      headers: { Authorization: `Bearer ${token}`, 'X-Company-Id': company, Accept: 'application/json', 'Idempotency-Key': crypto.randomUUID(), ...headers },
-    })
-    return { status: r.status(), body: await r.json().catch(() => null) }
-  }
-}
 
 test('supplier workflow: validate, group, local and international, duplicate, filters, edit, conflict, status, delete', async () => {
   const { context, page, errors } = await newPage()
