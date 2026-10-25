@@ -16,7 +16,7 @@ export const NAV: NavSection[] = [
     items: [
       { ...page('Sales', '/sales', 'sales.view'), icon: 'receipt-text', children: [
         page('Overview', '/sales', 'sales.view'), page('Invoices', '/sales/invoices', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view'),
-        page('Payments received', '/sales/payments', 'sales.view'), page('Returns and credit notes', '/sales/returns', 'sales.view'),
+        page('Payments received', '/sales/payments', 'sales.view', true), page('Returns and credit notes', '/sales/returns', 'sales.view'),
         page('Reports', '/reports/sales', 'reports.view'),
       ] },
       { ...page('Purchases', '/purchases', 'purchases.view'), icon: 'shopping-cart', children: [
@@ -27,9 +27,11 @@ export const NAV: NavSection[] = [
       { ...page('LC Management', '/lc', 'lc.view'), icon: 'file-text' },
       { ...page('Customers', '/customers', 'parties.view', true), icon: 'users', children: [
         page('All customers', '/customers', 'parties.view', true), page('Add customer', '/customers/new', 'parties.create', true),
+        page('Outstanding', '/customers/outstanding', 'parties.view', true),
       ] },
       { ...page('Suppliers', '/suppliers', 'parties.view', true), icon: 'truck', children: [
         page('All suppliers', '/suppliers', 'parties.view', true), page('Add supplier', '/suppliers/new', 'parties.create', true),
+        page('Outstanding', '/suppliers/outstanding', 'parties.view', true),
       ] },
       { ...page('Inventory', '/inventory', 'inventory.view', true), icon: 'package', children: [
         page('Products', '/inventory/products', 'inventory.view', true), page('Categories', '/inventory/categories', 'inventory.view', true),
@@ -43,7 +45,9 @@ export const NAV: NavSection[] = [
   {
     label: 'Money',
     items: [
-      { ...page('Cash and bank', '/banking', 'banking.view'), icon: 'landmark' },
+      { ...page('Cash and bank', '/banking', 'banking.view'), icon: 'landmark', children: [
+        page('Overview', '/banking', 'banking.view'), page('Accounts', '/banking/accounts', 'banking.view', true),
+      ] },
       { ...page('Income', '/income', 'banking.view'), icon: 'hand-coins' },
       { ...page('Expenses', '/expenses', 'banking.view'), icon: 'banknote' },
     ],
@@ -111,7 +115,7 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   Product: { path: '/inventory/products/new', built: true },
   'Sales invoice': { path: '/sales/invoices/new', built: true },
   'Purchase bill': { path: '/purchases/bills/new', built: true },
-  Receipt: { path: '/sales/payments/new', built: false },
+  Receipt: { path: '/sales/payments/new', built: true },
   Payment: { path: '/purchases/payments/new', built: false },
   Journal: { path: '/accounting/vouchers/new/journal', built: false },
 }

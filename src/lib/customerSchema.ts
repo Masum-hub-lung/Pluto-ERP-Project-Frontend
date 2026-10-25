@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { PartyInput } from '../api/contract.gen'
+import { openingFields } from './opening'
 
 /**
  * Client-side shape checks for B2/B3 (03 §7 layer 1). The server is authoritative and re-validates everything;
@@ -26,6 +27,7 @@ export const customerSchema = z.object({
   price_tier: z.enum(['standard', 'wholesale']),
   tax_registration_no: z.string().trim().max(40, 'Use at most 40 characters'),
   notes: z.string().max(2000, 'Use at most 2000 characters'),
+  ...openingFields,
 })
 
 export type CustomerFormValues = z.input<typeof customerSchema>
@@ -33,7 +35,7 @@ export type CustomerFormParsed = z.output<typeof customerSchema>
 
 export const emptyCustomer: Readonly<CustomerFormValues> = Object.freeze({
   name: '', category: '', party_group_id: '', contact_person: '', mobile: '', email: '', alt_phone: '', address: '',
-  district: '', area: '', payment_term_id: '', credit_limit: '', price_tier: 'standard', tax_registration_no: '', notes: '',
+  district: '', area: '', payment_term_id: '', credit_limit: '', price_tier: 'standard', tax_registration_no: '', notes: '', opening_balance: '', opening_side: 'dr',
 })
 
 /** Form values -> PartyInput (05 §10): empty strings become null, ids numbers, mobile normalised to 01XXX-XXXXXX. */
@@ -64,5 +66,5 @@ export function toPartyInput(v: CustomerFormParsed): PartyInput {
 export const serverFieldMap: Record<string, keyof CustomerFormValues> = {
   name: 'name', category: 'category', party_group_id: 'party_group_id', contact_person: 'contact_person', mobile: 'mobile',
   email: 'email', alt_phone: 'alt_phone', address: 'address', district: 'district', area: 'area', payment_term_id: 'payment_term_id',
-  credit_limit: 'credit_limit', price_tier: 'price_tier', tax_registration_no: 'tax_registration_no', notes: 'notes',
+  credit_limit: 'credit_limit', price_tier: 'price_tier', tax_registration_no: 'tax_registration_no', notes: 'notes', opening_balance: 'opening_balance', opening_side: 'opening_side',
 }

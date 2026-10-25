@@ -4,8 +4,9 @@ import type { BulkResult, CancelRequest, DeliveryUpdate, DocumentCalculation, Em
 
 /**
  * Sales invoices data access (05 Sales tag, backlog P5.2-FE-01). Keys sit under ['company', cid, 'sales-invoices'].
- * Posting and cancelling move stock and money, so they also refresh the customer (parties), products, warehouses and
- * the stock ledger (08 §8); drafts, delivery details and e-mails change only the invoices.
+ * Posting and cancelling move stock and money, so they also refresh the customer (parties), products, warehouses,
+ * the stock ledger, receipts (cancelling frees their allocations), party accounts and money accounts (08 §8); drafts,
+ * delivery details and e-mails change only the invoices.
  */
 export interface InvoiceListFilters {
   q?: string; status?: string; payment_status?: string; overdue?: string; party_id?: number; date_from?: string; date_to?: string
@@ -68,7 +69,7 @@ function useRefresh() {
     const cid = api.getCompany()
     void qc.invalidateQueries({ queryKey: keys.all(cid) })
     if (moved) {
-      for (const k of ['parties', 'products', 'warehouses', 'stock-movements', 'product-categories', 'stock-groups']) void qc.invalidateQueries({ queryKey: ['company', cid, k] })
+      for (const k of ['parties', 'products', 'warehouses', 'stock-movements', 'product-categories', 'stock-groups', 'customer-receipts', 'party-accounts', 'money-accounts']) void qc.invalidateQueries({ queryKey: ['company', cid, k] })
     }
   }
 }

@@ -10,6 +10,7 @@ import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { ds } from '../../ds'
 import { countryName, defaultCurrency, SUPPLIER_COUNTRIES } from '../../lib/countries'
+import { openingInput, splitOpening } from '../../lib/opening'
 import { formatTaka, termLabel } from '../../lib/format'
 import { applyProblemToForm } from '../../lib/forms'
 import { emptySupplier, supplierFieldMap, supplierSchema, toSupplierInput, type SupplierFormParsed, type SupplierFormValues } from '../../lib/supplierSchema'
@@ -57,7 +58,7 @@ function toForm(p: Party | null): SupplierFormValues {
     payment_term_id: p.payment_term ? String(p.payment_term.id) : '', credit_limit: p.credit_limit ?? '',
     default_purchase_ledger_id: p.default_purchase_ledger_id ? String(p.default_purchase_ledger_id) : '', tax_registration_no: p.tax_registration_no ?? '',
     bank_name: bank?.bank_name ?? '', bank_account_name: bank?.account_name ?? '', bank_account_number: bank?.account_number ?? '', bank_branch: bank?.branch ?? '',
-    notes: p.notes ?? '',
+    notes: p.notes ?? '', ...splitOpening(p.opening_balance, 'supplier'),
   }
 }
 
@@ -123,7 +124,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
     setFormError(null)
     setUnmatched([])
     setConflict(false)
-    const input = toSupplierInput(values)
+    const input = { ...toSupplierInput(values), ...(party?.opening_locked ? {} : openingInput(values, !!party)) }
     try {
       if (mode === 'add') {
         const r = await create.mutateAsync({ input, idempotencyKey: idem.key })
@@ -195,7 +196,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 } as const
   const checklist = [
     { ok: !err('name') && !err('mobile'), title: local ? 'Name and mobile' : 'Name', body: local ? 'Both are required to issue documents.' : 'International suppliers need no Bangladeshi mobile.' },
-    { info: true, title: 'Opening balance', body: 'Opening balances can be entered once accounting is live; locked after the first bill.' },
+    { info: true, title: 'Opening balance', body: 'Booked on the first day of the financial year; locked after the first bill or payment.' },
     { info: true, title: 'Purchase account', body: 'Optional. Used for non-stock lines on this supplier\'s bills.' },
     { ok: true, title: 'Ledger created for you', body: 'Posted under 2101 · Sundry creditors.' },
   ]
@@ -269,9 +270,15 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
 
           <Card title="Accounting" subtitle="How this supplier is posted to your books">
             <div style={grid}>
-              <Field label="Opening balance" term="What you already owed this supplier on the day you started using Pluto."
-                hint="Opening balances can be entered once accounting is live">
-                <Input prefix="৳" align="right" readOnly value={formatTaka(party?.opening_balance ?? '0.00')} aria-label="Opening balance" />
+              <Field label="Opening balance" term="What you already owed this supplier on the day you started using Pluto." error={err('opening_balance')} htmlFor="f-opening"
+                hint={party?.opening_locked ? 'Locked: this supplier already has entries (BR-028)' : 'Booked on the first day of the financial year'}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Input id="f-opening" prefix="৳" align="right" inputMode="decimal" {...register('opening_balance')} readOnly={!!party?.opening_locked} invalid={!!errors.opening_balance} placeholder="0.00" />
+                  <div style={{ width: 150, flex: 'none' }}>
+                    <Select aria-label="Opening side" {...register('opening_side')} disabled={!!party?.opening_locked}
+                      options={[{ value: 'cr', label: 'Cr · you owe them' }, { value: 'dr', label: 'Dr · advance' }]} />
+                  </div>
+                </div>
               </Field>
               <Field label="Payment terms" htmlFor="f-terms">
                 <Select id="f-terms" options={[{ value: '', label: 'None' }, ...(terms.data ?? []).map((t) => ({ value: String(t.id), label: termLabel(t.name) }))]} {...register('payment_term_id')} />

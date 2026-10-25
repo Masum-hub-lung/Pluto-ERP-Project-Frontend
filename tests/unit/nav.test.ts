@@ -19,8 +19,8 @@ test('a Store keeper sees only Purchases and Inventory (and personal Settings)',
 test('Owner sees every module; Viewer loses only create sub-pages', () => {
   assert.deepEqual(labels(OWNER), ['Dashboard', 'Sales', 'Purchases', 'LC Management', 'Customers', 'Suppliers', 'Inventory', 'Cash and bank', 'Income', 'Expenses', 'Accounting', 'Reports', 'Settings'])
   const cust = (can: (p: string) => boolean) => visibleNav(can).flatMap((s) => s.items).find((i) => i.label === 'Customers')!.children!.map((c) => c.label)
-  assert.deepEqual(cust(OWNER), ['All customers', 'Add customer'])
-  assert.deepEqual(cust(VIEWER), ['All customers'])
+  assert.deepEqual(cust(OWNER), ['All customers', 'Add customer', 'Outstanding'])
+  assert.deepEqual(cust(VIEWER), ['All customers', 'Outstanding'])
 })
 
 test('active item is the longest matching path on segment boundaries', () => {

@@ -20,15 +20,16 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { ResponsiveDialog } from '../../components/ResponsiveDialog'
 import { SummaryTile } from '../../components/SummaryTile'
-import { NotFound, NotInRelease } from '../../components/states'
+import { NotFound } from '../../components/states'
+import { PaymentsPanel } from '../../components/document/PaymentsPanel'
 import { shortDate } from '../purchases/BillList'
 import { InvoiceStatusBadge } from './InvoiceStatusBadge'
 
 /**
  * E5 Invoice details (Sal-Details.dc.html; backlog P5.2-FE-06): header with status and amounts, then tabs — Invoice
  * (lines and totals, read-only), Ledger entries (the posted journal), Delivery (challan, vehicle, time; editable after
- * posting, PATCH …/delivery), Activity, and Payments (customer receipts arrive in P6). Actions: Edit and Post for
- * drafts, Preview, E-mail to customer, Cancel with a reason for posted invoices. Attachments wait for P13.
+ * posting, PATCH …/delivery), Activity, and Payments (receipts and advances applied, remove/apply; P6). Actions: Edit and
+ * Post for drafts, Record payment, Preview, E-mail to customer, Cancel with a reason for posted invoices. Attachments wait for P13.
  */
 const TABS = [{ value: 'invoice', label: 'Invoice' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'delivery', label: 'Delivery' },
   { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }]
@@ -65,6 +66,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
   const warehouse = warehouses.data?.find((w) => w.id === inv.warehouse_id)?.name ?? '—'
   const actions = [
     { icon: 'eye', label: 'Preview', onClick: () => navigate(`/sales/invoices/${inv.id}/preview`), testId: 'preview-invoice', primary: false },
+    ...(inv.status === 'posted' && inv.balance_due !== '0.00' && can('sales.create') ? [{ icon: 'hand-coins', label: 'Record payment', onClick: () => navigate(`/sales/payments/new?party_id=${inv.party.id}&invoice_id=${inv.id}`), testId: 'header-record-payment', primary: true }] : []),
     ...(inv.status === 'posted' && can('sales.edit') ? [{ icon: 'arrow-up-right', label: 'E-mail', onClick: () => setSending(true), testId: 'send-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/sales/invoices/${inv.id}/edit`), testId: 'edit-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.create') ? [{ icon: 'check', label: 'Post', onClick: () => setPosting(true), testId: 'post-invoice', primary: true }] : []),
@@ -171,7 +173,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
       )}
       {tab === 'delivery' && <DeliveryCard inv={inv} editable={inv.status !== 'cancelled' && can('sales.edit')} />}
       {tab === 'activity' && <Card title="Activity"><ActivityTimeline type="sales_invoice" id={inv.id} /></Card>}
-      {tab === 'payments' && <NotInRelease label="Customer receipts" />}
+      {tab === 'payments' && <PaymentsPanel type="sales_invoice" id={inv.id} number={inv.number} partyId={inv.party.id} status={inv.status} balance={inv.balance_due} allocations={inv.allocations ?? []} />}
 
       {posting && <PostDialog title={`Post ${inv.number}?`} number={inv.number} total={inv.total} loading={post.isPending} onPost={doPost} onClose={() => setPosting(false)} />}
       {cancelling && <CancelDialog inv={inv} onClose={() => setCancelling(false)} />}

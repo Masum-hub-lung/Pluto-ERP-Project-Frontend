@@ -142,10 +142,10 @@ test('supplier workflow: validate, group, local and international, duplicate, fi
   await page.goto('/suppliers?status=active')
   await page.getByRole('cell', { name: /SUP-0001/ }).waitFor()
 
-  // Later tabs say when they arrive; Activity loads and lives in the URL
+  // The Bills tab lists the supplier's bills (P6.2-FE-06); Activity loads and lives in the URL
   await page.goto(localUrl)
   await page.getByRole('tab', { name: 'Bills' }).click()
-  await page.getByTestId('tab-bills-later').waitFor()
+  await page.getByTestId('party-bills').waitFor()
   await page.getByRole('tab', { name: 'Activity' }).click()
   await page.getByRole('region', { name: 'Activity' }).waitFor()
   assert.match(page.url(), /tab=activity/)

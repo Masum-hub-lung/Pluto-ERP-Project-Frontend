@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { PartyInput } from '../api/contract.gen'
+import { openingFields } from './opening'
 
 /**
  * Client-side shape checks for C2/C3 (03 §7 layer 1; backlog P2.2-FE-03). Like the customer schema, but the mobile is
@@ -33,6 +34,7 @@ export const supplierSchema = z.object({
   bank_account_number: max(40),
   bank_branch: max(120),
   notes: z.string().max(2000, 'Use at most 2000 characters'),
+  ...openingFields,
 }).superRefine((v, ctx) => {
   if (v.country_code === 'BD') {
     if (!v.mobile) ctx.addIssue({ code: 'custom', path: ['mobile'], message: 'Enter a mobile number' })
@@ -48,7 +50,7 @@ export type SupplierFormParsed = z.output<typeof supplierSchema>
 export const emptySupplier: Readonly<SupplierFormValues> = Object.freeze({
   name: '', category: '', party_group_id: '', contact_person: '', country_code: 'BD', default_currency_code: 'BDT', mobile: '', email: '',
   alt_phone: '', address: '', district: '', area: '', port_of_loading: '', payment_term_id: '', credit_limit: '', default_purchase_ledger_id: '',
-  tax_registration_no: '', bank_name: '', bank_account_name: '', bank_account_number: '', bank_branch: '', notes: '',
+  tax_registration_no: '', bank_name: '', bank_account_name: '', bank_account_number: '', bank_branch: '', notes: '', opening_balance: '', opening_side: 'cr',
 })
 
 /** Form values -> PartyInput (05 §10): empty strings become null, ids numbers, a BD mobile normalised to 01XXX-XXXXXX. */
@@ -86,6 +88,7 @@ export const supplierFieldMap: Record<string, keyof SupplierFormValues> = {
   default_currency_code: 'default_currency_code', mobile: 'mobile', email: 'email', alt_phone: 'alt_phone', address: 'address',
   district: 'district', area: 'area', port_of_loading: 'port_of_loading', payment_term_id: 'payment_term_id', credit_limit: 'credit_limit',
   default_purchase_ledger_id: 'default_purchase_ledger_id', tax_registration_no: 'tax_registration_no', notes: 'notes',
+  opening_balance: 'opening_balance', opening_side: 'opening_side',
   'bank_accounts.0.bank_name': 'bank_name', 'bank_accounts.0.account_name': 'bank_account_name',
   'bank_accounts.0.account_number': 'bank_account_number', 'bank_accounts.0.branch': 'bank_branch',
 }

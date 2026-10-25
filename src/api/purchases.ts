@@ -50,7 +50,7 @@ function useRefresh() {
     const cid = api.getCompany()
     void qc.invalidateQueries({ queryKey: keys.all(cid) })
     if (moved) {
-      for (const k of ['parties', 'products', 'warehouses', 'stock-movements', 'product-categories', 'stock-groups']) void qc.invalidateQueries({ queryKey: ['company', cid, k] })
+      for (const k of ['parties', 'products', 'warehouses', 'stock-movements', 'product-categories', 'stock-groups', 'customer-receipts', 'party-accounts', 'money-accounts']) void qc.invalidateQueries({ queryKey: ['company', cid, k] })
     }
   }
 }
