@@ -9,6 +9,7 @@ import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { ds } from '../../ds'
 import { customerSchema, emptyCustomer, serverFieldMap, toPartyInput, type CustomerFormParsed, type CustomerFormValues } from '../../lib/customerSchema'
+import { openingInput, splitOpening } from '../../lib/opening'
 import { formatTaka, termLabel } from '../../lib/format'
 import { applyProblemToForm } from '../../lib/forms'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
@@ -49,6 +50,7 @@ function toForm(p: Party | null): CustomerFormValues {
     mobile: p.mobile ?? '', email: p.email ?? '', alt_phone: p.alt_phone ?? '', address: p.address ?? '', district: p.district ?? '',
     area: p.area ?? '', payment_term_id: p.payment_term ? String(p.payment_term.id) : '', credit_limit: p.credit_limit ?? '',
     price_tier: p.price_tier === 'wholesale' ? 'wholesale' : 'standard', tax_registration_no: p.tax_registration_no ?? '', notes: p.notes ?? '',
+    ...splitOpening(p.opening_balance, 'customer'),
   }
 }
 
@@ -92,7 +94,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
     setFormError(null)
     setUnmatched([])
     setConflict(false)
-    const input = toPartyInput(values)
+    const input = { ...toPartyInput(values), ...(party?.opening_locked ? {} : openingInput(values, !!party)) }
     try {
       if (mode === 'add') {
         const r = await create.mutateAsync({ input, idempotencyKey: idem.key })
@@ -169,7 +171,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 } as const
   const checklist = [
     { ok: !err('name') && !err('mobile'), title: 'Name and mobile', body: 'Both are required to issue documents.' },
-    { info: true, title: 'Opening balance', body: 'Recorded with the accounting module (next release); locked after the first invoice.' },
+    { info: true, title: 'Opening balance', body: 'Booked on the first day of the financial year; locked after the first invoice or receipt.' },
     { info: true, title: 'Tax registration', body: 'Optional. Leave blank if tax does not apply to this customer.' },
     { ok: true, title: 'Ledger created for you', body: 'Posted under 1201 · Sundry debtors.' },
   ]
@@ -232,9 +234,15 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
 
           <Card title="Accounting" subtitle="How this customer is posted to your books">
             <div style={grid}>
-              <Field label="Opening balance" term="What this customer already owed you on the day you started using Pluto."
-                hint="Entered with the accounting module (next release)">
-                <Input prefix="৳" align="right" readOnly value={formatTaka(party?.opening_balance ?? '0.00')} aria-label="Opening balance" />
+              <Field label="Opening balance" term="What this customer already owed you on the day you started using Pluto." error={err('opening_balance')} htmlFor="f-opening"
+                hint={party?.opening_locked ? 'Locked: this customer already has entries (BR-028)' : 'Booked on the first day of the financial year'}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Input id="f-opening" prefix="৳" align="right" inputMode="decimal" {...register('opening_balance')} readOnly={!!party?.opening_locked} invalid={!!errors.opening_balance} placeholder="0.00" />
+                  <div style={{ width: 150, flex: 'none' }}>
+                    <Select aria-label="Opening side" {...register('opening_side')} disabled={!!party?.opening_locked}
+                      options={[{ value: 'dr', label: 'Dr · they owe you' }, { value: 'cr', label: 'Cr · advance' }]} />
+                  </div>
+                </div>
               </Field>
               <Field label="Payment terms" htmlFor="f-terms">
                 <Select id="f-terms" options={[{ value: '', label: 'None' }, ...(terms.data ?? []).map((t) => ({ value: String(t.id), label: termLabel(t.name) }))]} {...register('payment_term_id')} />

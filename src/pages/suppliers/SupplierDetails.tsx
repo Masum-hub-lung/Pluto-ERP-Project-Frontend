@@ -13,19 +13,19 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { SummaryTile } from '../../components/SummaryTile'
 import { NotFound } from '../../components/states'
+import { PartyAccountLinks, PartyDocumentsTab, PartyOpenItems, PartyPaymentsTab } from '../partyAccounts/PartyTabs'
 
-/** Tabs that need posted documents: shown, but their content arrives with the phase that builds those documents. */
+/** Tabs whose documents arrive with a later phase. */
 const LATER: Record<string, { label: string; text: string }> = {
-  bills: { label: 'Bills', text: 'Purchase bills from this supplier appear here once purchase bills are released (phase 4).' },
-  payments: { label: 'Payments', text: 'Payments made to this supplier appear here once supplier payments are released (phase 8).' },
-  statement: { label: 'Statement', text: 'The statement of account becomes available with receipts and party ledgers (phase 6).' },
   notes: { label: 'Notes', text: 'Debit notes and returns appear here once purchase returns are released (phase 10).' },
 }
-const TABS = [{ value: 'overview', label: 'Overview' }, ...Object.entries(LATER).map(([value, t]) => ({ value, label: t.label })), { value: 'activity', label: 'Activity' }]
+const TABS = [{ value: 'overview', label: 'Overview' }, { value: 'bills', label: 'Bills' }, { value: 'payments', label: 'Payments' },
+  ...Object.entries(LATER).map(([value, t]) => ({ value, label: t.label })), { value: 'activity', label: 'Activity' }]
 
 /**
  * C4 Supplier details (Supp-Details.dc.html; backlog P2.2-FE-04; pattern B4): header with actions, payable KPIs,
- * Overview and Activity tabs (tab in the URL, ?tab=…). Bills, Payments, Statement and Notes say when they arrive.
+ * Overview (with open bills and advances), Bills, Payments and Activity tabs (tab in the URL, ?tab=…), links to history,
+ * ledger and statement (P6.2-FE-06). Notes say when they arrive.
  */
 export function SupplierDetails() {
   const { Badge, Button, Icon, Tabs, IconButton, Menu, EmptyState } = ds()
@@ -111,7 +111,7 @@ export function SupplierDetails() {
             <Button variant="ghost" icon="arrow-left" onClick={() => navigate('/suppliers')}>All suppliers</Button>
             {can('parties.edit') && <Button variant="secondary" icon={active ? 'x' : 'check'} loading={action.isPending} onClick={() => void toggle()} data-testid="toggle-supplier">{active ? 'Make inactive' : 'Reactivate'}</Button>}
             {can('parties.edit') && <Button variant="secondary" icon="pencil" onClick={() => navigate(`/suppliers/${p.id}/edit`)} data-testid="edit-supplier">Edit</Button>}
-            <span title="Purchase bills arrive in phase 4"><Button variant="primary" icon="file-plus-2" disabled>New bill</Button></span>
+            {can('purchases.create') && <Button variant="primary" icon="file-plus-2" onClick={() => navigate('/purchases/bills/new')}>New bill</Button>}
           </div>
         )}
       </div>
@@ -123,7 +123,12 @@ export function SupplierDetails() {
           sub="Posted bills past their due date" />
       </div>
 
-      <Tabs items={TABS} value={tab} onChange={(v) => setParams(v === 'overview' ? {} : { tab: v }, { replace: true })} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ overflowX: 'auto' }}><Tabs key={tab} items={TABS} value={tab} onChange={(v) => setParams(v === 'overview' ? {} : { tab: v }, { replace: true })} /></div>
+        <PartyAccountLinks type="supplier" id={p.id} />
+      </div>
+      {tab === 'bills' && <PartyDocumentsTab type="supplier" partyId={p.id} />}
+      {tab === 'payments' && <PartyPaymentsTab type="supplier" partyId={p.id} />}
 
       {tab === 'activity' && (
         <section style={{ ...panel, padding: '16px 20px' }} aria-label="Activity">
@@ -138,6 +143,7 @@ export function SupplierDetails() {
       )}
 
       {tab === 'overview' && <div className="lf-grid" style={{ alignItems: 'start' }}>
+        <div className="lf-c12" style={{ minWidth: 0 }}><PartyOpenItems type="supplier" party={p} /></div>
         <section className="lf-c4" style={{ ...panel, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <h2 style={{ margin: 0, font: '650 16px/24px var(--font-sans)' }}>Contact</h2>
           {contact.length === 0 && <span style={{ color: 'var(--ink-muted)' }}>No contact details yet.</span>}

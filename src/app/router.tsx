@@ -34,11 +34,22 @@ const purchases = () => import('../pages/purchases')
 const BillList = lazy(() => purchases().then((m) => ({ default: m.BillList })))
 const BillDetails = lazy(() => purchases().then((m) => ({ default: m.BillDetails })))
 const BillEditor = lazy(() => purchases().then((m) => ({ default: m.BillEditor })))
+const partyAccounts = () => import('../pages/partyAccounts')
+const PartyLedger = lazy(() => partyAccounts().then((m) => ({ default: m.PartyLedger })))
+const PartyHistory = lazy(() => partyAccounts().then((m) => ({ default: m.PartyHistory })))
+const PartyOutstanding = lazy(() => partyAccounts().then((m) => ({ default: m.PartyOutstanding })))
+const PartyStatement = lazy(() => partyAccounts().then((m) => ({ default: m.PartyStatement })))
+const banking = () => import('../pages/banking')
+const MoneyAccountList = lazy(() => banking().then((m) => ({ default: m.MoneyAccountList })))
+const MoneyAccountForm = lazy(() => banking().then((m) => ({ default: m.MoneyAccountForm })))
 const sales = () => import('../pages/sales')
 const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
 const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
 const InvoiceEditor = lazy(() => sales().then((m) => ({ default: m.InvoiceEditor })))
 const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePreview })))
+const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm })))
+const ReceiptList = lazy(() => sales().then((m) => ({ default: m.ReceiptList })))
+const ReceiptDetails = lazy(() => sales().then((m) => ({ default: m.ReceiptDetails })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
@@ -74,10 +85,18 @@ export const router = createBrowserRouter([
       { index: true, element: <Landing /> },
       { path: 'customers', handle: crumbs('Customers'), element: guarded('parties.view', lazyPage(<CustomerList />, 'list')) },
       { path: 'customers/new', handle: crumbs('Customers', 'New customer'), element: guarded('parties.view', lazyPage(<CustomerForm mode="add" />, 'form')) },
+      { path: 'customers/outstanding', handle: crumbs('Customers', 'Outstanding'), element: guarded('parties.view', lazyPage(<PartyOutstanding type="customer" />, 'report')) },
+      { path: 'customers/:id/history', handle: crumbs('Customers', 'History'), element: guarded('parties.view', lazyPage(<PartyHistory type="customer" />, 'list')) },
+      { path: 'customers/:id/ledger', handle: crumbs('Customers', 'Ledger'), element: guarded('parties.view', lazyPage(<PartyLedger type="customer" />, 'report')) },
+      { path: 'customers/:id/statement', handle: crumbs('Customers', 'Statement'), element: guarded('parties.view', lazyPage(<PartyStatement type="customer" />, 'report')) },
       { path: 'customers/:id', handle: crumbs('Customers', 'Customer'), element: guarded('parties.view', lazyPage(<CustomerDetails />, 'detail')) },
       { path: 'customers/:id/edit', handle: crumbs('Customers', 'Edit customer'), element: guarded('parties.view', lazyPage(<CustomerForm mode="edit" />, 'form')) },
       { path: 'suppliers', handle: crumbs('Suppliers'), element: guarded('parties.view', lazyPage(<SupplierList />, 'list')) },
       { path: 'suppliers/new', handle: crumbs('Suppliers', 'New supplier'), element: guarded('parties.create', lazyPage(<SupplierForm mode="add" />, 'form')) },
+      { path: 'suppliers/outstanding', handle: crumbs('Suppliers', 'Outstanding'), element: guarded('parties.view', lazyPage(<PartyOutstanding type="supplier" />, 'report')) },
+      { path: 'suppliers/:id/history', handle: crumbs('Suppliers', 'History'), element: guarded('parties.view', lazyPage(<PartyHistory type="supplier" />, 'list')) },
+      { path: 'suppliers/:id/ledger', handle: crumbs('Suppliers', 'Ledger'), element: guarded('parties.view', lazyPage(<PartyLedger type="supplier" />, 'report')) },
+      { path: 'suppliers/:id/statement', handle: crumbs('Suppliers', 'Statement'), element: guarded('parties.view', lazyPage(<PartyStatement type="supplier" />, 'report')) },
       { path: 'suppliers/:id', handle: crumbs('Suppliers', 'Supplier'), element: guarded('parties.view', lazyPage(<SupplierDetails />, 'detail')) },
       { path: 'suppliers/:id/edit', handle: crumbs('Suppliers', 'Edit supplier'), element: guarded('parties.edit', lazyPage(<SupplierForm mode="edit" />, 'form')) },
       // Products is the module's main page until the Inventory summary (D14) arrives in P11.
@@ -88,6 +107,11 @@ export const router = createBrowserRouter([
       { path: 'inventory/categories', handle: crumbs('Inventory', 'Categories'), element: guarded('inventory.view', lazyPage(<CategoryList />, 'list')) },
       { path: 'inventory/stock-groups', handle: crumbs('Inventory', 'Stock groups'), element: guarded('inventory.view', lazyPage(<StockGroupList />, 'list')) },
       { path: 'inventory/warehouses', handle: crumbs('Inventory', 'Warehouses'), element: guarded('inventory.view', lazyPage(<WarehouseList />, 'list')) },
+      { path: 'banking/accounts', handle: crumbs('Cash and bank', 'Accounts'), element: guarded('banking.view', lazyPage(<MoneyAccountList />, 'list')) },
+      { path: 'banking/accounts/new', handle: crumbs('Cash and bank', 'Add account'), element: guarded('banking.create', lazyPage(<MoneyAccountForm />, 'form')) },
+      { path: 'sales/payments', handle: crumbs('Sales', 'Payments received'), element: guarded('sales.view', lazyPage(<ReceiptList />, 'list')) },
+      { path: 'sales/payments/new', handle: crumbs('Sales', 'Customer payment'), element: guarded('sales.create', lazyPage(<ReceiptForm />, 'form')) },
+      { path: 'sales/payments/:id', handle: crumbs('Sales', 'Payment'), element: guarded('sales.view', lazyPage(<ReceiptDetails />, 'detail')) },
       { path: 'sales/invoices', handle: crumbs('Sales', 'Invoices'), element: guarded('sales.view', lazyPage(<InvoiceList />, 'list')) },
       { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },
       { path: 'sales/invoices/:id', handle: crumbs('Sales', 'Invoice'), element: guarded('sales.view', lazyPage(<InvoiceDetails />, 'detail')) },

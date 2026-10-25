@@ -29,6 +29,7 @@ function artisan(args) {
  * the old token, which the API treats as reuse and ends the session (07 §3.2). Staying inside the app avoids that race.
  */
 async function go(page, path) {
+  await page.waitForLoadState('networkidle') // let the landing redirect after sign-in finish first
   await page.evaluate((p) => { history.pushState({}, '', p); dispatchEvent(new PopStateEvent('popstate')) }, path)
   await page.waitForURL((u) => u.pathname + u.search === path, { waitUntil: 'commit' })
 }

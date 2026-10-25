@@ -11,11 +11,12 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { SummaryTile } from '../../components/SummaryTile'
 import { NotFound } from '../../components/states'
+import { PartyAccountLinks, PartyDocumentsTab, PartyOpenItems, PartyPaymentsTab } from '../partyAccounts/PartyTabs'
 
 /**
- * B4 Customer details (Parties.dc.html party header + details): Overview and Activity tabs (tab in the URL,
- * ?tab=activity). The Transactions, Ledger and Statement tabs need posted documents, which arrive with the sales
- * slice; they are not shown yet.
+ * B4 Customer details (Parties.dc.html party header + details): Overview (contact, terms, open items and advances),
+ * Invoices, Payments and Activity tabs (tab in the URL, ?tab=…), and links to the history, ledger and statement pages
+ * (backlog P6.2-FE-06). Balance and overdue come from the API.
  */
 export function CustomerDetails() {
   const { Badge, Button, Icon, Tabs, IconButton, Menu } = ds()
@@ -26,7 +27,8 @@ export function CustomerDetails() {
   const { can } = useSession()
   const q = useCustomer(id)
   const [params, setParams] = useSearchParams()
-  const tab = params.get('tab') === 'activity' ? 'activity' : 'overview'
+  const TABS = [{ value: 'overview', label: 'Overview' }, { value: 'invoices', label: 'Invoices' }, { value: 'payments', label: 'Payments' }, { value: 'activity', label: 'Activity' }]
+  const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab')! : 'overview'
 
   if (q.error instanceof ApiError && q.error.status === 404) return <NotFound what="this customer" />
   if (q.error) return <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
@@ -93,8 +95,12 @@ export function CustomerDetails() {
           sub="Posted invoices past their due date" />
       </div>
 
-      <Tabs items={[{ value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity' }]} value={tab}
-        onChange={(v) => setParams(v === 'activity' ? { tab: 'activity' } : {}, { replace: true })} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ overflowX: 'auto' }}><Tabs key={tab} items={TABS} value={tab} onChange={(v) => setParams(v === 'overview' ? {} : { tab: v }, { replace: true })} /></div>
+        <PartyAccountLinks type="customer" id={p.id} />
+      </div>
+      {tab === 'invoices' && <PartyDocumentsTab type="customer" partyId={p.id} />}
+      {tab === 'payments' && <PartyPaymentsTab type="customer" partyId={p.id} />}
 
       {tab === 'activity' && (
         <section style={{ ...panel, padding: '16px 20px' }} aria-label="Activity">
@@ -103,6 +109,7 @@ export function CustomerDetails() {
       )}
 
       {tab === 'overview' && <div className="lf-grid" style={{ alignItems: 'start' }}>
+        <div className="lf-c12" style={{ minWidth: 0 }}><PartyOpenItems type="customer" party={p} /></div>
         <section className="lf-c4" style={{ ...panel, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <h2 style={{ margin: 0, font: '650 16px/24px var(--font-sans)' }}>Contact</h2>
           {contact.length === 0 && <span style={{ color: 'var(--ink-muted)' }}>No contact details yet.</span>}

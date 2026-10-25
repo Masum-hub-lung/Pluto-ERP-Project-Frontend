@@ -17,14 +17,15 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { ResponsiveDialog } from '../../components/ResponsiveDialog'
 import { SummaryTile } from '../../components/SummaryTile'
-import { NotFound, NotInRelease } from '../../components/states'
+import { NotFound } from '../../components/states'
+import { PaymentsPanel } from '../../components/document/PaymentsPanel'
 import { BillStatusBadge } from './BillStatusBadge'
 import { shortDate } from './BillList'
 
 /**
  * F4 Purchase bill details (Pur-Details.dc.html; backlog P4.5-FE-04): header with status and amounts, then tabs —
  * Bill (lines and totals, read-only), Ledger entries (the posted journal from the bill resource), Activity, and
- * Payments (P8, not in this release). Actions: Edit and Post for drafts, Cancel with a reason for posted bills.
+ * Payments (advances and credits applied, apply/remove; supplier payment vouchers come with P8). Actions: Edit and Post for drafts, Cancel with a reason for posted bills.
  * Print waits for P10.
  */
 const TABS = [{ value: 'bill', label: 'Bill' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }]
@@ -166,7 +167,7 @@ function Details({ b }: { b: PurchaseBill }) {
         </Card>
       )}
       {tab === 'activity' && <Card title="Activity"><ActivityTimeline type="purchase_bill" id={b.id} /></Card>}
-      {tab === 'payments' && <NotInRelease label="Supplier payments" />}
+      {tab === 'payments' && <PaymentsPanel type="purchase_bill" id={b.id} number={b.number} partyId={b.party.id} status={b.status} balance={b.balance_due} allocations={b.allocations ?? []} />}
 
       {posting && <PostDialog title={`Post ${b.number}?`} number={b.number} total={b.total} loading={post.isPending} onPost={doPost} onClose={() => setPosting(false)} />}
       {cancelling && <CancelDialog bill={b} onClose={() => setCancelling(false)} />}
