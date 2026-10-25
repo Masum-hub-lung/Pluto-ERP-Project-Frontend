@@ -7,6 +7,7 @@ import { ds, type DataColumn } from '../../ds'
 import { ListCard } from '../../components/ListCard'
 import { PartyPicker } from '../../components/pickers/PartyPicker'
 import { ProblemBanner } from '../../components/ProblemBanner'
+import { formatTaka } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
 import { BillStatusBadge } from './BillStatusBadge'
 
@@ -53,7 +54,7 @@ export function BillList() {
 
   const rows = (list.data?.data ?? []).map((b: PurchaseBill) => ({
     id: b.id, number: b.number, date: shortDate(b.bill_date), supplier: b.party.name, code: b.party.code, ref: b.supplier_bill_no,
-    due: shortDate(b.due_date), status: b.status, bill: b, total: b.total, balance: b.status === 'posted' ? b.balance_due : '—',
+    due: shortDate(b.due_date), status: b.status, bill: b, total: b.total, balance: b.status === 'posted' ? b.balance_due : '', // empty, not 0.00: a draft or cancelled document owes nothing yet
   }))
   const columns: DataColumn[] = [
     { key: 'number', label: 'Bill', mono: true },
@@ -67,7 +68,7 @@ export function BillList() {
     { key: 'due', label: 'Due' },
     { key: 'status', label: 'Status', render: (_v, r) => <BillStatusBadge bill={r.bill} /> },
     { key: 'total', label: 'Amount (৳)', type: 'amount' },
-    { key: 'balance', label: 'Balance (৳)', type: 'amount' },
+    { key: 'balance', label: 'Balance (৳)', align: 'right', render: (v: string) => (v ? <span className="lf-num">{formatTaka(v)}</span> : '') }, // drafts: blank, not 0.00
   ]
   const filtered = !!(q || tab !== 'all' || partyId || from || to)
   const clear = () => { setSearch(''); set({ q: null, tab: null, party_id: null, date_from: null, date_to: null }) }

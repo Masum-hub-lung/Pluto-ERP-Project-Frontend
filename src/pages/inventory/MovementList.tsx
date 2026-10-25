@@ -19,7 +19,7 @@ const TYPES: Record<string, string> = {
   opening: 'Opening stock', purchase_in: 'Purchase', sale_out: 'Sale', sales_return_in: 'Sales return', purchase_return_out: 'Purchase return',
   adjustment_in: 'Adjustment in', adjustment_out: 'Adjustment out', transfer_out: 'Transfer out', transfer_in: 'Transfer in', landed_cost: 'Landed cost', reversal: 'Reversal',
 }
-const SOURCE_PATH: Record<string, (id: number) => string> = { purchase_bills: (id) => `/purchases/bills/${id}` }
+const SOURCE_PATH: Record<string, (id: number) => string> = { purchase_bills: (id) => `/purchases/bills/${id}`, sales_invoices: (id) => `/sales/invoices/${id}` }
 const PER_PAGE = 50
 
 export function MovementList() {

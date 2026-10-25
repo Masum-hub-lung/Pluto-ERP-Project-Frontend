@@ -34,6 +34,11 @@ const purchases = () => import('../pages/purchases')
 const BillList = lazy(() => purchases().then((m) => ({ default: m.BillList })))
 const BillDetails = lazy(() => purchases().then((m) => ({ default: m.BillDetails })))
 const BillEditor = lazy(() => purchases().then((m) => ({ default: m.BillEditor })))
+const sales = () => import('../pages/sales')
+const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
+const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
+const InvoiceEditor = lazy(() => sales().then((m) => ({ default: m.InvoiceEditor })))
+const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePreview })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
@@ -83,6 +88,11 @@ export const router = createBrowserRouter([
       { path: 'inventory/categories', handle: crumbs('Inventory', 'Categories'), element: guarded('inventory.view', lazyPage(<CategoryList />, 'list')) },
       { path: 'inventory/stock-groups', handle: crumbs('Inventory', 'Stock groups'), element: guarded('inventory.view', lazyPage(<StockGroupList />, 'list')) },
       { path: 'inventory/warehouses', handle: crumbs('Inventory', 'Warehouses'), element: guarded('inventory.view', lazyPage(<WarehouseList />, 'list')) },
+      { path: 'sales/invoices', handle: crumbs('Sales', 'Invoices'), element: guarded('sales.view', lazyPage(<InvoiceList />, 'list')) },
+      { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },
+      { path: 'sales/invoices/:id', handle: crumbs('Sales', 'Invoice'), element: guarded('sales.view', lazyPage(<InvoiceDetails />, 'detail')) },
+      { path: 'sales/invoices/:id/edit', handle: crumbs('Sales', 'Edit invoice'), element: guarded('sales.edit', lazyPage(<InvoiceEditor mode="edit" />, 'form')) },
+      { path: 'sales/invoices/:id/preview', handle: crumbs('Sales', 'Invoice preview'), element: guarded('sales.view', lazyPage(<InvoicePreview />, 'detail')) },
       { path: 'purchases/bills', handle: crumbs('Purchases', 'Bills'), element: guarded('purchases.view', lazyPage(<BillList />, 'list')) },
       { path: 'purchases/bills/new', handle: crumbs('Purchases', 'New bill'), element: guarded('purchases.create', lazyPage(<BillEditor mode="new" />, 'form')) },
       { path: 'purchases/bills/:id', handle: crumbs('Purchases', 'Bill'), element: guarded('purchases.view', lazyPage(<BillDetails />, 'detail')) },
