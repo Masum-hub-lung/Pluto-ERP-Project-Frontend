@@ -15,7 +15,7 @@ export const NAV: NavSection[] = [
     label: 'Operations',
     items: [
       { ...page('Sales', '/sales', 'sales.view'), icon: 'receipt-text', children: [
-        page('Overview', '/sales', 'sales.view'), page('Invoices', '/sales/invoices', 'sales.view'), page('Quotations', '/sales/quotations', 'sales.view'),
+        page('Overview', '/sales', 'sales.view'), page('Invoices', '/sales/invoices', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view'),
         page('Payments received', '/sales/payments', 'sales.view'), page('Returns and credit notes', '/sales/returns', 'sales.view'),
         page('Reports', '/reports/sales', 'reports.view'),
       ] },
@@ -109,7 +109,7 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   Customer: { path: '/customers/new', built: true },
   Supplier: { path: '/suppliers/new', built: true },
   Product: { path: '/inventory/products/new', built: true },
-  'Sales invoice': { path: '/sales/invoices/new', built: false },
+  'Sales invoice': { path: '/sales/invoices/new', built: true },
   'Purchase bill': { path: '/purchases/bills/new', built: true },
   Receipt: { path: '/sales/payments/new', built: false },
   Payment: { path: '/purchases/payments/new', built: false },

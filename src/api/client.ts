@@ -47,6 +47,8 @@ export interface RequestOptions {
   /** Internal: do not try to refresh on 401. */
   noRefresh?: boolean
   signal?: AbortSignal
+  /** 'blob' for files (PDFs): the body is returned as a Blob; errors are still read as problem JSON. */
+  responseType?: 'json' | 'blob'
 }
 
 export interface ResponseMeta { status: number; etag: string | null; headers: Headers }
@@ -91,7 +93,9 @@ export class ApiClient {
     }
     const meta: ResponseMeta = { status: res.status, etag: res.headers.get('ETag'), headers: res.headers }
     if (res.status === 204) return { data: undefined as T, meta }
-    return { data: (await res.json()) as T, meta }
+    if (opts.responseType === 'blob') return { data: (await res.blob()) as T, meta }
+    const text = await res.text() // 202 Accepted (e.g. send invoice) has no body
+    return { data: (text ? JSON.parse(text) : undefined) as T, meta }
   }
 
   /** Renews the access token from the refresh cookie. Shared by concurrent callers. */

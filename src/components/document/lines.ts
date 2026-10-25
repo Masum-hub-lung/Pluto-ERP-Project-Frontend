@@ -59,7 +59,7 @@ export function remapLineErrors(errors: Record<string, string[]>, indexes: numbe
   const out: Record<string, string[]> = {}
   for (const [path, msgs] of Object.entries(errors)) {
     const m = /^lines\.(\d+)\.(.+)$/.exec(path)
-    out[m && indexes[Number(m[1])] !== undefined ? `lines.${indexes[Number(m[1])]}.${m[2] === 'unit_cost' ? 'price' : m[2] === 'product_id' ? 'product' : m[2]}` : path] = msgs
+    out[m && indexes[Number(m[1])] !== undefined ? `lines.${indexes[Number(m[1])]}.${m[2] === 'unit_cost' || m[2] === 'unit_price' ? 'price' : m[2] === 'product_id' ? 'product' : m[2]}` : path] = msgs
   }
   return out
 }
