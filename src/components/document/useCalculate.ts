@@ -7,8 +7,8 @@ import type { DocumentCalculation } from '../../api/contract.gen'
  * server's figures for the latest input — never numbers computed here. `input` null = not enough to calculate yet
  * (no party or no valid line): the last result is cleared and nothing is sent.
  */
-export function useCalculate<I>(input: I | null, calculate: (input: I, signal: AbortSignal) => Promise<DocumentCalculation>, delayMs = 300) {
-  const [result, setResult] = useState<DocumentCalculation | null>(null)
+export function useCalculate<I, R = DocumentCalculation>(input: I | null, calculate: (input: I, signal: AbortSignal) => Promise<R>, delayMs = 300) {
+  const [result, setResult] = useState<R | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const key = input === null ? null : JSON.stringify(input)

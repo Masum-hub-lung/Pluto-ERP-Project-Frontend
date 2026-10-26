@@ -4,6 +4,7 @@ import { currentFiscalYear, useFiscalYears } from '../api/platform'
 import { useSession } from '../auth/session'
 import { ds } from '../ds'
 import { NavDrawer } from '../components/NavDrawer'
+import { NotificationPanel, useUnreadCount } from './NotificationBell'
 import { initials } from '../lib/format'
 import { readPref, writePref } from '../lib/prefs'
 import { activePath, allLinks, QUICK_CREATE, visibleNav, type NavSection as NavSectionDef } from './nav'
@@ -32,6 +33,8 @@ export function Shell() {
   const [profileOpen, setProfileOpen] = useState<false | 'top' | 'mobile'>(false) // which bar opened it
   const [companyOpen, setCompanyOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
+  const unread = useUnreadCount()
   const [drawerCreateOpen, setDrawerCreateOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const avatarZone = useRef<HTMLDivElement>(null)
@@ -197,6 +200,11 @@ export function Shell() {
             </svg>
           </button>
           <span className="lf-mobilebar-title">{crumbs[crumbs.length - 1]}</span>
+          <button type="button" className="lf-mobilebar-btn" aria-label={`${unread} notifications`} data-testid="mobile-bell" onClick={() => setBellOpen((o) => !o)}
+            style={{ position: 'relative' }}>
+            <Icon name="bell" size={20} />
+            {unread > 0 && <span aria-hidden="true" style={{ position: 'absolute', top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, background: 'var(--negative)', color: 'var(--surface)', fontSize: 10, lineHeight: '16px', textAlign: 'center' }}>{unread}</span>}
+          </button>
           <div ref={mobileAvatarZone} className="lf-mobilebar-profile">
             <button type="button" className="lf-mobilebar-btn" aria-label="Profile menu" aria-haspopup="menu" aria-expanded={profileOpen === 'mobile'}
               data-testid="mobile-profile-menu" onClick={() => setProfileOpen((o) => (o === 'mobile' ? false : 'mobile'))}>
@@ -225,7 +233,9 @@ export function Shell() {
           </div>
         </NavDrawer>
         <div className="lf-shell-top" data-scrolled={scrolled}>
-          <Topbar breadcrumbs={crumbs} company={company?.company_name} fy={fyName} notifications={0} user={me?.name} onCreateItem={quickCreate} />
+          <Topbar breadcrumbs={crumbs} company={company?.company_name} fy={fyName} notifications={unread} user={me?.name} onCreateItem={quickCreate}
+            onNotifications={() => setBellOpen((o) => !o)} />
+          {bellOpen && <NotificationPanel onClose={() => setBellOpen(false)} />}
           {/* The design opens the profile menu from the avatar (Shell.dc.html "profileItems"); Settings opens Security, the only built settings page. */}
           <div ref={avatarZone} style={{ position: 'absolute', right: 16, top: 0, bottom: 0, width: 40 }}>
             <button type="button" aria-label="Profile menu" aria-haspopup="menu" aria-expanded={profileOpen === 'top'} data-testid="profile-menu"

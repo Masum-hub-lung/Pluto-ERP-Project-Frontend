@@ -55,9 +55,9 @@ export const NAV: NavSection[] = [
   {
     label: 'Books',
     items: [
-      { ...page('Accounting', '/accounting', 'accounting.view'), icon: 'book-open-text', children: [
-        page('Chart of accounts', '/accounting/chart', 'accounting.view'), page('Ledgers', '/accounting/ledgers', 'accounting.view'),
-        page('Vouchers', '/accounting/vouchers', 'accounting.view'),
+      { ...page('Accounting', '/accounting', 'accounting.view', true), icon: 'book-open-text', children: [
+        page('Overview', '/accounting', 'accounting.view', true), page('Chart of accounts', '/accounting/chart', 'accounting.view', true),
+        page('Ledgers', '/accounting/ledgers', 'accounting.view', true), page('Vouchers', '/accounting/vouchers', 'accounting.view', true),
       ] },
       { ...page('Reports', '/reports', 'reports.view'), icon: 'scale' },
     ],
@@ -102,8 +102,9 @@ const LANDING = ['/dashboard', '/sales', '/inventory', '/purchases', '/banking',
 export function landingPath(can: Can, links: NavLink[] = allLinks()): string {
   const byPath = new Map(links.map((l) => [l.path, l]))
   const permitted = LANDING.map((p) => byPath.get(p)).filter((l): l is NavLink => !!l && allowed(can, l))
-  // Inventory is the Store keeper's home (R-35); roles that see parties keep Customers until Dashboard or Sales exist.
-  const home = permitted.find((l) => l.built && (l.path !== '/inventory' || !can('parties.view')))
+  // Inventory is the Store keeper's home (R-35); roles that see parties keep Customers until Dashboard or Sales exist
+  // (Accounting too, so the Owner and Accountant still land on Customers now that Accounting is built).
+  const home = permitted.find((l) => l.built && (!['/inventory', '/accounting'].includes(l.path) || !can('parties.view')))
   return home?.path ?? (can('parties.view') ? '/customers' : permitted[0]?.path ?? '/settings/security')
 }
 
@@ -117,5 +118,5 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   'Purchase bill': { path: '/purchases/bills/new', built: true },
   Receipt: { path: '/sales/payments/new', built: true },
   Payment: { path: '/purchases/payments/new', built: false },
-  Journal: { path: '/accounting/vouchers/new/journal', built: false },
+  Journal: { path: '/accounting/vouchers/new/journal', built: true },
 }
