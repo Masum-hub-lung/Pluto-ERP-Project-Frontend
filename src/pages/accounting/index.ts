@@ -1,0 +1,10 @@
+/** Accounting module (H1–H14; backlog P7.2-FE): one lazy chunk (NFR-004). */
+export { AccountingOverview } from './AccountingOverview'
+export { ChartOfAccounts } from './ChartOfAccounts'
+export { GroupDetails } from './GroupDetails'
+export { LedgerList } from './LedgerList'
+export { LedgerForm } from './LedgerForm'
+export { LedgerDetails } from './LedgerDetails'
+export { VoucherList } from './VoucherList'
+export { VoucherDetails } from './VoucherDetails'
+export { VoucherNew, VoucherEdit } from './VoucherNew'

@@ -2,10 +2,11 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ds } from '../../ds'
 
-/** The section rail of the Settings design (Settings.dc.html). Only Security is built; the rest say so honestly. */
+/** The section rail of the Settings design (Settings.dc.html). Built: Financial year (K4), Accounting defaults (K16), Security; the rest say so honestly. */
 const RAIL: Array<{ title: string; items: Array<{ label: string; icon: string; path?: string }> }> = [
   { title: 'Business', items: [{ label: 'Company profile', icon: 'building-2' }, { label: 'Preferences', icon: 'sliders-horizontal' },
-    { label: 'Financial year', icon: 'calendar' }, { label: 'Currency and region', icon: 'banknote' }, { label: 'Tax', icon: 'percent' },
+    { label: 'Financial year', icon: 'calendar', path: '/settings/financial-years' }, { label: 'Accounting defaults', icon: 'book-open-text', path: '/settings/accounting' },
+    { label: 'Currency and region', icon: 'banknote' }, { label: 'Tax', icon: 'percent' },
     { label: 'Invoice design', icon: 'file-text' }] },
   { title: 'People', items: [{ label: 'Users', icon: 'users' }, { label: 'Roles and permissions', icon: 'list-tree' }] },
   { title: 'You', items: [{ label: 'Notifications', icon: 'bell' }, { label: 'Appearance', icon: 'eye' },

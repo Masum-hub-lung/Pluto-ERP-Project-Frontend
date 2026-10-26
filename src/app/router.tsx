@@ -51,6 +51,19 @@ const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm }))
 const ReceiptList = lazy(() => sales().then((m) => ({ default: m.ReceiptList })))
 const ReceiptDetails = lazy(() => sales().then((m) => ({ default: m.ReceiptDetails })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
+const FinancialYears = lazy(() => import('../pages/settings').then((m) => ({ default: m.FinancialYears })))
+const AccountingDefaults = lazy(() => import('../pages/settings').then((m) => ({ default: m.AccountingDefaults })))
+const accounting = () => import('../pages/accounting')
+const AccountingOverview = lazy(() => accounting().then((m) => ({ default: m.AccountingOverview })))
+const ChartOfAccounts = lazy(() => accounting().then((m) => ({ default: m.ChartOfAccounts })))
+const GroupDetails = lazy(() => accounting().then((m) => ({ default: m.GroupDetails })))
+const LedgerList = lazy(() => accounting().then((m) => ({ default: m.LedgerList })))
+const LedgerForm = lazy(() => accounting().then((m) => ({ default: m.LedgerForm })))
+const LedgerDetails = lazy(() => accounting().then((m) => ({ default: m.LedgerDetails })))
+const VoucherList = lazy(() => accounting().then((m) => ({ default: m.VoucherList })))
+const VoucherDetails = lazy(() => accounting().then((m) => ({ default: m.VoucherDetails })))
+const VoucherNew = lazy(() => accounting().then((m) => ({ default: m.VoucherNew })))
+const VoucherEdit = lazy(() => accounting().then((m) => ({ default: m.VoucherEdit })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
 const DocumentDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/DocumentDemo').then((m) => ({ default: m.DocumentDemo }))) : null
@@ -124,6 +137,20 @@ export const router = createBrowserRouter([
       { path: 'inventory/movements', handle: crumbs('Inventory', 'Movements'), element: guarded('inventory.view', lazyPage(<MovementList />, 'list')) },
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
+      { path: 'settings/financial-years', handle: crumbs('Settings', 'Financial years'), element: lazyPage(<FinancialYears />, 'form') },
+      { path: 'settings/accounting', handle: crumbs('Settings', 'Accounting defaults'), element: guarded('accounting.view', lazyPage(<AccountingDefaults />, 'form')) },
+      // Accounting (P7.2). Voucher pages check the type-specific permission themselves (R-09: cash vouchers allow banking.*).
+      { path: 'accounting', handle: crumbs('Accounting'), element: guarded('accounting.view', lazyPage(<AccountingOverview />, 'report')) },
+      { path: 'accounting/chart', handle: crumbs('Accounting', 'Chart of accounts'), element: guarded('accounting.view', lazyPage(<ChartOfAccounts />, 'list')) },
+      { path: 'accounting/groups/:id', handle: crumbs('Accounting', 'Account group'), element: guarded('accounting.view', lazyPage(<GroupDetails />, 'detail')) },
+      { path: 'accounting/ledgers', handle: crumbs('Accounting', 'Ledgers'), element: guarded('accounting.view', lazyPage(<LedgerList />, 'list')) },
+      { path: 'accounting/ledgers/new', handle: crumbs('Accounting', 'Add ledger'), element: guarded('accounting.create', lazyPage(<LedgerForm mode="add" />, 'form')) },
+      { path: 'accounting/ledgers/:id', handle: crumbs('Accounting', 'Ledger'), element: guarded('accounting.view', lazyPage(<LedgerDetails />, 'report')) },
+      { path: 'accounting/ledgers/:id/edit', handle: crumbs('Accounting', 'Edit ledger'), element: guarded('accounting.edit', lazyPage(<LedgerForm mode="edit" />, 'form')) },
+      { path: 'accounting/vouchers', handle: crumbs('Accounting', 'Vouchers'), element: guarded('accounting.view', lazyPage(<VoucherList />, 'list')) },
+      { path: 'accounting/vouchers/new/:type', handle: crumbs('Accounting', 'New voucher'), element: lazyPage(<VoucherNew />, 'form') },
+      { path: 'accounting/vouchers/:id', handle: crumbs('Accounting', 'Voucher'), element: guarded('accounting.view', lazyPage(<VoucherDetails />, 'detail')) },
+      { path: 'accounting/vouchers/:id/edit', handle: crumbs('Accounting', 'Edit voucher'), element: lazyPage(<VoucherEdit />, 'form') },
       ...unbuiltRoutes(),
       { path: 'not-in-release', handle: crumbs('Pluto'), element: <NotInRelease /> },
       // Development-only demo of the async pickers (P1.2-FE-07); not part of production builds.

@@ -38,7 +38,7 @@ export interface PlutoLibrary {
   NavSection: C<{ label?: string }>
   NavItem: C<{ icon: string; label: string; active?: boolean; open?: boolean; count?: number; onClick?: () => void }>
   NavSubItem: C<{ label: string; active?: boolean; onClick?: () => void }>
-  Topbar: C<{ breadcrumbs: string[]; company?: string; fy?: string; notifications?: number; user?: string; onCreateItem?: (label: string) => void }>
+  Topbar: C<{ breadcrumbs: string[]; company?: string; fy?: string; notifications?: number; user?: string; onCreateItem?: (label: string) => void; onNotifications?: () => void }>
 }
 
 export interface DataColumn {
