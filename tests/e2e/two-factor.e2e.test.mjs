@@ -4,11 +4,21 @@
  */
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { launch, newPage, signIn, signOut, sql, totp, OWNER, PASSWORD, VIEWER } from './helpers.mjs'
+import { apiFor, launch, newPage, signIn, signOut, sql, totp, OWNER, PASSWORD, VIEWER } from './helpers.mjs'
 
 let browser
 before(async () => { browser = await launch() })
 after(async () => { await browser?.close() })
+
+// Each E2E file starts from a fresh company (scripts/e2e.sh): the customer list this file opens needs one customer.
+test('owner adds a customer (API)', async () => {
+  const { context, page } = await newPage(browser)
+  const api = apiFor(page)
+  await signIn(page, OWNER)
+  const r = await api('POST', '/parties', { party_type: 'customer', name: 'Karim Distributors', mobile: '01711458230' })
+  assert.equal(r.status, 201, JSON.stringify(r.body))
+  await context.close()
+})
 
 test('turn on 2-step, sign in with a code and with recovery codes, then turn it off', async () => {
   const { context, page, errors } = await newPage(browser)
@@ -53,11 +63,11 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   await page.getByLabel('Authenticator code').fill(totp(secret, 1))
   await page.getByRole('button', { name: 'Verify and sign in' }).click()
   await page.waitForURL(/\/customers/)
-  await page.getByRole('heading', { name: 'Customers' }).waitFor()
+  await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
 
   // A reload keeps the session (the refresh token carries the second factor)
   await page.reload()
-  await page.getByRole('heading', { name: 'Customers' }).waitFor()
+  await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
 
   // Recovery code: works once
   await signOut(page)
@@ -90,7 +100,7 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   // Back to password-only sign-in
   await signOut(page)
   await signIn(page, VIEWER)
-  await page.getByRole('heading', { name: 'Customers' }).waitFor()
+  await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
   assert.deepEqual(errors, [])
   await context.close()
 })
@@ -139,7 +149,7 @@ test('a company that requires 2-step sends a password-only sign-in to Security u
 
     // The same sign-in now counts as 2-step: customers open without signing in again
     await page.goto('/customers')
-    await page.getByRole('heading', { name: 'Customers' }).waitFor()
+    await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
     await page.getByRole('cell', { name: /CUS-0001/ }).waitFor()
 
     // While required, it cannot be turned off
@@ -153,5 +163,8 @@ test('a company that requires 2-step sends a password-only sign-in to Security u
     await context.close()
   } finally {
     sql('UPDATE company_settings SET require_two_factor = 0 WHERE company_id = 1')
+    // The Owner had to turn 2-step on and could not turn it off while it was required: switch it off again so the files
+    // that run after this one (vendor-payments, vouchers) can sign in as the Owner with the password only.
+    sql(`UPDATE users SET two_factor_secret = NULL, two_factor_recovery_codes = NULL, two_factor_confirmed_at = NULL WHERE email = '${OWNER}'`)
   }
 })

@@ -34,6 +34,9 @@ const purchases = () => import('../pages/purchases')
 const BillList = lazy(() => purchases().then((m) => ({ default: m.BillList })))
 const BillDetails = lazy(() => purchases().then((m) => ({ default: m.BillDetails })))
 const BillEditor = lazy(() => purchases().then((m) => ({ default: m.BillEditor })))
+const PaymentForm = lazy(() => purchases().then((m) => ({ default: m.PaymentForm })))
+const PaymentList = lazy(() => purchases().then((m) => ({ default: m.PaymentList })))
+const PaymentDetails = lazy(() => purchases().then((m) => ({ default: m.PaymentDetails })))
 const partyAccounts = () => import('../pages/partyAccounts')
 const PartyLedger = lazy(() => partyAccounts().then((m) => ({ default: m.PartyLedger })))
 const PartyHistory = lazy(() => partyAccounts().then((m) => ({ default: m.PartyHistory })))
@@ -134,6 +137,9 @@ export const router = createBrowserRouter([
       { path: 'purchases/bills/new', handle: crumbs('Purchases', 'New bill'), element: guarded('purchases.create', lazyPage(<BillEditor mode="new" />, 'form')) },
       { path: 'purchases/bills/:id', handle: crumbs('Purchases', 'Bill'), element: guarded('purchases.view', lazyPage(<BillDetails />, 'detail')) },
       { path: 'purchases/bills/:id/edit', handle: crumbs('Purchases', 'Edit bill'), element: guarded('purchases.edit', lazyPage(<BillEditor mode="edit" />, 'form')) },
+      { path: 'purchases/payments', handle: crumbs('Purchases', 'Payments made'), element: guarded('purchases.view', lazyPage(<PaymentList />, 'list')) },
+      { path: 'purchases/payments/new', handle: crumbs('Purchases', 'Supplier payment'), element: guarded('purchases.create', lazyPage(<PaymentForm />, 'form')) },
+      { path: 'purchases/payments/:id', handle: crumbs('Purchases', 'Payment'), element: guarded('purchases.view', lazyPage(<PaymentDetails />, 'detail')) },
       { path: 'inventory/movements', handle: crumbs('Inventory', 'Movements'), element: guarded('inventory.view', lazyPage(<MovementList />, 'list')) },
       { path: 'settings', element: <Navigate to="/settings/security" replace /> },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },

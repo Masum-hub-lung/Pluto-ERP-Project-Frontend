@@ -4,6 +4,7 @@ import type { PartyType } from '../../api/parties'
 import { useBills } from '../../api/purchases'
 import { methodLabel, paymentOf, useOpenDocuments, useReceipts } from '../../api/receipts'
 import { useInvoices } from '../../api/sales'
+import { useSupplierPayments } from '../../api/supplierPayments'
 import { useSession } from '../../auth/session'
 import { ds, type DataColumn } from '../../ds'
 import { formatTaka } from '../../lib/format'
@@ -11,6 +12,7 @@ import { ProblemBanner } from '../../components/ProblemBanner'
 import { InvoiceStatusBadge } from '../sales/InvoiceStatusBadge'
 import { BillStatusBadge } from '../purchases/BillStatusBadge'
 import { shortDate } from '../purchases/BillList'
+import { VoucherStatusBadge } from '../accounting/common'
 
 /**
  * B4/C4 party detail parts (backlog P6.2-FE-06), shared by customers and suppliers: the documents tab (invoices or
@@ -115,11 +117,36 @@ function BillsOf({ partyId }: { partyId: number }) {
 }
 
 export function PartyPaymentsTab({ type, partyId }: { type: PartyType; partyId: number }) {
-  const { Card, EmptyState } = ds()
-  if (type === 'supplier') {
-    return <Card title="Payments"><EmptyState icon="hand-coins" title="Supplier payments arrive in phase 8" description="Advances applied to bills already show on each bill's Payments tab." /></Card>
-  }
-  return <ReceiptsOf partyId={partyId} />
+  return type === 'supplier' ? <PaymentsOf partyId={partyId} /> : <ReceiptsOf partyId={partyId} />
+}
+
+/** C4 Payments tab (P8.2-FE-04): the supplier's payment vouchers, their state and any advance left. */
+function PaymentsOf({ partyId }: { partyId: number }) {
+  const { Card, DataTable, EmptyState, Button } = ds()
+  const navigate = useNavigate()
+  const { can } = useSession()
+  const list = useSupplierPayments({ party_id: partyId, per_page: 50 })
+  const rows = (list.data?.data ?? []).map((v) => {
+    const p = paymentOf(v)
+    return { id: v.id, number: v.voucher_number, date: shortDate(v.entry_date), method: p ? methodLabel(p.method) : '', account: p?.money_account.name ?? '', amount: p?.amount ?? v.total_debit,
+      status: v.status, advance: p && v.status === 'posted' && p.unapplied_amount !== '0.00' ? p.unapplied_amount : '' }
+  })
+  const cols: DataColumn[] = [
+    { key: 'number', label: 'Payment', mono: true }, { key: 'date', label: 'Date' }, { key: 'method', label: 'Method' }, { key: 'account', label: 'Paid from' },
+    { key: 'status', label: 'Status', render: (v) => <VoucherStatusBadge status={v} /> },
+    { key: 'amount', label: 'Amount (৳)', type: 'amount' },
+    { key: 'advance', label: 'Advance (৳)', align: 'right', render: (v: string) => (v ? <span className="lf-num">{formatTaka(v)}</span> : '') },
+  ]
+  return (
+    <Card title="Payments made" padding="none"
+      actions={can('purchases.create') ? <Button size="sm" variant="primary" icon="plus" onClick={() => navigate(`/purchases/payments/new?party_id=${partyId}`)} data-testid="pay-supplier">Pay supplier</Button> : undefined}>
+      <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
+      <div style={{ overflowX: 'auto' }} data-testid="party-payments">
+        <DataTable caption="Payments made" columns={cols} rows={rows} loading={list.isPending} onRowClick={(r: { id: number }) => navigate(`/purchases/payments/${r.id}`)}
+          emptyState={<EmptyState icon="hand-coins" title="No payments yet" description="Money paid to this supplier appears here." />} />
+      </div>
+    </Card>
+  )
 }
 
 function ReceiptsOf({ partyId }: { partyId: number }) {

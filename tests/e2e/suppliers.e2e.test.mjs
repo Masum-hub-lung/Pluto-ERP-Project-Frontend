@@ -175,6 +175,12 @@ test('bulk deactivate: selection survives page changes, failures are named, work
   await page.goto('/suppliers')
   await page.getByRole('cell', { name: /SUP-0001/ }).waitFor()
 
+  // The customer half below needs customers; each E2E file starts from a fresh company (scripts/e2e.sh).
+  for (const [name, mobile] of [['Rahim Store', '01711000301'], ['Selim Traders', '01711000302'], ['Karim Distributors', '01711458230']]) {
+    const c = await api('POST', '/parties', { party_type: 'customer', name, mobile })
+    assert.equal(c.status, 201, JSON.stringify(c.body))
+  }
+
   // 25 more suppliers make a second page (25 per page)
   for (let i = 1; i <= 25; i++) {
     const r = await api('POST', '/parties', { party_type: 'supplier', name: `Bulk Supplier ${String(i).padStart(2, '0')}`, mobile: `0171100${String(i).padStart(4, '0')}` })

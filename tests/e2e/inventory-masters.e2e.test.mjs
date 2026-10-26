@@ -34,8 +34,8 @@ test('owner sets up warehouses, a category tree, a unit, a product with reorder 
     await page.getByTestId('save-warehouse').click()
     await page.getByText(`${name} added`).waitFor()
   }
+  await row(page, 'WH-NGJ').getByText('1301-02').waitFor() // the ledger list refreshes after the save
   assert.match(await row(page, 'WH-TEJ').innerText(), /Head office[\s\S]*1301-01/)
-  assert.match(await row(page, 'WH-NGJ').innerText(), /1301-02/)
 
   // D5: a two-level tree; the child sits right under its parent, indented
   await page.goto('/inventory/categories')
