@@ -41,7 +41,7 @@ test('owner sets up a supplier, a warehouse and a stocked product (API)', async 
   ids.supplier = sup.body.data.id
   const unit = (await api('GET', '/units?per_page=100')).body.data[0]
   const income = (await api('GET', '/ledgers?purpose=income_for_product&per_page=100')).body.data[0]
-  const prod = await api('POST', '/products', { item_type: 'product', name: 'Soybean oil 5L jar', unit_id: unit.id, selling_price: '950.00', income_ledger_id: income.id })
+  const prod = await api('POST', '/products', { item_type: 'product', name: 'Teer soybean oil 5L jar', unit_id: unit.id, selling_price: '950.00', income_ledger_id: income.id })
   assert.equal(prod.status, 201, JSON.stringify(prod.body))
   ids.product = prod.body.data.id
   assert.equal(prod.body.data.track_stock, true)
@@ -58,7 +58,7 @@ async function fillBill(page, ref, qty, cost) {
   await page.locator('#f-supplier-bill').fill(ref)
   await page.locator('#doc-warehouse').selectOption(String(ids.warehouse))
   await page.getByLabel('Item, line 1').fill('Soybean')
-  await page.getByRole('listbox').getByRole('option', { name: /Soybean oil 5L jar/ }).click()
+  await page.getByRole('listbox').getByRole('option', { name: /Teer soybean oil 5L jar/ }).click()
   await page.getByLabel('Quantity, line 1').fill(qty)
   await page.getByLabel('Cost, line 1').fill(cost)
 }
@@ -117,7 +117,7 @@ test('accountant enters and posts two bills; stock, average cost and ledger entr
 
   // D1 shows on hand and average cost; D9 has both movements linking back to F4
   await page.goto('/inventory/products')
-  const prodRow = page.locator('tbody tr', { hasText: 'Soybean oil 5L jar' })
+  const prodRow = page.locator('tbody tr', { hasText: 'Teer soybean oil 5L jar' })
   assert.match(await prodRow.innerText(), /820\.00[\s\S]*150\.000|150\.000[\s\S]*820\.00/)
   await page.goto(`/inventory/movements?product_id=${ids.product}`)
   await page.locator('tbody tr', { hasText: /BILL-\d{4}-0001/ }).waitFor()

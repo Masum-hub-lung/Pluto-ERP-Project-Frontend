@@ -25,7 +25,7 @@ import { shortDate } from './BillList'
 /**
  * F4 Purchase bill details (Pur-Details.dc.html; backlog P4.5-FE-04): header with status and amounts, then tabs —
  * Bill (lines and totals, read-only), Ledger entries (the posted journal from the bill resource), Activity, and
- * Payments (advances and credits applied, apply/remove; supplier payment vouchers come with P8). Actions: Edit and Post for drafts, Cancel with a reason for posted bills.
+ * Payments (supplier payments, advances and credits applied, apply/remove, Record payment → F5). Actions: Edit and Post for drafts, Cancel with a reason for posted bills.
  * Print waits for P10.
  */
 const TABS = [{ value: 'bill', label: 'Bill' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }]

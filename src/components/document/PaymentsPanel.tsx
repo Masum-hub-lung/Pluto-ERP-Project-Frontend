@@ -14,7 +14,7 @@ import { ResponsiveDialog } from '../ResponsiveDialog'
 /**
  * Payments tab of an invoice (E5) or bill (F4) (backlog P6.2-FE-05; R-08): the receipts, payments, notes and advances
  * applied to it, each removable (DELETE /allocations), "Apply advance or credit" from the party's unapplied credits
- * (POST /allocations), and for an invoice "Record payment" (E7 prefilled). Amounts and balances are the server's;
+ * (POST /allocations), and "Record payment" (E7 for an invoice, F5 for a bill, prefilled). Amounts and balances are the server's;
  * a wrong amount comes back as allocation_exceeds_balance and is shown in the dialog.
  */
 const KIND: Record<string, string> = { receipt: 'Receipt', payment: 'Payment', credit_note: 'Credit note', debit_note: 'Debit note', advance: 'Advance' }
@@ -48,7 +48,8 @@ export function PaymentsPanel({ type, id, number, partyId, status, balance, allo
   }
 
   const cols: DataColumn[] = [
-    { key: 'voucher', label: 'Voucher', mono: true, render: (_v, r) => (r.kind === 'receipt' ? <Link to={`/sales/payments/${r.voucherId}`}>{r.voucher}</Link> : <span className="lf-code">{r.voucher}</span>) },
+    { key: 'voucher', label: 'Voucher', mono: true, render: (_v, r) => (r.kind === 'receipt' ? <Link to={`/sales/payments/${r.voucherId}`}>{r.voucher}</Link>
+      : r.kind === 'payment' ? <Link to={`/purchases/payments/${r.voucherId}`}>{r.voucher}</Link> : <span className="lf-code">{r.voucher}</span>) },
     { key: 'kindLabel', label: 'Kind' },
     { key: 'date', label: 'Applied on' },
     { key: 'amount', label: 'Amount (৳)', type: 'amount' },
@@ -61,7 +62,8 @@ export function PaymentsPanel({ type, id, number, partyId, status, balance, allo
     <Card title="Payments" subtitle={status === 'posted' ? `Open balance ${formatTaka(balance, { symbol: true })}` : undefined} padding="none"
       actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {canApply && <Button size="sm" variant="secondary" icon="hand-coins" onClick={() => setApplying(true)} data-testid="apply-credit">Apply advance or credit</Button>}
-        {sales && canApply && <Button size="sm" variant="primary" icon="plus" onClick={() => navigate(`/sales/payments/new?party_id=${partyId}&invoice_id=${id}`)} data-testid="record-payment">Record payment</Button>}
+        {canApply && <Button size="sm" variant="primary" icon="plus" data-testid="record-payment"
+          onClick={() => navigate(sales ? `/sales/payments/new?party_id=${partyId}&invoice_id=${id}` : `/purchases/payments/new?party_id=${partyId}&bill_id=${id}`)}>Record payment</Button>}
       </div>}>
       <div style={{ padding: error ? '12px 20px 0' : 0 }}><ProblemBanner error={error} /></div>
       {rows.length
