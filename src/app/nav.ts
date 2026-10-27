@@ -59,7 +59,12 @@ export const NAV: NavSection[] = [
         page('Overview', '/accounting', 'accounting.view', true), page('Chart of accounts', '/accounting/chart', 'accounting.view', true),
         page('Ledgers', '/accounting/ledgers', 'accounting.view', true), page('Vouchers', '/accounting/vouchers', 'accounting.view', true),
       ] },
-      { ...page('Reports', '/reports', 'reports.view'), icon: 'scale' },
+      { ...page('Reports', '/reports', 'reports.view', true), icon: 'scale', children: [
+        page('All reports', '/reports', 'reports.view', true), page('Trial balance', '/reports/trial-balance', 'reports.financial', true),
+        page('Profit and loss', '/reports/profit-and-loss', 'reports.financial', true), page('Balance sheet', '/reports/balance-sheet', 'reports.financial', true),
+        page('Cash flow', '/reports/cash-flow', 'reports.financial', true), page('General ledger', '/reports/general-ledger', 'reports.financial', true),
+        page('Receivables aging', '/reports/receivables-aging', 'reports.financial', true), page('Payables aging', '/reports/payables-aging', 'reports.financial', true),
+      ] },
     ],
   },
   // Settings is open to everyone: Security (2-step) is personal; other sections check their own permission.
@@ -103,8 +108,8 @@ export function landingPath(can: Can, links: NavLink[] = allLinks()): string {
   const byPath = new Map(links.map((l) => [l.path, l]))
   const permitted = LANDING.map((p) => byPath.get(p)).filter((l): l is NavLink => !!l && allowed(can, l))
   // Inventory is the Store keeper's home (R-35); roles that see parties keep Customers until Dashboard or Sales exist
-  // (Accounting too, so the Owner and Accountant still land on Customers now that Accounting is built).
-  const home = permitted.find((l) => l.built && (!['/inventory', '/accounting'].includes(l.path) || !can('parties.view')))
+  // (Accounting and Reports too, so the Owner and Accountant still land on Customers now that they are built).
+  const home = permitted.find((l) => l.built && (!['/inventory', '/accounting', '/reports'].includes(l.path) || !can('parties.view')))
   return home?.path ?? (can('parties.view') ? '/customers' : permitted[0]?.path ?? '/settings/security')
 }
 
