@@ -67,6 +67,14 @@ const VoucherList = lazy(() => accounting().then((m) => ({ default: m.VoucherLis
 const VoucherDetails = lazy(() => accounting().then((m) => ({ default: m.VoucherDetails })))
 const VoucherNew = lazy(() => accounting().then((m) => ({ default: m.VoucherNew })))
 const VoucherEdit = lazy(() => accounting().then((m) => ({ default: m.VoucherEdit })))
+const reports = () => import('../pages/reports')
+const ReportsCentre = lazy(() => reports().then((m) => ({ default: m.ReportsCentre })))
+const TrialBalance = lazy(() => reports().then((m) => ({ default: m.TrialBalance })))
+const ProfitAndLoss = lazy(() => reports().then((m) => ({ default: m.ProfitAndLoss })))
+const BalanceSheet = lazy(() => reports().then((m) => ({ default: m.BalanceSheet })))
+const CashFlow = lazy(() => reports().then((m) => ({ default: m.CashFlow })))
+const GeneralLedger = lazy(() => reports().then((m) => ({ default: m.GeneralLedger })))
+const Aging = lazy(() => reports().then((m) => ({ default: m.Aging })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
 const DocumentDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/DocumentDemo').then((m) => ({ default: m.DocumentDemo }))) : null
@@ -158,6 +166,15 @@ export const router = createBrowserRouter([
       { path: 'accounting/vouchers/:id', handle: crumbs('Accounting', 'Voucher'), element: guarded('accounting.view', lazyPage(<VoucherDetails />, 'detail')) },
       { path: 'accounting/vouchers/:id/edit', handle: crumbs('Accounting', 'Edit voucher'), element: lazyPage(<VoucherEdit />, 'form') },
       ...unbuiltRoutes(),
+      // Reports (P9.2): the hub for reports.view; financial statements need reports.financial (DEC-13).
+      { path: 'reports', handle: crumbs('Reports'), element: guarded('reports.view', lazyPage(<ReportsCentre />, 'list')) },
+      { path: 'reports/trial-balance', handle: crumbs('Reports', 'Trial balance'), element: guarded('reports.financial', lazyPage(<TrialBalance />, 'report')) },
+      { path: 'reports/profit-and-loss', handle: crumbs('Reports', 'Profit and loss'), element: guarded('reports.financial', lazyPage(<ProfitAndLoss />, 'report')) },
+      { path: 'reports/balance-sheet', handle: crumbs('Reports', 'Balance sheet'), element: guarded('reports.financial', lazyPage(<BalanceSheet />, 'report')) },
+      { path: 'reports/cash-flow', handle: crumbs('Reports', 'Cash flow'), element: guarded('reports.financial', lazyPage(<CashFlow />, 'report')) },
+      { path: 'reports/general-ledger', handle: crumbs('Reports', 'General ledger'), element: guarded('reports.financial', lazyPage(<GeneralLedger />, 'report')) },
+      { path: 'reports/receivables-aging', handle: crumbs('Reports', 'Receivables aging'), element: guarded('reports.financial', lazyPage(<Aging key="customer" type="customer" />, 'report')) },
+      { path: 'reports/payables-aging', handle: crumbs('Reports', 'Payables aging'), element: guarded('reports.financial', lazyPage(<Aging key="supplier" type="supplier" />, 'report')) },
       { path: 'not-in-release', handle: crumbs('Pluto'), element: <NotInRelease /> },
       // Development-only demo of the async pickers (P1.2-FE-07); not part of production builds.
       ...(PickersDemo ? [{ path: 'dev/pickers', handle: crumbs('Development', 'Pickers'), element: lazyPage(<PickersDemo />, 'form') }] : []),

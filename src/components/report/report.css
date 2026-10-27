@@ -1,0 +1,44 @@
+/* Financial reports (backlog P9.2-FE-01): filter bar, paper statement, aside, print stylesheet. */
+.lf-report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lf-report-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 4px 0 16px; }
+.lf-report-filters > * { min-width: 0; }
+.lf-report-check { margin-bottom: 12px; }
+.lf-report-body { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) { .lf-report-body--aside { grid-template-columns: minmax(0, 1fr) 300px; } }
+.lf-report-paper { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px 20px 12px; min-width: 0; }
+.lf-report-paper-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 12px; }
+.lf-report-paper-head h2 { font: 600 18px/24px var(--font-sans); margin: 0; color: var(--ink); }
+.lf-report-paper-head > span { color: var(--ink-muted); font-size: 13px; }
+.lf-report-aside { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px; align-self: start; min-width: 0; }
+.lf-report-aside h3 { font: 600 14px/20px var(--font-sans); margin: 0 0 8px; }
+.lf-report-empty { color: var(--ink-muted); padding: 24px 0; text-align: center; }
+.lf-report-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.lf-statement { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--ink); }
+.lf-statement th { text-align: left; font-weight: 600; font-size: 12px; color: var(--ink-muted); padding: 8px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+.lf-statement td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.lf-statement .num { text-align: right; white-space: nowrap; }
+.lf-statement tr.strong td { font-weight: 600; }
+.lf-statement tr.k-heading td { padding-top: 14px; border-bottom-color: var(--line-strong); }
+.lf-statement tr.k-total td, .lf-statement tfoot td { border-top: 1.5px solid var(--ink); }
+.lf-statement tr.k-opening td, .lf-statement tr.k-closing td { color: var(--ink-muted); }
+.lf-statement tr.link { cursor: pointer; }
+.lf-statement tr.link:hover td, .lf-statement tr.link:focus-visible td { background: var(--surface-hover); }
+@media (max-width: 639px) {
+  .lf-report-paper { padding: 12px; }
+  .lf-statement { font-size: 13px; }
+  .lf-report-filters > * { flex: 1 1 100%; }
+  .lf-report-filters input, .lf-report-filters select { font-size: 16px; }
+}
+
+/* Print: only the paper statement (and its checks), full width, no app chrome. */
+@media print {
+  body * { visibility: hidden; }
+  .lf-report-paper, .lf-report-paper *, .lf-report-check, .lf-report-check * { visibility: visible; }
+  .lf-report { position: absolute; inset: 0; }
+  .lf-report-paper { border: 0; padding: 0; }
+  .lf-report-scroll { overflow: visible; }
+  .lf-report-aside, .lf-report-filters, .lf-report-actions { display: none; }
+  .lf-statement { font-size: 11px; }
+  .lf-statement tr { break-inside: avoid; }
+}
