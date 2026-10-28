@@ -81,3 +81,12 @@
   .lf-shell-top { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Brand logo (public/brand/*, made from the owner's IDOIR artwork): replaces the design system's drawn mark and serif
+   word in both our Logo component and the bundle's Sidebar. The word stays in the DOM as text for screen readers.
+   is-reversed (dark backgrounds) uses the copies with the navy turned white. */
+.lf-logo .lf-logo-mark { display: none; }
+.lf-logo::before { content: ""; flex: none; width: 34px; height: 30px; background: url("/brand/mark.png") center / contain no-repeat; }
+.lf-logo.is-reversed::before { background-image: url("/brand/mark-reversed.png"); }
+.lf-logo .lf-logo-word { font-size: 0; width: 78px; height: 20px; background: url("/brand/word.png") left center / contain no-repeat; }
+.lf-logo.is-reversed .lf-logo-word { background-image: url("/brand/word-reversed.png"); }

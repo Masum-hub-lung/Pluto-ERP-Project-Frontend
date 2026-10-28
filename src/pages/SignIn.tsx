@@ -103,7 +103,7 @@ export function SignIn() {
       {challenge ? (
       <form onSubmit={submitCode} noValidate aria-labelledby="signin-title"
         style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: 'var(--navy-900)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', alignSelf: 'flex-start' }}><Logo /></div>
+        <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>2-step verification</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)' }}>
@@ -133,7 +133,7 @@ export function SignIn() {
       ) : (
       <form onSubmit={submit} noValidate aria-labelledby="signin-title"
         style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: 'var(--navy-900)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', alignSelf: 'flex-start' }}><Logo /></div>
+        <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>Sign in</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)' }}>Use the e-mail your company invited.</p>
