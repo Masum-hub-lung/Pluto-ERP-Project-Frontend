@@ -91,6 +91,16 @@ test('every report opens at four widths with its green checks; Excel export down
   await go(page, '/reports')
   await page.getByRole('heading', { name: 'Reports', exact: true }).waitFor()
   for (const [path] of REPORTS) assert.ok(await page.getByTestId(`report-${path}`).isVisible(), `J1 lists ${path}`)
+  for (const [name, size] of Object.entries(VIEWPORTS)) {
+    await page.setViewportSize(size)
+    await assertNoPageScroll(page, `/reports at ${name}`)
+    const cramped = await page.locator('[data-testid^="report-/"]').evaluateAll((cards) => cards
+      .filter((c) => c.clientWidth < 200 || c.scrollWidth > c.clientWidth || [...c.querySelectorAll('*')].some((x) => x.getBoundingClientRect().right > c.getBoundingClientRect().right + 1))
+      .map((c) => `${c.dataset.testid} (${c.clientWidth}px)`))
+    assert.deepEqual(cramped, [], `J1 cards keep their text inside at ${name}`)
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/reports-${name}.png`, fullPage: true })
+  }
+  await page.setViewportSize(VIEWPORTS.desktop)
   await page.getByLabel('Find a report').fill('aging')
   await page.getByTestId('report-/reports/payables-aging').waitFor()
   assert.equal(await page.getByTestId('report-/reports/trial-balance').count(), 0, 'search narrows the cards')
