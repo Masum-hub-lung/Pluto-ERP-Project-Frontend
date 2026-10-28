@@ -59,11 +59,11 @@ export function ReportsCentre() {
       {sections.map((s) => (
         <section key={s.title} style={{ marginBottom: 24 }} aria-label={s.title}>
           <h2 style={{ font: '600 15px/22px var(--font-sans)', margin: '0 0 8px', color: 'var(--ink)' }}>{s.title}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16,width: '100%',boxSizing: 'border-box',alignItems: 'stretch', }}>
             {s.reports.map((r) => (
               <button key={r.path} type="button" className="lf-report-card" data-testid={`report-${r.path}`} onClick={() => navigate(r.built ? r.path : '/not-in-release')}
-                style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: 14, minHeight: 44,
-                  cursor: 'pointer', display: 'grid', gap: 6, alignContent: 'start', minWidth: 0, overflowWrap: 'anywhere', font: 'inherit', color: 'var(--ink)' }}>
+                style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: 16, minHeight: 150,
+                  cursor: 'pointer', display: 'grid', gap: 8, alignContent: 'start', minWidth: 0, overflowWrap: 'anywhere', font: 'inherit', color: 'var(--ink)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <strong style={{ fontSize: 14 }}>{r.label}</strong><Icon name="arrow-right" size={16} />
                 </span>
