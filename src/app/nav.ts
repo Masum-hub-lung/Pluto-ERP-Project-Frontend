@@ -51,8 +51,15 @@ export const NAV: NavSection[] = [
         page('Transactions', '/banking/transactions', 'banking.view', true), page('Cash book', '/banking/cash-book', 'banking.view', true),
         page('Bank book', '/banking/bank-book', 'banking.view', true),
       ] },
-      { ...page('Income', '/income', 'banking.view'), icon: 'hand-coins' },
-      { ...page('Expenses', '/expenses', 'banking.view'), icon: 'banknote' },
+      { ...page('Income', '/income', 'banking.view', true), icon: 'hand-coins', children: [
+        page('Overview', '/income', 'banking.view', true), page('Transactions', '/income/list', 'banking.view', true),
+        page('Categories', '/income/categories', 'banking.view', true), page('Report', '/income/report', 'reports.financial', true),
+      ] },
+      { ...page('Expenses', '/expenses', 'banking.view', true), icon: 'banknote', children: [
+        page('Overview', '/expenses', 'banking.view', true), page('Transactions', '/expenses/list', 'banking.view', true),
+        page('Categories and budgets', '/expenses/categories', 'banking.view', true), page('Recurring entries', '/expenses/recurring', 'banking.view', true),
+        page('Report', '/expenses/report', 'reports.financial', true),
+      ] },
     ],
   },
   {

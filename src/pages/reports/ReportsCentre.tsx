@@ -21,8 +21,8 @@ export const REPORT_SECTIONS: Array<{ title: string; reports: ReportLink[] }> = 
     { label: 'General ledger', description: 'Opening, entries and closing of the ledgers you choose.', path: '/reports/general-ledger', permission: 'reports.financial', module: 'Accounting', built: true },
     { label: 'Ledgers', description: 'Any ledger’s statement with a running balance.', path: '/accounting/ledgers', permission: 'accounting.view', module: 'Accounting', built: true },
     { label: 'Day book', description: 'Every voucher in date order.', path: '/accounting/vouchers', permission: 'accounting.view', module: 'Accounting', built: true },
-    { label: 'Cash book', description: 'Receipts and payments of a cash account.', path: '/banking/cash-book', permission: 'banking.view', module: 'Cash and bank', built: false },
-    { label: 'Bank book', description: 'Deposits and withdrawals of a bank account.', path: '/banking/bank-book', permission: 'banking.view', module: 'Cash and bank', built: false },
+    { label: 'Cash book', description: 'Receipts and payments of a cash account.', path: '/banking/cash-book', permission: 'banking.view', module: 'Cash and bank', built: true },
+    { label: 'Bank book', description: 'Deposits and withdrawals of a bank account.', path: '/banking/bank-book', permission: 'banking.view', module: 'Cash and bank', built: true },
   ] },
   { title: 'Receivables and payables', reports: [
     { label: 'Receivables aging', description: 'What customers owe by days past due.', path: '/reports/receivables-aging', permission: 'reports.financial', module: 'Customers', built: true },
@@ -35,9 +35,9 @@ export const REPORT_SECTIONS: Array<{ title: string; reports: ReportLink[] }> = 
     { label: 'Sales return report', description: 'Every return from customers and its credit note.', path: '/reports/sales-returns', permission: 'reports.view', module: 'Sales', built: true },
     { label: 'Purchase report', description: 'Purchases by supplier, category or month.', path: '/reports/purchases', permission: 'reports.view', module: 'Purchases', built: true },
     { label: 'Purchase return report', description: 'Every return to suppliers and its debit note.', path: '/reports/purchase-returns', permission: 'reports.view', module: 'Purchases', built: true },
-    { label: 'Income report', description: 'Income by category and month.', path: '/income/report', permission: 'reports.view', module: 'Income', built: false },
-    { label: 'Expense report', description: 'Expenses by category and month.', path: '/expenses/report', permission: 'reports.view', module: 'Expenses', built: false },
-    { label: 'Stock valuation', description: 'Stock value at weighted average cost.', path: '/inventory/valuation', permission: 'inventory.view_costs', module: 'Inventory', built: false },
+    { label: 'Income report', description: 'Income by category and month.', path: '/income/report', permission: 'reports.financial', module: 'Income', built: true },
+    { label: 'Expense report', description: 'Expenses by category and month.', path: '/expenses/report', permission: 'reports.financial', module: 'Expenses', built: true },
+    { label: 'Stock valuation', description: 'Stock value at weighted average cost.', path: '/inventory/valuation', permission: 'inventory.view_costs', module: 'Inventory', built: true },
     { label: 'Stock movements', description: 'Every stock in and out.', path: '/inventory/movements', permission: 'inventory.view', module: 'Inventory', built: true },
   ] },
 ]

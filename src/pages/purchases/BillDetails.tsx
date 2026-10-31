@@ -11,6 +11,7 @@ import { formatTaka } from '../../lib/format'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { PHONE, useMediaQuery } from '../../lib/useMediaQuery'
 import { ActivityTimeline } from '../../components/ActivityTimeline'
+import { AttachmentUploader } from '../../components/AttachmentUploader'
 import { PostDialog } from '../../components/document/PostDialog'
 import { totalsRows } from '../../components/document/totals'
 import { PageSkeleton } from '../../components/PageSkeleton'
@@ -28,7 +29,7 @@ import { shortDate } from './BillList'
  * Payments (supplier payments, advances and credits applied, apply/remove, Record payment → F5). Actions: Edit and Post for drafts, Cancel with a reason for posted bills.
  * Print waits for P10.
  */
-const TABS = [{ value: 'bill', label: 'Bill' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }]
+const TABS = [{ value: 'bill', label: 'Bill' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }, { value: 'attachments', label: 'Attachments' }]
 const REASONS: Array<{ value: CancelRequest['reason'] | ''; label: string }> = [
   { value: '', label: 'Choose a reason…' }, { value: 'entered_by_mistake', label: 'Entered by mistake' }, { value: 'wrong_party', label: 'Wrong supplier' },
   { value: 'duplicate', label: 'Duplicate bill' }, { value: 'customer_cancelled', label: 'Supplier cancelled the bill' }, { value: 'other', label: 'Other' },
@@ -168,6 +169,8 @@ function Details({ b }: { b: PurchaseBill }) {
         </Card>
       )}
       {tab === 'activity' && <Card title="Activity"><ActivityTimeline type="purchase_bill" id={b.id} /></Card>}
+      {tab === 'attachments' && <Card title="Attachments"><AttachmentUploader type="purchase_bill" recordId={b.id}
+        canEdit={can('purchases.edit') || (b.status === 'draft' && can('purchases.create'))} testId="bill-attachments" /></Card>}
       {tab === 'payments' && <PaymentsPanel type="purchase_bill" id={b.id} number={b.number} partyId={b.party.id} status={b.status} balance={b.balance_due} allocations={b.allocations ?? []} />}
 
       {posting && <PostDialog title={`Post ${b.number}?`} number={b.number} total={b.total} loading={post.isPending} onPost={doPost} onClose={() => setPosting(false)} />}

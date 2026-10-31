@@ -13,6 +13,7 @@ import { deliveryToForm, toDeliveryUpdate } from '../../lib/invoiceSchema'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { PHONE, useMediaQuery } from '../../lib/useMediaQuery'
 import { ActivityTimeline } from '../../components/ActivityTimeline'
+import { AttachmentUploader } from '../../components/AttachmentUploader'
 import { ConflictBanner } from '../../components/ConflictBanner'
 import { PostDialog } from '../../components/document/PostDialog'
 import { totalsRows } from '../../components/document/totals'
@@ -32,7 +33,7 @@ import { InvoiceStatusBadge } from './InvoiceStatusBadge'
  * Post for drafts, Record payment, Preview, E-mail to customer, Cancel with a reason for posted invoices. Attachments wait for P13.
  */
 const TABS = [{ value: 'invoice', label: 'Invoice' }, { value: 'ledger', label: 'Ledger entries' }, { value: 'delivery', label: 'Delivery' },
-  { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }]
+  { value: 'activity', label: 'Activity' }, { value: 'payments', label: 'Payments' }, { value: 'attachments', label: 'Attachments' }]
 const REASONS: Array<{ value: CancelRequest['reason'] | ''; label: string }> = [
   { value: '', label: 'Choose a reason…' }, { value: 'customer_cancelled', label: 'Customer cancelled' }, { value: 'entered_by_mistake', label: 'Entered by mistake' },
   { value: 'wrong_party', label: 'Wrong customer' }, { value: 'duplicate', label: 'Duplicate invoice' }, { value: 'other', label: 'Other' },
@@ -174,6 +175,8 @@ function Details({ inv }: { inv: SalesInvoice }) {
       )}
       {tab === 'delivery' && <DeliveryCard inv={inv} editable={inv.status !== 'cancelled' && can('sales.edit')} />}
       {tab === 'activity' && <Card title="Activity"><ActivityTimeline type="sales_invoice" id={inv.id} /></Card>}
+      {tab === 'attachments' && <Card title="Attachments"><AttachmentUploader type="sales_invoice" recordId={inv.id}
+        canEdit={can('sales.edit') || (inv.status === 'draft' && can('sales.create'))} testId="invoice-attachments" /></Card>}
       {tab === 'payments' && <PaymentsPanel type="sales_invoice" id={inv.id} number={inv.number} partyId={inv.party.id} status={inv.status} balance={inv.balance_due} allocations={inv.allocations ?? []} />}
 
       {posting && <PostDialog title={`Post ${inv.number}?`} number={inv.number} total={inv.total} loading={post.isPending} onPost={doPost} onClose={() => setPosting(false)} />}

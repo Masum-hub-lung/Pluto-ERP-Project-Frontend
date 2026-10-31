@@ -10,6 +10,7 @@ import { ds, type DataColumn } from '../../ds'
 import { formatTaka } from '../../lib/format'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { ApprovalDrawer } from '../../components/ApprovalDrawer'
+import { AttachmentUploader } from '../../components/AttachmentUploader'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { DeleteDialog } from '../../components/DeleteDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
@@ -50,7 +51,13 @@ function Details({ v }: { v: Voucher }) {
   const del = useDeleteVoucher(v.id)
   const idem = useIdempotencyKey()
   const isVoucher = VOUCHER_TYPES.some((t) => t.value === v.entry_type) && !v.source
-  const type = v.entry_type as VoucherType
+  // Expense and income entries (I3/I6, recurring drafts) post, submit, delete and reverse like a payment / receipt;
+  // they are changed by deleting the draft and entering again, not in the voucher editor.
+  const isIe = (v.entry_type === 'expense' || v.entry_type === 'income') && !v.source
+  const actionable = isVoucher || isIe
+  const type = (isIe ? (v.entry_type === 'income' ? 'receipt' : 'payment') : v.entry_type) as VoucherType
+  const cash = type !== 'journal' && !v.source
+  const filesEditable = can(cash ? 'banking.edit' : 'accounting.edit') || (v.status === 'draft' && can(cash ? 'banking.create' : 'accounting.create'))
   const editable = isVoucher && (v.status === 'draft' || v.status === 'rejected') && canEnter(can, type, 'edit')
   const p = v.payment as null | { money_account: { name: string }; party: { id: number; name: string } | null; method: string; cheque_number: string | null; direction: string }
 
@@ -112,10 +119,10 @@ function Details({ v }: { v: Voucher }) {
           <Button variant="secondary" icon="download" onClick={() => void pdf()} data-testid="voucher-pdf">PDF</Button>
           {isVoucher && canEnter(can, type) && <Button variant="secondary" icon="copy" onClick={() => navigate(`/accounting/vouchers/new/${type}?from=${v.id}`)}>Duplicate</Button>}
           {editable && <Button variant="secondary" icon="pencil" onClick={() => navigate(`/accounting/vouchers/${v.id}/edit`)} data-testid="edit-voucher">Edit</Button>}
-          {isVoucher && v.status === 'draft' && can('accounting.delete') && <Button variant="danger" icon="trash-2" onClick={() => setDialog('delete')} data-testid="delete-voucher">Delete</Button>}
-          {isVoucher && (v.status === 'draft' || v.status === 'rejected') && canEnter(can, type) && <Button variant="secondary" icon="arrow-up-right" loading={submit.isPending} onClick={() => void doSubmit()}>Submit for approval</Button>}
-          {isVoucher && v.status === 'draft' && canEnter(can, type) && <Button variant="primary" icon="check" loading={post.isPending} onClick={() => void doPost()} data-testid="post-voucher">Post</Button>}
-          {isVoucher && v.status === 'posted' && can('accounting.create') && <Button variant="primary" icon="refresh-cw" onClick={() => setDialog('reverse')} data-testid="reverse-voucher">Reverse</Button>}
+          {actionable && v.status === 'draft' && can('accounting.delete') && <Button variant="danger" icon="trash-2" onClick={() => setDialog('delete')} data-testid="delete-voucher">Delete</Button>}
+          {actionable && (v.status === 'draft' || v.status === 'rejected') && canEnter(can, type) && <Button variant="secondary" icon="arrow-up-right" loading={submit.isPending} onClick={() => void doSubmit()}>Submit for approval</Button>}
+          {actionable && v.status === 'draft' && canEnter(can, type) && <Button variant="primary" icon="check" loading={post.isPending} onClick={() => void doPost()} data-testid="post-voucher">Post</Button>}
+          {actionable && v.status === 'posted' && can('accounting.create') && <Button variant="primary" icon="refresh-cw" onClick={() => setDialog('reverse')} data-testid="reverse-voucher">Reverse</Button>}
         </div>
       </div>
       <ProblemBanner error={error} />
@@ -138,6 +145,7 @@ function Details({ v }: { v: Voucher }) {
         <div style={{ flex: '2 1 480px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Card title="Entries" padding="none"><div style={{ overflowX: 'auto' }} data-testid="voucher-lines"><DataTable caption="Entries" columns={cols} rows={rows} /></div></Card>
           {v.narration && <Card title="Narration"><p style={{ margin: 0 }}>{v.narration}</p></Card>}
+          <Card title="Attachments"><AttachmentUploader type="voucher" recordId={v.id} canEdit={filesEditable} compact testId="voucher-attachments" /></Card>
         </div>
         <div style={{ flex: '1 1 260px' }}>
           <Card title="Activity">

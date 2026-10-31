@@ -49,6 +49,9 @@ export interface RequestOptions {
   signal?: AbortSignal
   /** 'blob' for files (PDFs): the body is returned as a Blob; errors are still read as problem JSON. */
   responseType?: 'json' | 'blob'
+  /** Multipart uploads only: called with the share sent so far (0–1). The request then goes through XMLHttpRequest,
+   *  the only browser API that reports upload progress; the answer is handled like any other. */
+  onUploadProgress?: (fraction: number) => void
 }
 
 export interface ResponseMeta { status: number; etag: string | null; headers: Headers }
@@ -139,11 +142,36 @@ export class ApiClient {
       body = JSON.stringify(opts.body)
     }
     const target = url.origin === (globalThis.location?.origin ?? url.origin) ? url.pathname + url.search : url.toString()
+    if (opts.onUploadProgress && body instanceof FormData && typeof XMLHttpRequest !== 'undefined') return xhrSend(method, target, headers, body, opts.onUploadProgress, opts.signal)
     return this.fetchImpl(target, { method, headers, body, credentials: 'same-origin', signal: opts.signal }).catch((e: unknown) => {
       if (e instanceof DOMException && e.name === 'AbortError') throw e
       throw new ApiError({ title: 'The server could not be reached. Check your connection and try again.', status: 0, code: 'network_error' })
     })
   }
+}
+
+/** An upload with progress events, answered as a fetch Response so request() treats it like any other call. */
+function xhrSend(method: string, url: string, headers: Record<string, string>, body: FormData, onProgress: (f: number) => void, signal?: AbortSignal): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open(method, url)
+    xhr.withCredentials = true
+    for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v)
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total) }
+    xhr.onload = () => {
+      const h = new Headers()
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+        const i = line.indexOf(':')
+        if (i > 0) h.append(line.slice(0, i).trim(), line.slice(i + 1).trim())
+      }
+      onProgress(1)
+      resolve(new Response(xhr.status === 204 ? null : xhr.responseText, { status: xhr.status, headers: h }))
+    }
+    xhr.onerror = () => reject(new ApiError({ title: 'The server could not be reached. Check your connection and try again.', status: 0, code: 'network_error' }))
+    xhr.onabort = () => reject(new DOMException('Aborted', 'AbortError'))
+    signal?.addEventListener('abort', () => xhr.abort())
+    xhr.send(body)
+  })
 }
 
 async function readProblem(res: Response): Promise<Problem> {
