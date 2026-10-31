@@ -9,7 +9,7 @@ import { dhakaToday } from './platform'
  * vouchers only, and any posting anywhere can move them, so they are refetched every time a report page opens
  * instead of being invalidated by every mutation.
  */
-export type ReportPath = 'trial-balance' | 'profit-and-loss' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'receivables-aging' | 'payables-aging'
+export type ReportPath = 'sales' | 'sales-returns' | 'purchases' | 'purchase-returns' | 'trial-balance' | 'profit-and-loss' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'receivables-aging' | 'payables-aging'
 export type ReportFormat = 'xlsx' | 'pdf' | 'csv'
 export type ReportQuery = Record<string, string | undefined>
 

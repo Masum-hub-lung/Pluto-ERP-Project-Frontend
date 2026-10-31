@@ -70,6 +70,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
     ...(inv.status === 'posted' && can('sales.edit') ? [{ icon: 'arrow-up-right', label: 'E-mail', onClick: () => setSending(true), testId: 'send-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/sales/invoices/${inv.id}/edit`), testId: 'edit-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.create') ? [{ icon: 'check', label: 'Post', onClick: () => setPosting(true), testId: 'post-invoice', primary: true }] : []),
+    ...(inv.status === 'posted' && can('sales.create') ? [{ icon: 'undo-2', label: 'Return goods', onClick: () => navigate(`/sales/returns/new?invoice=${inv.id}`), testId: 'return-goods', primary: false }] : []),
     ...(inv.status === 'posted' && can('sales.edit') ? [{ icon: 'x', label: 'Cancel invoice', onClick: () => setCancelling(true), testId: 'cancel-invoice', primary: false }] : []),
   ]
 

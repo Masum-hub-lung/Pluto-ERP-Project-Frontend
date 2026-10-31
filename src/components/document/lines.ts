@@ -12,6 +12,8 @@ export interface LineValues {
   price: string
   discount_pct: string
   tax_rule_id: string
+  /** The purchase order line a bill line receives (F3 "From PO", P10.2-FE-01); kept through edits so posting updates the order. */
+  po_line_id?: number | null
 }
 
 export const emptyLine = (): LineValues => ({ product: null, description: '', quantity: '', price: '', discount_pct: '', tax_rule_id: '' })

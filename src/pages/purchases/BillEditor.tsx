@@ -22,6 +22,7 @@ import { DocumentHeader } from '../../components/document/DocumentHeader'
 import { LineGrid } from '../../components/document/LineGrid'
 import { completeIndexes, mapResults, remapLineErrors } from '../../components/document/lines'
 import { PartyPanel } from '../../components/document/PartyPanel'
+import { FromPoField, poToLines } from './FromPoField'
 import { PostDialog } from '../../components/document/PostDialog'
 import { TotalsPanel } from '../../components/document/TotalsPanel'
 import { useCalculate } from '../../components/document/useCalculate'
@@ -231,6 +232,13 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
             <Field label="Supplier's bill number" required error={errors.supplier_bill_no?.message} htmlFor="f-supplier-bill">
               <Input id="f-supplier-bill" mono {...register('supplier_bill_no')} invalid={!!errors.supplier_bill_no} placeholder="As printed on their bill" />
             </Field>
+            <FromPoField supplierId={values.party?.id ?? null} value={values.purchase_order_id ?? ''} onPick={(po) => {
+              setValue('purchase_order_id', po ? String(po.id) : '', { shouldDirty: true })
+              if (po) {
+                setValue('warehouse_id', String(po.warehouse_id), { shouldDirty: true })
+                setValue('lines', poToLines(po), { shouldDirty: true })
+              }
+            }} />
           </DocumentHeader>
         </div>
         {duplicateOf && (

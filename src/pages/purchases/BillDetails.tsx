@@ -65,6 +65,7 @@ function Details({ b }: { b: PurchaseBill }) {
   const actions = [
     ...(b.status === 'draft' && can('purchases.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/purchases/bills/${b.id}/edit`), testId: 'edit-bill' }] : []),
     ...(b.status === 'draft' && can('purchases.create') ? [{ icon: 'check', label: 'Post', onClick: () => setPosting(true), testId: 'post-bill' }] : []),
+    ...(b.status === 'posted' && can('purchases.create') ? [{ icon: 'undo-2', label: 'Return to supplier', onClick: () => navigate(`/purchases/returns/new?bill=${b.id}`), testId: 'return-goods' }] : []),
     ...(b.status === 'posted' && can('purchases.edit') ? [{ icon: 'x', label: 'Cancel bill', onClick: () => setCancelling(true), testId: 'cancel-bill' }] : []),
   ]
 
