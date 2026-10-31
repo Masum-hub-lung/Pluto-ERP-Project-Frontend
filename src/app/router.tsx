@@ -30,6 +30,15 @@ const WarehouseList = lazy(() => inventory().then((m) => ({ default: m.Warehouse
 const CategoryList = lazy(() => inventory().then((m) => ({ default: m.CategoryList })))
 const MovementList = lazy(() => inventory().then((m) => ({ default: m.MovementList })))
 const StockGroupList = lazy(() => inventory().then((m) => ({ default: m.StockGroupList })))
+const ProductDetails = lazy(() => inventory().then((m) => ({ default: m.ProductDetails })))
+const WarehouseDetails = lazy(() => inventory().then((m) => ({ default: m.WarehouseDetails })))
+const AdjustmentList = lazy(() => inventory().then((m) => ({ default: m.AdjustmentList })))
+const AdjustmentForm = lazy(() => inventory().then((m) => ({ default: m.AdjustmentForm })))
+const TransferList = lazy(() => inventory().then((m) => ({ default: m.TransferList })))
+const TransferForm = lazy(() => inventory().then((m) => ({ default: m.TransferForm })))
+const LowStock = lazy(() => inventory().then((m) => ({ default: m.LowStock })))
+const Valuation = lazy(() => inventory().then((m) => ({ default: m.Valuation })))
+const InventorySummary = lazy(() => inventory().then((m) => ({ default: m.InventorySummary })))
 const purchases = () => import('../pages/purchases')
 const BillList = lazy(() => purchases().then((m) => ({ default: m.BillList })))
 const BillDetails = lazy(() => purchases().then((m) => ({ default: m.BillDetails })))
@@ -50,6 +59,12 @@ const PartyStatement = lazy(() => partyAccounts().then((m) => ({ default: m.Part
 const banking = () => import('../pages/banking')
 const MoneyAccountList = lazy(() => banking().then((m) => ({ default: m.MoneyAccountList })))
 const MoneyAccountForm = lazy(() => banking().then((m) => ({ default: m.MoneyAccountForm })))
+const BankingOverview = lazy(() => banking().then((m) => ({ default: m.BankingOverview })))
+const AccountDetails = lazy(() => banking().then((m) => ({ default: m.AccountDetails })))
+const MoneyForm = lazy(() => banking().then((m) => ({ default: m.MoneyForm })))
+const MoneyBookPage = lazy(() => banking().then((m) => ({ default: m.MoneyBookPage })))
+const MoneyTransactions = lazy(() => banking().then((m) => ({ default: m.MoneyTransactions })))
+const Reconcile = lazy(() => banking().then((m) => ({ default: m.Reconcile })))
 const sales = () => import('../pages/sales')
 const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
 const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
@@ -141,11 +156,34 @@ export const router = createBrowserRouter([
       { path: 'inventory/products', handle: crumbs('Inventory', 'Products'), element: guarded('inventory.view', lazyPage(<ProductList />, 'list')) },
       { path: 'inventory/products/new', handle: crumbs('Inventory', 'New item'), element: guarded('inventory.create', lazyPage(<ProductForm mode="add" />, 'form')) },
       { path: 'inventory/products/:id/edit', handle: crumbs('Inventory', 'Edit item'), element: guarded('inventory.edit', lazyPage(<ProductForm mode="edit" />, 'form')) },
+      { path: 'inventory/products/:id', handle: crumbs('Inventory', 'Item'), element: guarded('inventory.view', lazyPage(<ProductDetails />, 'detail')) },
       { path: 'inventory/categories', handle: crumbs('Inventory', 'Categories'), element: guarded('inventory.view', lazyPage(<CategoryList />, 'list')) },
       { path: 'inventory/stock-groups', handle: crumbs('Inventory', 'Stock groups'), element: guarded('inventory.view', lazyPage(<StockGroupList />, 'list')) },
       { path: 'inventory/warehouses', handle: crumbs('Inventory', 'Warehouses'), element: guarded('inventory.view', lazyPage(<WarehouseList />, 'list')) },
+      { path: 'inventory/warehouses/:id', handle: crumbs('Inventory', 'Warehouse'), element: guarded('inventory.view', lazyPage(<WarehouseDetails />, 'detail')) },
+      // Inventory completion (P11): adjustments, transfers and the inventory reports.
+      { path: 'inventory/adjustments', handle: crumbs('Inventory', 'Adjustments'), element: guarded('inventory.view', lazyPage(<AdjustmentList />, 'list')) },
+      { path: 'inventory/adjustments/new', handle: crumbs('Inventory', 'New adjustment'), element: guarded('inventory.create', lazyPage(<AdjustmentForm key="new" mode="new" />, 'form')) },
+      { path: 'inventory/adjustments/:id', handle: crumbs('Inventory', 'Adjustment'), element: guarded('inventory.view', lazyPage(<AdjustmentForm mode="edit" />, 'form')) },
+      { path: 'inventory/transfers', handle: crumbs('Inventory', 'Transfers'), element: guarded('inventory.view', lazyPage(<TransferList />, 'list')) },
+      { path: 'inventory/transfers/new', handle: crumbs('Inventory', 'New transfer'), element: guarded('inventory.create', lazyPage(<TransferForm key="new" mode="new" />, 'form')) },
+      { path: 'inventory/transfers/:id', handle: crumbs('Inventory', 'Transfer'), element: guarded('inventory.view', lazyPage(<TransferForm mode="edit" />, 'form')) },
+      { path: 'inventory/low-stock', handle: crumbs('Inventory', 'Low stock'), element: guarded('inventory.view', lazyPage(<LowStock />, 'report')) },
+      { path: 'inventory/valuation', handle: crumbs('Inventory', 'Valuation'), element: guarded('inventory.view_costs', lazyPage(<Valuation />, 'report')) },
+      { path: 'inventory/summary', handle: crumbs('Inventory', 'Summary'), element: guarded('inventory.view', lazyPage(<InventorySummary />, 'report')) },
       { path: 'banking/accounts', handle: crumbs('Cash and bank', 'Accounts'), element: guarded('banking.view', lazyPage(<MoneyAccountList />, 'list')) },
       { path: 'banking/accounts/new', handle: crumbs('Cash and bank', 'Add account'), element: guarded('banking.create', lazyPage(<MoneyAccountForm />, 'form')) },
+      // Cash and bank (P12)
+      { path: 'banking', handle: crumbs('Cash and bank', 'Overview'), element: guarded('banking.view', lazyPage(<BankingOverview />, 'detail')) },
+      { path: 'banking/accounts/:id', handle: crumbs('Cash and bank', 'Account'), element: guarded('banking.view', lazyPage(<AccountDetails />, 'detail')) },
+      { path: 'banking/received', handle: crumbs('Cash and bank', 'Money received'), element: guarded('banking.create', lazyPage(<MoneyForm key="received" kind="received" />, 'form')) },
+      { path: 'banking/paid', handle: crumbs('Cash and bank', 'Money paid'), element: guarded('banking.create', lazyPage(<MoneyForm key="paid" kind="paid" />, 'form')) },
+      { path: 'banking/cash-transfer', handle: crumbs('Cash and bank', 'Cash transfer'), element: guarded('banking.create', lazyPage(<MoneyForm key="ct" kind="cash-transfer" />, 'form')) },
+      { path: 'banking/bank-transfer', handle: crumbs('Cash and bank', 'Bank transfer'), element: guarded('banking.create', lazyPage(<MoneyForm key="bt" kind="bank-transfer" />, 'form')) },
+      { path: 'banking/cash-book', handle: crumbs('Cash and bank', 'Cash book'), element: guarded('banking.view', lazyPage(<MoneyBookPage key="cash" kind="cash" />, 'report')) },
+      { path: 'banking/bank-book', handle: crumbs('Cash and bank', 'Bank book'), element: guarded('banking.view', lazyPage(<MoneyBookPage key="bank" kind="bank" />, 'report')) },
+      { path: 'banking/reconcile/:id', handle: crumbs('Cash and bank', 'Reconciliation'), element: guarded('banking.reconcile', lazyPage(<Reconcile />, 'detail')) },
+      { path: 'banking/transactions', handle: crumbs('Cash and bank', 'Transactions'), element: guarded('banking.view', lazyPage(<MoneyTransactions />, 'list')) },
       { path: 'sales/payments', handle: crumbs('Sales', 'Payments received'), element: guarded('sales.view', lazyPage(<ReceiptList />, 'list')) },
       { path: 'sales/payments/new', handle: crumbs('Sales', 'Customer payment'), element: guarded('sales.create', lazyPage(<ReceiptForm />, 'form')) },
       { path: 'sales/payments/:id', handle: crumbs('Sales', 'Payment'), element: guarded('sales.view', lazyPage(<ReceiptDetails />, 'detail')) },

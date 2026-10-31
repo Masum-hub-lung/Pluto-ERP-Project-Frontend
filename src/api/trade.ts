@@ -14,7 +14,7 @@ import type {
  */
 export type ListFilters = Record<string, string | number | undefined>
 
-type Resource = 'quotations' | 'purchase-orders' | 'sales-returns' | 'credit-notes' | 'purchase-returns' | 'debit-notes'
+type Resource = 'quotations' | 'purchase-orders' | 'sales-returns' | 'credit-notes' | 'purchase-returns' | 'debit-notes' | 'stock-adjustments' | 'stock-transfers'
 
 /** What else changes when a document of this kind posts, converts or cancels. */
 const MOVES: Record<Resource, string[]> = {
@@ -24,9 +24,12 @@ const MOVES: Record<Resource, string[]> = {
   'credit-notes': ['sales-returns', 'sales-invoices', 'parties', 'party-accounts', 'customer-receipts', 'money-accounts'],
   'purchase-returns': ['debit-notes', 'purchase-bills', 'products', 'warehouses', 'stock-movements', 'parties', 'party-accounts'],
   'debit-notes': ['purchase-returns', 'purchase-bills', 'parties', 'party-accounts'],
+  'stock-adjustments': ['products', 'warehouses', 'stock-movements', 'warehouse-stock', 'reports'],
+  'stock-transfers': ['products', 'warehouses', 'stock-movements', 'warehouse-stock', 'reports'],
 }
 
-function documentApi<T extends { id: number; version: number }, I>(resource: Resource) {
+/** `update`: PUT for trade documents, PATCH for the stock documents (05). */
+export function documentApi<T extends { id: number; version: number }, I>(resource: Resource, update: 'PUT' | 'PATCH' = 'PUT') {
   const all = (cid: number | null) => ['company', cid, resource] as const
 
   function useRefresh() {
@@ -67,7 +70,7 @@ function documentApi<T extends { id: number; version: number }, I>(resource: Res
       const refresh = useRefresh()
       return useMutation({
         mutationFn: async ({ input, version }: { input: I; version: number }) =>
-          (await api.request<{ data: T }>('PUT', `/${resource}/${id}`, { body: input, ifMatch: `W/"${version}"` })).data.data,
+          (await api.request<{ data: T }>(update, `/${resource}/${id}`, { body: input, ifMatch: `W/"${version}"` })).data.data,
         onSuccess: () => refresh(false),
       })
     },

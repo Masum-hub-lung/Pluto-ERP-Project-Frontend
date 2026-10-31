@@ -15,11 +15,15 @@ import { shortDate } from '../purchases/BillList'
  * ?product_id=). Cost and value show only with inventory.view_costs (the API omits them otherwise). The source
  * document links to its page where one is built.
  */
-const TYPES: Record<string, string> = {
+export const MOVEMENT_TYPES: Record<string, string> = {
   opening: 'Opening stock', purchase_in: 'Purchase', sale_out: 'Sale', sales_return_in: 'Sales return', purchase_return_out: 'Purchase return',
   adjustment_in: 'Adjustment in', adjustment_out: 'Adjustment out', transfer_out: 'Transfer out', transfer_in: 'Transfer in', landed_cost: 'Landed cost', reversal: 'Reversal',
 }
-const SOURCE_PATH: Record<string, (id: number) => string> = { purchase_bills: (id) => `/purchases/bills/${id}`, sales_invoices: (id) => `/sales/invoices/${id}` }
+export const SOURCE_PATH: Record<string, (id: number) => string> = {
+  purchase_bills: (id) => `/purchases/bills/${id}`, sales_invoices: (id) => `/sales/invoices/${id}`, sales_returns: (id) => `/sales/returns/${id}`,
+  purchase_returns: (id) => `/purchases/returns/${id}`, stock_adjustments: (id) => `/inventory/adjustments/${id}`, stock_transfers: (id) => `/inventory/transfers/${id}`,
+  products: (id) => `/inventory/products/${id}`,
+}
 const PER_PAGE = 50
 
 export function MovementList() {
@@ -38,7 +42,7 @@ export function MovementList() {
     date_from: from || undefined, date_to: to || undefined, sort, page, per_page: PER_PAGE,
   })
   const rows = (list.data?.data ?? []).map((m: StockMovement) => ({
-    id: m.id, date: shortDate(m.moved_on), product: m.product.name, warehouse: m.warehouse.name, type: TYPES[m.movement_type] ?? m.movement_type,
+    id: m.id, date: shortDate(m.moved_on), product: m.product.name, warehouse: m.warehouse.name, type: MOVEMENT_TYPES[m.movement_type] ?? m.movement_type,
     qin: m.quantity_in === '0.000' ? '' : m.quantity_in, qout: m.quantity_out === '0.000' ? '' : m.quantity_out, after: m.qty_balance_after,
     cost: m.unit_cost ?? '', value: m.value ?? '', m,
   }))
@@ -79,7 +83,7 @@ export function MovementList() {
           </div>
           <div style={{ width: 190 }}>
             <Select aria-label="Type" value={type} onChange={(e) => set({ movement_type: e.target.value || null })}
-              options={[{ value: '', label: 'All types' }, ...Object.entries(TYPES).map(([value, label]) => ({ value, label }))]} />
+              options={[{ value: '', label: 'All types' }, ...Object.entries(MOVEMENT_TYPES).map(([value, label]) => ({ value, label }))]} />
           </div>
         </>}
         filters={<>

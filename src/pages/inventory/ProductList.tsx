@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Product } from '../../api/contract.gen'
 import { useCategories, useProducts, useWarehouses } from '../../api/inventory'
@@ -7,6 +8,7 @@ import { formatTaka } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
 import { ListCard } from '../../components/ListCard'
 import { ProblemBanner } from '../../components/ProblemBanner'
+import { ImportDialog } from './ImportDialog'
 
 /**
  * D1 Product list (Inventory.dc.html D1; backlog P3.2-FE-05; pattern B1): search, type, category, warehouse and stock
@@ -63,6 +65,7 @@ export function ProductList() {
     { key: 'status', label: 'Stock', render: (v: Product['stock_status']) => <Badge tone={STATUS[v][1]} dot>{STATUS[v][0]}</Badge> },
   ]
   const meta = list.data?.meta
+  const [importing, setImporting] = useState(false)
   const filtered = q || type !== 'all' || stock !== 'all' || category || warehouse
   const newButton = (testId: string) => can('inventory.create')
     ? <Button variant="primary" icon="plus" onClick={() => navigate('/inventory/products/new')} data-testid={testId}>New item</Button> : undefined
@@ -71,11 +74,15 @@ export function ProductList() {
         action={<Button variant="secondary" onClick={() => { setSearch(''); set({ q: null, type: null, stock: null, category: null, warehouse: null }) }}>Clear filters</Button>} />
     : <EmptyState icon="package" title="No products or services yet" description="Add what you buy and sell. Stock quantities fill in as purchase bills post."
         action={newButton('empty-new-product')} />
-  const open = can('inventory.edit') ? (r: { id: number }) => navigate(`/inventory/products/${r.id}/edit`) : undefined
+  const open = (r: { id: number }) => navigate(`/inventory/products/${r.id}`) // D4 (P11.2-FE-01)
+  const edit = can('inventory.edit') ? (r: { id: number }) => navigate(`/inventory/products/${r.id}/edit`) : undefined
 
   return (
     <>
-      <PageHeader title="Products and services" description="Everything you buy and sell, with what is on hand today." actions={newButton('new-product')} />
+      <PageHeader title="Products and services" description="Everything you buy and sell, with what is on hand today."
+        actions={can('inventory.create') ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="secondary" icon="upload" onClick={() => setImporting(true)} data-testid="import-products">Import</Button>{newButton('new-product')}</div> : undefined} />
+      {importing && <ImportDialog onClose={() => setImporting(false)} />}
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <ListCard label="Products" meta={meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
         cards={{ columns, rows, loading: list.isPending, onOpen: open, mobileColumns: ['name', 'category', 'onHand', 'price'], badgeKey: 'status', empty }}
@@ -102,7 +109,7 @@ export function ProductList() {
         <DataTable caption="Products" columns={columns} rows={rows} loading={list.isPending} onRowClick={open}
           rowActions={(r) => <>
             <IconButton icon="history" label={`Movements of ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/inventory/movements?product_id=${r.id}`) }} />
-            {open && <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); open(r) }} />}
+            {edit && <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e) => { e.stopPropagation(); edit(r) }} />}
           </>} />
       </ListCard>
     </>
