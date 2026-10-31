@@ -21,11 +21,12 @@ const keys = {
   one: (cid: number | null, id: number) => ['company', cid, 'sales-invoices', id] as const,
 }
 
-export function useInvoices(f: InvoiceListFilters) {
+export function useInvoices(f: InvoiceListFilters, enabled = true) {
   return useQuery({
     queryKey: keys.list(api.getCompany(), f),
     queryFn: async ({ signal }) => (await api.request<{ data: SalesInvoice[]; meta: PageMeta }>('GET', '/sales-invoices', { query: { ...f }, signal })).data,
     placeholderData: keepPreviousData,
+    enabled,
   })
 }
 

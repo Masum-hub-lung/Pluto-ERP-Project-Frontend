@@ -14,15 +14,15 @@ export const NAV: NavSection[] = [
   {
     label: 'Operations',
     items: [
-      { ...page('Sales', '/sales', 'sales.view'), icon: 'receipt-text', children: [
-        page('Overview', '/sales', 'sales.view'), page('Invoices', '/sales/invoices', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view'),
-        page('Payments received', '/sales/payments', 'sales.view', true), page('Returns and credit notes', '/sales/returns', 'sales.view'),
-        page('Reports', '/reports/sales', 'reports.view'),
+      { ...page('Sales', '/sales', 'sales.view', true), icon: 'receipt-text', children: [
+        page('Overview', '/sales', 'sales.view', true), page('Invoices', '/sales/invoices', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view', true),
+        page('Payments received', '/sales/payments', 'sales.view', true), page('Returns and credit notes', '/sales/returns', 'sales.view', true),
+        page('Reports', '/reports/sales', 'reports.view', true),
       ] },
-      { ...page('Purchases', '/purchases', 'purchases.view'), icon: 'shopping-cart', children: [
-        page('Overview', '/purchases', 'purchases.view'), page('Bills', '/purchases/bills', 'purchases.view', true), page('Purchase orders', '/purchases/orders', 'purchases.view'),
-        page('Payments made', '/purchases/payments', 'purchases.view', true), page('Returns and debit notes', '/purchases/returns', 'purchases.view'),
-        page('Reports', '/reports/purchases', 'reports.view'),
+      { ...page('Purchases', '/purchases', 'purchases.view', true), icon: 'shopping-cart', children: [
+        page('Overview', '/purchases', 'purchases.view', true), page('Bills', '/purchases/bills', 'purchases.view', true), page('Purchase orders', '/purchases/orders', 'purchases.view', true),
+        page('Payments made', '/purchases/payments', 'purchases.view', true), page('Returns and debit notes', '/purchases/returns', 'purchases.view', true),
+        page('Reports', '/reports/purchases', 'reports.view', true),
       ] },
       { ...page('LC Management', '/lc', 'lc.view'), icon: 'file-text' },
       { ...page('Customers', '/customers', 'parties.view', true), icon: 'users', children: [
@@ -107,8 +107,8 @@ const LANDING = ['/dashboard', '/sales', '/inventory', '/purchases', '/banking',
 export function landingPath(can: Can, links: NavLink[] = allLinks()): string {
   const byPath = new Map(links.map((l) => [l.path, l]))
   const permitted = LANDING.map((p) => byPath.get(p)).filter((l): l is NavLink => !!l && allowed(can, l))
-  // Inventory is the Store keeper's home (R-35); roles that see parties keep Customers until Dashboard or Sales exist
-  // (Accounting and Reports too, so the Owner and Accountant still land on Customers now that they are built).
+  // Inventory is the Store keeper's home (R-35). Sales (built in P10) is home for the roles that see it; Accounting and
+  // Reports never are, so a role that sees parties but not Sales still lands on Customers.
   const home = permitted.find((l) => l.built && (!['/inventory', '/accounting', '/reports'].includes(l.path) || !can('parties.view')))
   return home?.path ?? (can('parties.view') ? '/customers' : permitted[0]?.path ?? '/settings/security')
 }

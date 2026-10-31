@@ -18,11 +18,12 @@ const keys = {
   one: (cid: number | null, id: number) => ['company', cid, 'purchase-bills', id] as const,
 }
 
-export function useBills(f: BillListFilters) {
+export function useBills(f: BillListFilters, enabled = true) {
   return useQuery({
     queryKey: keys.list(api.getCompany(), f),
     queryFn: async ({ signal }) => (await api.request<{ data: PurchaseBill[]; meta: PageMeta }>('GET', '/purchase-bills', { query: { ...f }, signal })).data,
     placeholderData: keepPreviousData,
+    enabled,
   })
 }
 

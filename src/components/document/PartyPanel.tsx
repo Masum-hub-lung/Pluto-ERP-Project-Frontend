@@ -8,8 +8,8 @@ import { PartyPicker } from '../pickers/PartyPicker'
  * party's balance, overdue amount and credit limit, and — once calculated — the balance after this document and
  * the credit/overdue warnings. All figures come from the API (party resource, calculate response).
  */
-export function PartyPanel({ type, party, onChange, calc, invalid, error, disabled }: {
-  type: 'customer' | 'supplier'; party: Party | null; onChange: (p: Party | null) => void; calc?: DocumentCalculation | null
+export function PartyPanel({ type, party, onChange, calc, invalid, error, disabled, prospects }: {
+  type: 'customer' | 'supplier'; prospects?: boolean; party: Party | null; onChange: (p: Party | null) => void; calc?: DocumentCalculation | null
   invalid?: boolean; error?: string; disabled?: boolean
 }) {
   const { Field, Badge } = ds()
@@ -25,7 +25,7 @@ export function PartyPanel({ type, party, onChange, calc, invalid, error, disabl
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }} data-testid="party-panel">
       <Field label={label} required error={error} htmlFor="doc-party">
-        <PartyPicker id="doc-party" type={type} value={party} onChange={onChange} invalid={invalid} disabled={disabled} aria-label={label} />
+        <PartyPicker id="doc-party" type={type} value={party} onChange={onChange} invalid={invalid} disabled={disabled} prospects={prospects} aria-label={label} />
       </Field>
       {party && (
         <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>

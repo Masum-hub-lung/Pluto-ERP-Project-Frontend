@@ -31,8 +31,10 @@ export const REPORT_SECTIONS: Array<{ title: string; reports: ReportLink[] }> = 
     { label: 'Supplier outstanding', description: 'What you owe each supplier.', path: '/suppliers/outstanding', permission: 'parties.view', module: 'Suppliers', built: true },
   ] },
   { title: 'Operations', reports: [
-    { label: 'Sales report', description: 'Sales by customer, category or month.', path: '/reports/sales', permission: 'reports.view', module: 'Sales', built: false },
-    { label: 'Purchase report', description: 'Purchases by supplier, category or month.', path: '/reports/purchases', permission: 'reports.view', module: 'Purchases', built: false },
+    { label: 'Sales report', description: 'Sales by customer, category or month.', path: '/reports/sales', permission: 'reports.view', module: 'Sales', built: true },
+    { label: 'Sales return report', description: 'Every return from customers and its credit note.', path: '/reports/sales-returns', permission: 'reports.view', module: 'Sales', built: true },
+    { label: 'Purchase report', description: 'Purchases by supplier, category or month.', path: '/reports/purchases', permission: 'reports.view', module: 'Purchases', built: true },
+    { label: 'Purchase return report', description: 'Every return to suppliers and its debit note.', path: '/reports/purchase-returns', permission: 'reports.view', module: 'Purchases', built: true },
     { label: 'Income report', description: 'Income by category and month.', path: '/income/report', permission: 'reports.view', module: 'Income', built: false },
     { label: 'Expense report', description: 'Expenses by category and month.', path: '/expenses/report', permission: 'reports.view', module: 'Expenses', built: false },
     { label: 'Stock valuation', description: 'Stock value at weighted average cost.', path: '/inventory/valuation', permission: 'inventory.view_costs', module: 'Inventory', built: false },

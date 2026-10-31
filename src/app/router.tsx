@@ -37,6 +37,11 @@ const BillEditor = lazy(() => purchases().then((m) => ({ default: m.BillEditor }
 const PaymentForm = lazy(() => purchases().then((m) => ({ default: m.PaymentForm })))
 const PaymentList = lazy(() => purchases().then((m) => ({ default: m.PaymentList })))
 const PaymentDetails = lazy(() => purchases().then((m) => ({ default: m.PaymentDetails })))
+const PurchaseOrderList = lazy(() => purchases().then((m) => ({ default: m.PurchaseOrderList })))
+const PurchaseOrderEditor = lazy(() => purchases().then((m) => ({ default: m.PurchaseOrderEditor })))
+const PurchaseReturnsList = lazy(() => purchases().then((m) => ({ default: m.ReturnsList })))
+const PurchaseReturnForm = lazy(() => purchases().then((m) => ({ default: m.ReturnForm })))
+const DebitNoteForm = lazy(() => purchases().then((m) => ({ default: m.NoteForm })))
 const partyAccounts = () => import('../pages/partyAccounts')
 const PartyLedger = lazy(() => partyAccounts().then((m) => ({ default: m.PartyLedger })))
 const PartyHistory = lazy(() => partyAccounts().then((m) => ({ default: m.PartyHistory })))
@@ -53,6 +58,11 @@ const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePrevi
 const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm })))
 const ReceiptList = lazy(() => sales().then((m) => ({ default: m.ReceiptList })))
 const ReceiptDetails = lazy(() => sales().then((m) => ({ default: m.ReceiptDetails })))
+const QuotationList = lazy(() => sales().then((m) => ({ default: m.QuotationList })))
+const QuotationEditor = lazy(() => sales().then((m) => ({ default: m.QuotationEditor })))
+const SalesReturnsList = lazy(() => sales().then((m) => ({ default: m.ReturnsList })))
+const SalesReturnForm = lazy(() => sales().then((m) => ({ default: m.ReturnForm })))
+const CreditNoteForm = lazy(() => sales().then((m) => ({ default: m.NoteForm })))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 const FinancialYears = lazy(() => import('../pages/settings').then((m) => ({ default: m.FinancialYears })))
 const AccountingDefaults = lazy(() => import('../pages/settings').then((m) => ({ default: m.AccountingDefaults })))
@@ -75,6 +85,9 @@ const BalanceSheet = lazy(() => reports().then((m) => ({ default: m.BalanceSheet
 const CashFlow = lazy(() => reports().then((m) => ({ default: m.CashFlow })))
 const GeneralLedger = lazy(() => reports().then((m) => ({ default: m.GeneralLedger })))
 const Aging = lazy(() => reports().then((m) => ({ default: m.Aging })))
+const TradeReport = lazy(() => reports().then((m) => ({ default: m.TradeReport })))
+const ReturnReport = lazy(() => reports().then((m) => ({ default: m.ReturnReport })))
+const TradeOverview = lazy(() => reports().then((m) => ({ default: m.TradeOverview })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
 const DocumentDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/DocumentDemo').then((m) => ({ default: m.DocumentDemo }))) : null
@@ -136,11 +149,30 @@ export const router = createBrowserRouter([
       { path: 'sales/payments', handle: crumbs('Sales', 'Payments received'), element: guarded('sales.view', lazyPage(<ReceiptList />, 'list')) },
       { path: 'sales/payments/new', handle: crumbs('Sales', 'Customer payment'), element: guarded('sales.create', lazyPage(<ReceiptForm />, 'form')) },
       { path: 'sales/payments/:id', handle: crumbs('Sales', 'Payment'), element: guarded('sales.view', lazyPage(<ReceiptDetails />, 'detail')) },
+      // Trade completion (P10): overviews, quotations, returns and notes.
+      { path: 'sales', handle: crumbs('Sales', 'Overview'), element: guarded('sales.view', lazyPage(<TradeOverview key="sales" side="sales" />, 'detail')) },
+      { path: 'sales/quotations', handle: crumbs('Sales', 'Quotations'), element: guarded('sales.view', lazyPage(<QuotationList />, 'list')) },
+      { path: 'sales/quotations/new', handle: crumbs('Sales', 'New quotation'), element: guarded('sales.create', lazyPage(<QuotationEditor mode="new" />, 'form')) },
+      { path: 'sales/quotations/:id', handle: crumbs('Sales', 'Quotation'), element: guarded('sales.view', lazyPage(<QuotationEditor mode="edit" />, 'form')) },
+      { path: 'sales/returns', handle: crumbs('Sales', 'Returns and credit notes'), element: guarded('sales.view', lazyPage(<SalesReturnsList key="sales" side="sales" />, 'list')) },
+      { path: 'sales/returns/new', handle: crumbs('Sales', 'New return'), element: guarded('sales.create', lazyPage(<SalesReturnForm key="new" side="sales" mode="new" />, 'form')) },
+      { path: 'sales/returns/:id', handle: crumbs('Sales', 'Return'), element: guarded('sales.view', lazyPage(<SalesReturnForm side="sales" mode="edit" />, 'form')) },
+      { path: 'sales/credit-notes/new', handle: crumbs('Sales', 'New credit note'), element: guarded('sales.create', lazyPage(<CreditNoteForm key="new" side="sales" mode="new" />, 'form')) },
+      { path: 'sales/credit-notes/:id', handle: crumbs('Sales', 'Credit note'), element: guarded('sales.view', lazyPage(<CreditNoteForm side="sales" mode="edit" />, 'form')) },
       { path: 'sales/invoices', handle: crumbs('Sales', 'Invoices'), element: guarded('sales.view', lazyPage(<InvoiceList />, 'list')) },
       { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },
       { path: 'sales/invoices/:id', handle: crumbs('Sales', 'Invoice'), element: guarded('sales.view', lazyPage(<InvoiceDetails />, 'detail')) },
       { path: 'sales/invoices/:id/edit', handle: crumbs('Sales', 'Edit invoice'), element: guarded('sales.edit', lazyPage(<InvoiceEditor mode="edit" />, 'form')) },
       { path: 'sales/invoices/:id/preview', handle: crumbs('Sales', 'Invoice preview'), element: guarded('sales.view', lazyPage(<InvoicePreview />, 'detail')) },
+      { path: 'purchases', handle: crumbs('Purchases', 'Overview'), element: guarded('purchases.view', lazyPage(<TradeOverview key="purchases" side="purchases" />, 'detail')) },
+      { path: 'purchases/orders', handle: crumbs('Purchases', 'Purchase orders'), element: guarded('purchases.view', lazyPage(<PurchaseOrderList />, 'list')) },
+      { path: 'purchases/orders/new', handle: crumbs('Purchases', 'New purchase order'), element: guarded('purchases.create', lazyPage(<PurchaseOrderEditor mode="new" />, 'form')) },
+      { path: 'purchases/orders/:id', handle: crumbs('Purchases', 'Purchase order'), element: guarded('purchases.view', lazyPage(<PurchaseOrderEditor mode="edit" />, 'form')) },
+      { path: 'purchases/returns', handle: crumbs('Purchases', 'Returns and debit notes'), element: guarded('purchases.view', lazyPage(<PurchaseReturnsList key="purchases" side="purchases" />, 'list')) },
+      { path: 'purchases/returns/new', handle: crumbs('Purchases', 'New return'), element: guarded('purchases.create', lazyPage(<PurchaseReturnForm key="new" side="purchases" mode="new" />, 'form')) },
+      { path: 'purchases/returns/:id', handle: crumbs('Purchases', 'Return'), element: guarded('purchases.view', lazyPage(<PurchaseReturnForm side="purchases" mode="edit" />, 'form')) },
+      { path: 'purchases/debit-notes/new', handle: crumbs('Purchases', 'New debit note'), element: guarded('purchases.create', lazyPage(<DebitNoteForm key="new" side="purchases" mode="new" />, 'form')) },
+      { path: 'purchases/debit-notes/:id', handle: crumbs('Purchases', 'Debit note'), element: guarded('purchases.view', lazyPage(<DebitNoteForm side="purchases" mode="edit" />, 'form')) },
       { path: 'purchases/bills', handle: crumbs('Purchases', 'Bills'), element: guarded('purchases.view', lazyPage(<BillList />, 'list')) },
       { path: 'purchases/bills/new', handle: crumbs('Purchases', 'New bill'), element: guarded('purchases.create', lazyPage(<BillEditor mode="new" />, 'form')) },
       { path: 'purchases/bills/:id', handle: crumbs('Purchases', 'Bill'), element: guarded('purchases.view', lazyPage(<BillDetails />, 'detail')) },
@@ -175,6 +207,10 @@ export const router = createBrowserRouter([
       { path: 'reports/general-ledger', handle: crumbs('Reports', 'General ledger'), element: guarded('reports.financial', lazyPage(<GeneralLedger />, 'report')) },
       { path: 'reports/receivables-aging', handle: crumbs('Reports', 'Receivables aging'), element: guarded('reports.financial', lazyPage(<Aging key="customer" type="customer" />, 'report')) },
       { path: 'reports/payables-aging', handle: crumbs('Reports', 'Payables aging'), element: guarded('reports.financial', lazyPage(<Aging key="supplier" type="supplier" />, 'report')) },
+      { path: 'reports/sales', handle: crumbs('Reports', 'Sales report'), element: guarded('reports.view', lazyPage(<TradeReport key="sales" side="sales" />, 'report')) },
+      { path: 'reports/sales-returns', handle: crumbs('Reports', 'Sales return report'), element: guarded('reports.view', lazyPage(<ReturnReport key="sales" side="sales" />, 'report')) },
+      { path: 'reports/purchases', handle: crumbs('Reports', 'Purchase report'), element: guarded('reports.view', lazyPage(<TradeReport key="purchases" side="purchases" />, 'report')) },
+      { path: 'reports/purchase-returns', handle: crumbs('Reports', 'Purchase return report'), element: guarded('reports.view', lazyPage(<ReturnReport key="purchases" side="purchases" />, 'report')) },
       { path: 'not-in-release', handle: crumbs('Pluto'), element: <NotInRelease /> },
       // Development-only demo of the async pickers (P1.2-FE-07); not part of production builds.
       ...(PickersDemo ? [{ path: 'dev/pickers', handle: crumbs('Development', 'Pickers'), element: lazyPage(<PickersDemo />, 'form') }] : []),
