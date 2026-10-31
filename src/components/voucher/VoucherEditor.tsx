@@ -32,7 +32,8 @@ const HINTS = {
   contra: 'Money moved between your own cash and bank accounts.',
 } as const
 
-export function VoucherEditor({ initial, voucher }: { initial: VoucherFormState; voucher?: Voucher }) {
+/** `heading`: the page's own title when a cash and bank page (G6–G9) uses the editor. */
+export function VoucherEditor({ initial, voucher, heading }: { initial: VoucherFormState; voucher?: Voucher; heading?: { eyebrow: string; title: string; description: string } }) {
   const { PageHeader, Card, Field, Input, Select, Button, IconButton, Banner } = ds()
   const navigate = useNavigate()
   const toast = useToast()
@@ -102,7 +103,7 @@ export function VoucherEditor({ initial, voucher }: { initial: VoucherFormState;
 
   return (
     <form onSubmit={(e) => e.preventDefault()} noValidate data-testid="voucher-editor">
-      <PageHeader eyebrow={voucher ? `Edit ${voucher.voucher_number}` : 'New voucher'} title={TITLES[type]} description={HINTS[type]} />
+      <PageHeader eyebrow={voucher ? `Edit ${voucher.voucher_number}` : heading?.eyebrow ?? 'New voucher'} title={heading?.title ?? TITLES[type]} description={heading?.description ?? HINTS[type]} />
       {conflict ? <ConflictBanner onReload={() => window.location.reload()} /> : <ProblemBanner error={error} />}
       {voucher?.status === 'rejected' && voucher.approval?.comment && <Banner tone="warning" title="Rejected">{voucher.approval.comment}</Banner>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>

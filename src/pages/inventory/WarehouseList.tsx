@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ApiError } from '../../api/client'
@@ -18,14 +19,15 @@ import { ResponsiveDialog } from '../../components/ResponsiveDialog'
 
 /**
  * D7 Warehouse list (Inv-Warehouses.dc.html; backlog P3.2-FE-02): a table of warehouses with their inventory ledger,
- * items and status; "Add warehouse" and row click (until D8 arrives in P11) open the add/edit dialog.
+ * items and status; a row opens D8 (P11.2-FE-02), the pencil and "Add warehouse" open the add/edit dialog.
  */
 const STATUS_LABEL: Record<Warehouse['status'], string> = { active: 'Active', planned: 'Planned', inactive: 'Inactive' }
 const STATUS_TONE: Record<Warehouse['status'], 'positive' | 'info' | 'neutral'> = { active: 'positive', planned: 'info', inactive: 'neutral' }
 
 export function WarehouseList() {
-  const { PageHeader, Button, DataTable, EmptyState, Badge } = ds()
+  const { PageHeader, Button, DataTable, EmptyState, Badge, IconButton } = ds()
   const { can } = useSession()
+  const navigate = useNavigate()
   const list = useWarehouses()
   const branches = useBranches()
   const ledgers = useInventoryLedgers(can('accounting.view'))
@@ -50,7 +52,7 @@ export function WarehouseList() {
     { key: 'below', label: 'Below reorder', align: 'right' as const },
     { key: 'status', label: 'Status', render: (v: Warehouse['status']) => <Badge tone={STATUS_TONE[v]} dot>{STATUS_LABEL[v]}</Badge> },
   ]
-  const open = canEdit ? (r: { w: Warehouse }) => setEditing(r.w) : undefined
+  const open = (r: { id: number }) => navigate(`/inventory/warehouses/${r.id}`)
   const addButton = (testId: string) => can('inventory.create')
     ? <Button variant="primary" icon="plus" onClick={() => setEditing('new')} data-testid={testId}>Add warehouse</Button> : undefined
   const add = addButton('new-warehouse')
@@ -62,7 +64,8 @@ export function WarehouseList() {
       <PageHeader title="Warehouses" description="Where your stock is kept. Quantities fill in as purchase bills post." actions={add} />
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <ListCard label="Warehouses" cards={{ columns, rows, loading: list.isPending, onOpen: open, mobileColumns: ['name', 'branch', 'items'], badgeKey: 'status', empty }}>
-        <DataTable caption="Warehouses" columns={columns} rows={rows} loading={list.isPending} onRowClick={open} />
+        <DataTable caption="Warehouses" columns={columns} rows={rows} loading={list.isPending} onRowClick={open}
+          rowActions={canEdit ? (r: { w: Warehouse; name: string }) => <IconButton icon="pencil" label={`Edit ${r.name}`} size="sm" onClick={(e: { stopPropagation: () => void }) => { e.stopPropagation(); setEditing(r.w) }} /> : undefined} />
       </ListCard>
       {editing && <WarehouseDialog warehouse={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </>
@@ -71,7 +74,7 @@ export function WarehouseList() {
 
 const FIELDS = ['name', 'code', 'branch_id', 'address', 'phone', 'status', 'opens_on', 'is_default_for_sales'] as const
 
-function WarehouseDialog({ warehouse, onClose }: { warehouse: Warehouse | null; onClose: () => void }) {
+export function WarehouseDialog({ warehouse, onClose }: { warehouse: Warehouse | null; onClose: () => void }) {
   const { Field, Input, Select, Button, Switch } = ds()
   const toast = useToast()
   const branches = useBranches()

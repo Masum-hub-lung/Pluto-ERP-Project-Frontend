@@ -131,8 +131,10 @@ export class ApiClient {
     if ((opts.company ?? true) && this.companyId !== null) headers['X-Company-Id'] = String(this.companyId)
     if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
     if (opts.ifMatch) headers['X-If-Match'] = opts.ifMatch
-    let body: string | undefined
-    if (opts.body !== undefined) {
+    let body: string | FormData | undefined
+    if (opts.body instanceof FormData) {
+      body = opts.body // multipart upload: the browser sets Content-Type with the boundary
+    } else if (opts.body !== undefined) {
       headers['Content-Type'] = 'application/json'
       body = JSON.stringify(opts.body)
     }

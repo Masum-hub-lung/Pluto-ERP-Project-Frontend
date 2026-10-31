@@ -34,19 +34,22 @@ export const NAV: NavSection[] = [
         page('Outstanding', '/suppliers/outstanding', 'parties.view', true),
       ] },
       { ...page('Inventory', '/inventory', 'inventory.view', true), icon: 'package', children: [
+        page('Summary', '/inventory/summary', 'inventory.view', true),
         page('Products', '/inventory/products', 'inventory.view', true), page('Categories', '/inventory/categories', 'inventory.view', true),
         page('Stock groups', '/inventory/stock-groups', 'inventory.view', true), page('Warehouses', '/inventory/warehouses', 'inventory.view', true),
-        page('Movements', '/inventory/movements', 'inventory.view', true), page('Adjustments', '/inventory/adjustments', 'inventory.view'),
-        page('Transfers', '/inventory/transfers', 'inventory.view'), page('Low stock', '/inventory/low-stock', 'inventory.view'),
-        page('Valuation', '/inventory/valuation', 'inventory.view'),
+        page('Movements', '/inventory/movements', 'inventory.view', true), page('Adjustments', '/inventory/adjustments', 'inventory.view', true),
+        page('Transfers', '/inventory/transfers', 'inventory.view', true), page('Low stock', '/inventory/low-stock', 'inventory.view', true),
+        page('Valuation', '/inventory/valuation', 'inventory.view_costs', true),
       ] },
     ],
   },
   {
     label: 'Money',
     items: [
-      { ...page('Cash and bank', '/banking', 'banking.view'), icon: 'landmark', children: [
-        page('Overview', '/banking', 'banking.view'), page('Accounts', '/banking/accounts', 'banking.view', true),
+      { ...page('Cash and bank', '/banking', 'banking.view', true), icon: 'landmark', children: [
+        page('Overview', '/banking', 'banking.view', true), page('Accounts', '/banking/accounts', 'banking.view', true),
+        page('Transactions', '/banking/transactions', 'banking.view', true), page('Cash book', '/banking/cash-book', 'banking.view', true),
+        page('Bank book', '/banking/bank-book', 'banking.view', true),
       ] },
       { ...page('Income', '/income', 'banking.view'), icon: 'hand-coins' },
       { ...page('Expenses', '/expenses', 'banking.view'), icon: 'banknote' },

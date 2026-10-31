@@ -10,7 +10,7 @@ import { ProblemBanner } from '../ProblemBanner'
  */
 const TONES: Record<string, 'neutral' | 'info' | 'positive' | 'warning' | 'negative' | 'accent'> = {
   draft: 'neutral', sent: 'info', accepted: 'positive', declined: 'negative', expired: 'warning', converted: 'accent',
-  partly_received: 'warning', received: 'positive', closed: 'neutral', cancelled: 'negative', posted: 'positive',
+  partly_received: 'warning', received: 'positive', closed: 'neutral', cancelled: 'negative', posted: 'positive', dispatched: 'info', reversed: 'warning',
 }
 
 export const statusLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')

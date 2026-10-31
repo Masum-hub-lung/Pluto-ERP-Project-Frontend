@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { PageMeta } from '../../api/contract.gen'
+import { useWarehouses } from '../../api/inventory'
 import { useParty } from '../../api/parties'
 import { ds, type DataColumn } from '../../ds'
 import { useListParams } from '../../lib/useListParams'
@@ -17,7 +18,9 @@ export interface DocListConfig<T> {
   title: string
   description: string
   label: string
-  partyType: 'customer' | 'supplier'
+  /** Party filter (trade documents); stock documents filter by warehouse instead. */
+  partyType?: 'customer' | 'supplier'
+  warehouseFilter?: boolean
   tabs: { value: string; label: string }[]
   /** Extra filters per tab (e.g. status). */
   tabFilters?: Record<string, Record<string, string>>
@@ -37,7 +40,7 @@ export interface DocListConfig<T> {
 }
 
 export function DocumentList<T>({ cfg }: { cfg: DocListConfig<T> }) {
-  const { PageHeader, Button, Input, Tabs, DataTable, EmptyState, Field } = ds()
+  const { PageHeader, Button, Input, Tabs, DataTable, EmptyState, Field, Select } = ds()
   const navigate = useNavigate()
   const { get, set, search, setSearch, page } = useListParams()
   const tab = get('tab', 'all')
@@ -45,11 +48,13 @@ export function DocumentList<T>({ cfg }: { cfg: DocListConfig<T> }) {
   const partyId = Number(get('party_id')) || 0
   const from = get('date_from'), to = get('date_to')
   const party = useParty(partyId)
-  const list = cfg.useList({ ...(cfg.tabFilters?.[tab] ?? (tab === 'all' ? {} : { status: tab })), q: q || undefined, party_id: partyId || undefined,
+  const warehouseId = Number(get('warehouse_id')) || 0
+  const warehouses = useWarehouses()
+  const list = cfg.useList({ ...(cfg.tabFilters?.[tab] ?? (tab === 'all' ? {} : { status: tab })), q: q || undefined, party_id: partyId || undefined, warehouse_id: warehouseId || undefined,
     date_from: from || undefined, date_to: to || undefined, page, per_page: 25 })
   const rows = (list.data?.data ?? []).map(cfg.toRow)
-  const filtered = !!(q || tab !== 'all' || partyId || from || to)
-  const clear = () => { setSearch(''); set({ q: null, tab: null, party_id: null, date_from: null, date_to: null }) }
+  const filtered = !!(q || tab !== 'all' || partyId || warehouseId || from || to)
+  const clear = () => { setSearch(''); set({ q: null, tab: null, party_id: null, warehouse_id: null, date_from: null, date_to: null }) }
   const create = cfg.newAction ? () => navigate(cfg.newAction!.path) : undefined
   const empty = filtered
     ? <EmptyState icon="search" title={`Nothing matches${q ? ` “${q}”` : ' these filters'}`} description="Check the spelling or clear the filters."
@@ -72,10 +77,18 @@ export function DocumentList<T>({ cfg }: { cfg: DocListConfig<T> }) {
           <div style={{ flex: '1 1 260px', maxWidth: 360 }}>
             <Input icon="search" placeholder={cfg.searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search" />
           </div>
-          <div style={{ flex: '1 1 240px', maxWidth: 320 }}>
-            <PartyPicker type={cfg.partyType} value={partyId ? party.data?.party ?? null : null} onChange={(p) => set({ party_id: p ? String(p.id) : null })}
-              aria-label={cfg.partyType === 'customer' ? 'Customer' : 'Supplier'} />
-          </div>
+          {cfg.partyType && (
+            <div style={{ flex: '1 1 240px', maxWidth: 320 }}>
+              <PartyPicker type={cfg.partyType} value={partyId ? party.data?.party ?? null : null} onChange={(p) => set({ party_id: p ? String(p.id) : null })}
+                aria-label={cfg.partyType === 'customer' ? 'Customer' : 'Supplier'} />
+            </div>
+          )}
+          {cfg.warehouseFilter && (
+            <div style={{ flex: '1 1 200px', maxWidth: 260 }}>
+              <Select aria-label="Warehouse" value={warehouseId ? String(warehouseId) : ''} onChange={(e) => set({ warehouse_id: e.target.value || null })}
+                options={[{ value: '', label: 'All warehouses' }, ...(warehouses.data ?? []).map((w) => ({ value: String(w.id), label: w.name }))]} />
+            </div>
+          )}
         </>}
         filters={<>
           <Field label={cfg.dateLabels?.[0] ?? 'From'} htmlFor="doc-from"><Input id="doc-from" type="date" value={from} onChange={(e) => set({ date_from: e.target.value || null })} /></Field>

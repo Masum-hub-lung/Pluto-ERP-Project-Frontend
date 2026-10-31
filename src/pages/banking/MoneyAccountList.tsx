@@ -36,6 +36,7 @@ export function MoneyAccountList() {
     { key: 'balance', label: 'Book balance (৳)', align: 'right', render: (v: string) => (v ? <span className="lf-num">{formatTaka(v)}</span> : '') },
   ]
   const add = can('banking.create') ? () => navigate('/banking/accounts/new') : undefined
+  const open = (r: { id: number }) => navigate(`/banking/accounts/${r.id}`) // G2 / G5 (P12)
   const empty = <EmptyState icon="landmark" title="No money accounts yet" description="Add your cash box and bank accounts. Receipts and payments go into them, and each gets its own ledger."
     action={add ? <Button variant="primary" icon="plus" onClick={add}>Add account</Button> : undefined} />
 
@@ -45,8 +46,8 @@ export function MoneyAccountList() {
         actions={add ? <Button variant="primary" icon="plus" onClick={add} data-testid="add-account">Add account</Button> : undefined} />
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <ListCard label="Money accounts" meta={undefined}
-        cards={{ columns, rows, loading: list.isPending, mobileColumns: ['name', 'type', 'number', 'balance'], badgeKey: 'status', empty }}>
-        <DataTable caption="Money accounts" columns={columns} rows={rows} loading={list.isPending} emptyState={empty} />
+        cards={{ columns, rows, loading: list.isPending, onOpen: open, mobileColumns: ['name', 'type', 'number', 'balance'], badgeKey: 'status', empty }}>
+        <DataTable caption="Money accounts" columns={columns} rows={rows} loading={list.isPending} emptyState={empty} onRowClick={open} />
       </ListCard>
     </>
   )
