@@ -65,6 +65,13 @@ const MoneyForm = lazy(() => banking().then((m) => ({ default: m.MoneyForm })))
 const MoneyBookPage = lazy(() => banking().then((m) => ({ default: m.MoneyBookPage })))
 const MoneyTransactions = lazy(() => banking().then((m) => ({ default: m.MoneyTransactions })))
 const Reconcile = lazy(() => banking().then((m) => ({ default: m.Reconcile })))
+const incomeExpense = () => import('../pages/incomeExpense')
+const IeOverview = lazy(() => incomeExpense().then((m) => ({ default: m.IeOverview })))
+const IeList = lazy(() => incomeExpense().then((m) => ({ default: m.IeList })))
+const IeForm = lazy(() => incomeExpense().then((m) => ({ default: m.IeForm })))
+const IeCategories = lazy(() => incomeExpense().then((m) => ({ default: m.IeCategories })))
+const IeReport = lazy(() => incomeExpense().then((m) => ({ default: m.IeReport })))
+const RecurringList = lazy(() => incomeExpense().then((m) => ({ default: m.RecurringList })))
 const sales = () => import('../pages/sales')
 const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
 const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
@@ -183,6 +190,17 @@ export const router = createBrowserRouter([
       { path: 'banking/cash-book', handle: crumbs('Cash and bank', 'Cash book'), element: guarded('banking.view', lazyPage(<MoneyBookPage key="cash" kind="cash" />, 'report')) },
       { path: 'banking/bank-book', handle: crumbs('Cash and bank', 'Bank book'), element: guarded('banking.view', lazyPage(<MoneyBookPage key="bank" kind="bank" />, 'report')) },
       { path: 'banking/reconcile/:id', handle: crumbs('Cash and bank', 'Reconciliation'), element: guarded('banking.reconcile', lazyPage(<Reconcile />, 'detail')) },
+      { path: 'income', handle: crumbs('Income', 'Overview'), element: guarded('banking.view', lazyPage(<IeOverview key="income" kind="income" />, 'detail')) },
+      { path: 'income/list', handle: crumbs('Income', 'Transactions'), element: guarded('banking.view', lazyPage(<IeList key="income" kind="income" />, 'list')) },
+      { path: 'income/new', handle: crumbs('Income', 'Add income'), element: guarded('banking.create', lazyPage(<IeForm key="income" kind="income" />, 'form')) },
+      { path: 'income/categories', handle: crumbs('Income', 'Categories'), element: guarded('banking.view', lazyPage(<IeCategories key="income" kind="income" />, 'list')) },
+      { path: 'income/report', handle: crumbs('Income', 'Report'), element: guarded('reports.financial', lazyPage(<IeReport key="income" kind="income" />, 'report')) },
+      { path: 'expenses', handle: crumbs('Expenses', 'Overview'), element: guarded('banking.view', lazyPage(<IeOverview key="expense" kind="expense" />, 'detail')) },
+      { path: 'expenses/list', handle: crumbs('Expenses', 'Transactions'), element: guarded('banking.view', lazyPage(<IeList key="expense" kind="expense" />, 'list')) },
+      { path: 'expenses/new', handle: crumbs('Expenses', 'Add expense'), element: guarded('banking.create', lazyPage(<IeForm key="expense" kind="expense" />, 'form')) },
+      { path: 'expenses/categories', handle: crumbs('Expenses', 'Categories'), element: guarded('banking.view', lazyPage(<IeCategories key="expense" kind="expense" />, 'list')) },
+      { path: 'expenses/report', handle: crumbs('Expenses', 'Report'), element: guarded('reports.financial', lazyPage(<IeReport key="expense" kind="expense" />, 'report')) },
+      { path: 'expenses/recurring', handle: crumbs('Expenses', 'Recurring entries'), element: guarded('banking.view', lazyPage(<RecurringList />, 'list')) },
       { path: 'banking/transactions', handle: crumbs('Cash and bank', 'Transactions'), element: guarded('banking.view', lazyPage(<MoneyTransactions />, 'list')) },
       { path: 'sales/payments', handle: crumbs('Sales', 'Payments received'), element: guarded('sales.view', lazyPage(<ReceiptList />, 'list')) },
       { path: 'sales/payments/new', handle: crumbs('Sales', 'Customer payment'), element: guarded('sales.create', lazyPage(<ReceiptForm />, 'form')) },
