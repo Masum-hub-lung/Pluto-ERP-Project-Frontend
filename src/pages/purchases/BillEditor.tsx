@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { api, ApiError } from '../../api/client'
 import type { Party, PurchaseBill } from '../../api/contract.gen'
 import { useTaxRules, useWarehouses } from '../../api/inventory'
+import { useLc } from '../../api/lc'
 import { useParty } from '../../api/parties'
 import { dhakaToday } from '../../api/platform'
 import { calculateBill, useBill, useCreateBill, useDeleteBill, usePostBill, useUpdateBill } from '../../api/purchases'
@@ -23,6 +24,7 @@ import { LineGrid } from '../../components/document/LineGrid'
 import { completeIndexes, mapResults, remapLineErrors } from '../../components/document/lines'
 import { PartyPanel } from '../../components/document/PartyPanel'
 import { FromPoField, poToLines } from './FromPoField'
+import { ImportFields } from './ImportFields'
 import { PostDialog } from '../../components/document/PostDialog'
 import { TotalsPanel } from '../../components/document/TotalsPanel'
 import { useCalculate } from '../../components/document/useCalculate'
@@ -35,7 +37,7 @@ import { Forbidden, NotFound } from '../../components/states'
  * F3 Create / edit purchase bill (Pur-Create.dc.html; backlog P4.5-FE-02/03). Drafts only: a posted or cancelled bill
  * opens F4 instead. Every figure comes from POST /purchase-bills/calculate (300 ms after the last change). "Save and
  * post" saves, then asks in the PostDialog; a new bill is first saved and reopened at its edit route with ?post=1.
- * Import fields (currency, LC, lot) stay hidden until P16.
+ * Import mode (P16): the Import card (LC, lot, currency, rate) opens from M4's "Receive goods" (?lc=…&lot=…) or by hand.
  */
 export function BillEditor({ mode }: { mode: 'new' | 'edit' }) {
   const { can } = useSession()
@@ -96,6 +98,19 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
   }, [warehouses.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const values = watch()
+  // F3 import mode from M4 "Receive goods": /purchases/bills/new?lc=<id>&lot=<id> prefills the supplier, LC, lot and currency.
+  const lcParam = mode === 'new' ? Number(params.get('lc')) || 0 : 0
+  const fromLc = useLc(lcParam)
+  const lcParty = useParty(fromLc.data?.party.id ?? 0)
+  const [importOpen, setImportOpen] = useState(false)
+  useEffect(() => {
+    if (!fromLc.data || !lcParty.data || watch('letter_of_credit_id')) return
+    setValue('party', lcParty.data.party, { shouldDirty: true })
+    setValue('letter_of_credit_id', String(fromLc.data.id), { shouldDirty: true })
+    setValue('currency_code', fromLc.data.currency_code, { shouldDirty: true })
+    const lot = params.get('lot')
+    if (lot) setValue('lc_shipment_id', lot, { shouldDirty: true })
+  }, [fromLc.data, lcParty.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const indexes = completeIndexes(values.lines)
   // Calculate needs the same required fields as saving; the supplier's bill number is not used in any figure, so a
   // placeholder stands in until it is typed.
@@ -247,6 +262,12 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
           </p>
         )}
       </Card>
+      {(importOpen || lcParam > 0 || !!values.letter_of_credit_id || (!!values.currency_code && values.currency_code !== 'BDT')) ? <>
+        <div style={{ height: 16 }} />
+        <ImportFields values={values} register={register} setValue={setValue} errors={errors as never} />
+      </> : can('lc.view') && (
+        <p style={{ margin: '8px 0 0' }}><Button size="sm" variant="ghost" icon="ship" onClick={() => setImportOpen(true)} data-testid="bill-import-open">Import against an LC or in a foreign currency</Button></p>
+      )}
       <div style={{ height: 16 }} />
       <Card title="Items">
         <LineGrid control={control} register={register} watch={watch} setValue={setValue} errors={errors} side="purchase"

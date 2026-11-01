@@ -14,6 +14,12 @@ export interface BillFormValues {
   warehouse_id: string
   /** The purchase order this bill receives (F3 "From PO"); '' when none. */
   purchase_order_id?: string
+  /** F3 import mode (P16): the LC and lot this bill receives, in the LC's currency; '' when not an import. A blank
+   *  rate lets the server use the LC's payment rate or planning rate (06 §12.5). */
+  letter_of_credit_id?: string
+  lc_shipment_id?: string
+  currency_code?: string
+  exchange_rate?: string
   notes: string
   internal_note: string
   lines: LineValues[]
@@ -28,6 +34,10 @@ export const billSchema = z.object({
   due_date: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date')]),
   warehouse_id: z.string().min(1, 'Choose where the goods are received'),
   purchase_order_id: z.string().optional(),
+  letter_of_credit_id: z.string().optional(),
+  lc_shipment_id: z.string().optional(),
+  currency_code: z.string().optional(),
+  exchange_rate: z.union([z.literal(''), z.string().trim().regex(/^\d{1,10}(\.\d{1,6})?$/, 'Enter the rate (up to 6 decimals)')]).optional(),
   notes: z.string().max(2000, 'Use at most 2000 characters'),
   internal_note: z.string().max(2000, 'Use at most 2000 characters'),
   lines: z.array(line),
@@ -56,6 +66,8 @@ export function toBillInput(v: BillFormValues): PurchaseBillInput {
     due_date: v.due_date || null,
     warehouse_id: Number(v.warehouse_id),
     ...(v.purchase_order_id ? { purchase_order_id: Number(v.purchase_order_id) } : {}),
+    ...(v.letter_of_credit_id ? { letter_of_credit_id: Number(v.letter_of_credit_id), ...(v.lc_shipment_id ? { lc_shipment_id: Number(v.lc_shipment_id) } : {}) } : {}),
+    ...(v.currency_code && v.currency_code !== 'BDT' ? { currency_code: v.currency_code, ...(v.exchange_rate?.trim() ? { exchange_rate: v.exchange_rate.trim() } : {}) } : {}),
     notes: v.notes.trim() || null,
     internal_note: v.internal_note.trim() || null,
     lines: completeIndexes(v.lines).map((i) => {
@@ -77,7 +89,10 @@ interface BillLine {
 
 /** Stored bill → form values. Lines carry only the product's code, name and unit, which is all the grid shows. */
 export function billToForm(b: PurchaseBill | null, party: Party | null, today: string, warehouseId = ''): BillFormValues {
-  if (!b) return { party: null, supplier_bill_no: '', date: today, due_date: '', warehouse_id: warehouseId, purchase_order_id: '', notes: '', internal_note: '', lines: [emptyLine()] }
+  if (!b) {
+    return { party: null, supplier_bill_no: '', date: today, due_date: '', warehouse_id: warehouseId, purchase_order_id: '', letter_of_credit_id: '', lc_shipment_id: '',
+      currency_code: 'BDT', exchange_rate: '', notes: '', internal_note: '', lines: [emptyLine()] }
+  }
   const lines = (b.lines as unknown as BillLine[]).map((l): LineValues => ({
     product: { id: l.product_id, code: l.product_code, name: l.product_name, unit: l.unit, track_stock: true } as Product,
     description: l.description ?? '', quantity: l.quantity, price: l.unit_cost, discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '',
@@ -88,11 +103,15 @@ export function billToForm(b: PurchaseBill | null, party: Party | null, today: s
   return {
     party, supplier_bill_no: b.supplier_bill_no, date: b.bill_date, due_date: b.due_date, warehouse_id: String(b.warehouse_id),
     purchase_order_id: b.purchase_order_id ? String(b.purchase_order_id) : '',
+    // Contract gap (P16): the bill resource has no lc_shipment_id, so the lot reloads empty (the server keeps the stored one only if it is sent).
+    letter_of_credit_id: b.letter_of_credit_id ? String(b.letter_of_credit_id) : '', lc_shipment_id: '',
+    currency_code: b.currency_code ?? 'BDT', exchange_rate: b.currency_code && b.currency_code !== 'BDT' ? b.exchange_rate : '',
     notes: ext.notes ?? '', internal_note: ext.internal_note ?? '', lines: lines.length ? lines : [emptyLine()],
   }
 }
 
 /** API field paths that are not lines → form fields. */
 export const billFieldMap: Record<string, keyof BillFormValues> = {
-  party_id: 'party', supplier_bill_no: 'supplier_bill_no', bill_date: 'date', due_date: 'due_date', warehouse_id: 'warehouse_id', notes: 'notes', internal_note: 'internal_note',
+  party_id: 'party', supplier_bill_no: 'supplier_bill_no', letter_of_credit_id: 'letter_of_credit_id', lc_shipment_id: 'lc_shipment_id', currency_code: 'currency_code',
+  exchange_rate: 'exchange_rate', bill_date: 'date', due_date: 'due_date', warehouse_id: 'warehouse_id', notes: 'notes', internal_note: 'internal_note',
 }

@@ -56,6 +56,15 @@ const PartyLedger = lazy(() => partyAccounts().then((m) => ({ default: m.PartyLe
 const PartyHistory = lazy(() => partyAccounts().then((m) => ({ default: m.PartyHistory })))
 const PartyOutstanding = lazy(() => partyAccounts().then((m) => ({ default: m.PartyOutstanding })))
 const PartyStatement = lazy(() => partyAccounts().then((m) => ({ default: m.PartyStatement })))
+const lcPages = () => import('../pages/lc')
+const LcDashboard = lazy(() => lcPages().then((m) => ({ default: m.LcDashboard })))
+const LcList = lazy(() => lcPages().then((m) => ({ default: m.LcList })))
+const LcForm = lazy(() => lcPages().then((m) => ({ default: m.LcForm })))
+const LcDetails = lazy(() => lcPages().then((m) => ({ default: m.LcDetails })))
+const LcAmendments = lazy(() => lcPages().then((m) => ({ default: m.LcAmendments })))
+const LcDocuments = lazy(() => lcPages().then((m) => ({ default: m.LcDocuments })))
+const LcCharges = lazy(() => lcPages().then((m) => ({ default: m.LcCharges })))
+const LcReports = lazy(() => lcPages().then((m) => ({ default: m.LcReports })))
 const banking = () => import('../pages/banking')
 const MoneyAccountList = lazy(() => banking().then((m) => ({ default: m.MoneyAccountList })))
 const MoneyAccountForm = lazy(() => banking().then((m) => ({ default: m.MoneyAccountForm })))
@@ -207,6 +216,16 @@ export const router = createBrowserRouter([
       { path: 'banking/accounts', handle: crumbs('Cash and bank', 'Accounts'), element: guarded('banking.view', lazyPage(<MoneyAccountList />, 'list')) },
       { path: 'banking/accounts/new', handle: crumbs('Cash and bank', 'Add account'), element: guarded('banking.create', lazyPage(<MoneyAccountForm />, 'form')) },
       // Cash and bank (P12)
+      { path: 'lc', handle: crumbs('LC Management', 'Overview'), element: guarded('lc.view', lazyPage(<LcDashboard />, 'detail')) },
+      { path: 'lc/list', handle: crumbs('LC Management', 'All LCs'), element: guarded('lc.view', lazyPage(<LcList />, 'list')) },
+      { path: 'lc/new', handle: crumbs('LC Management', 'New LC'), element: guarded('lc.create', lazyPage(<LcForm mode="new" />, 'form')) },
+      { path: 'lc/amendments', handle: crumbs('LC Management', 'Amendments'), element: guarded('lc.view', lazyPage(<LcAmendments />, 'list')) },
+      { path: 'lc/documents', handle: crumbs('LC Management', 'Documents'), element: guarded('lc.view', lazyPage(<LcDocuments />, 'report')) },
+      { path: 'lc/charges', handle: crumbs('LC Management', 'Charges and cost'), element: guarded('lc.view', lazyPage(<LcCharges />, 'list')) },
+      { path: 'lc/reports', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
+      { path: 'lc/reports/:report', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
+      { path: 'lc/:id', handle: crumbs('LC Management', 'LC'), element: guarded('lc.view', lazyPage(<LcDetails />, 'detail')) },
+      { path: 'lc/:id/edit', handle: crumbs('LC Management', 'Edit LC'), element: guarded('lc.edit', lazyPage(<LcForm mode="edit" />, 'form')) },
       { path: 'banking', handle: crumbs('Cash and bank', 'Overview'), element: guarded('banking.view', lazyPage(<BankingOverview />, 'detail')) },
       { path: 'banking/accounts/:id', handle: crumbs('Cash and bank', 'Account'), element: guarded('banking.view', lazyPage(<AccountDetails />, 'detail')) },
       { path: 'banking/received', handle: crumbs('Cash and bank', 'Money received'), element: guarded('banking.create', lazyPage(<MoneyForm key="received" kind="received" />, 'form')) },

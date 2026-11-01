@@ -8,7 +8,7 @@ import type { CancelRequest, DocumentCalculation, PageMeta, PostRequest, Purchas
  * the stock ledger (08 §8). Drafts change only the bills.
  */
 export interface BillListFilters {
-  q?: string; status?: string; payment_status?: string; overdue?: string; party_id?: number; date_from?: string; date_to?: string
+  q?: string; status?: string; letter_of_credit_id?: number; payment_status?: string; overdue?: string; party_id?: number; date_from?: string; date_to?: string
   sort?: string; page?: number; per_page?: number
 }
 

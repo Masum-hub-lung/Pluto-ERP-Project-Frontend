@@ -24,7 +24,11 @@ export const NAV: NavSection[] = [
         page('Payments made', '/purchases/payments', 'purchases.view', true), page('Returns and debit notes', '/purchases/returns', 'purchases.view', true),
         page('Reports', '/reports/purchases', 'reports.view', true),
       ] },
-      { ...page('LC Management', '/lc', 'lc.view'), icon: 'file-text' },
+      { ...page('LC Management', '/lc', 'lc.view', true), icon: 'file-text', children: [
+        page('Overview', '/lc', 'lc.view', true), page('All LCs', '/lc/list', 'lc.view', true), page('New LC', '/lc/new', 'lc.create', true),
+        page('Amendments', '/lc/amendments', 'lc.view', true), page('Documents', '/lc/documents', 'lc.view', true),
+        page('Charges and cost', '/lc/charges', 'lc.view', true), page('Reports', '/lc/reports', 'lc.view', true),
+      ] },
       { ...page('Customers', '/customers', 'parties.view', true), icon: 'users', children: [
         page('All customers', '/customers', 'parties.view', true), page('Add customer', '/customers/new', 'parties.create', true),
         page('Outstanding', '/customers/outstanding', 'parties.view', true),
