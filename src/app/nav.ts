@@ -10,7 +10,7 @@ export interface NavSection { label?: string; items: NavItem[] }
 const page = (label: string, path: string, permission: string | null, built = false): NavLink => ({ label, path, permission, built })
 
 export const NAV: NavSection[] = [
-  { items: [{ ...page('Dashboard', '/dashboard', 'dashboard.view'), icon: 'layout-dashboard' }] },
+  { items: [{ ...page('Dashboard', '/dashboard', 'dashboard.view', true), icon: 'layout-dashboard' }] },
   {
     label: 'Operations',
     items: [
@@ -134,4 +134,5 @@ export const QUICK_CREATE: Record<string, { path: string; built: boolean }> = {
   Receipt: { path: '/sales/payments/new', built: true },
   Payment: { path: '/purchases/payments/new', built: true },
   Journal: { path: '/accounting/vouchers/new/journal', built: true },
+  'Journal voucher': { path: '/accounting/vouchers/new/journal', built: true },
 }

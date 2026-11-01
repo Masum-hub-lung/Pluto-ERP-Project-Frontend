@@ -1,12 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useMatches, useNavigate, useNavigationType } from 'react-router-dom'
 import { currentFiscalYear, useFiscalYears } from '../api/platform'
+import { usePreferences } from '../api/settings'
 import { useSession } from '../auth/session'
 import { ds } from '../ds'
+import { CommandPalette } from '../components/CommandPalette'
 import { NavDrawer } from '../components/NavDrawer'
 import { NotificationPanel, useUnreadCount } from './NotificationBell'
 import { initials } from '../lib/format'
 import { readPref, writePref } from '../lib/prefs'
+import { shortcutButton, shortcutFor } from '../lib/shortcuts'
 import { activePath, allLinks, QUICK_CREATE, visibleNav, type NavSection as NavSectionDef } from './nav'
 import type { RouteHandle } from './router'
 import { useToast } from './toast'
@@ -34,6 +37,7 @@ export function Shell() {
   const [companyOpen, setCompanyOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const unread = useUnreadCount()
   const [drawerCreateOpen, setDrawerCreateOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -46,6 +50,7 @@ export function Shell() {
   const scrollPositions = useRef(new Map<string, number>())
   const [scrolled, setScrolled] = useState(false)
   const { compact, toggle: toggleSidebar } = useSidebarMode()
+  const look = useAppearance()
   const [flyout, setFlyout] = useState<null | { path: string; top: number }>(null)
   const company = me?.companies.find((c) => c.company_id === companyId)
   const companies = (me?.companies ?? []).filter((c) => c.status === 'active')
@@ -67,6 +72,29 @@ export function Shell() {
   }, [profileOpen, companyOpen])
 
   useEffect(() => { setFlyout(null) }, [pathname, compact])
+
+  // Keyboard shortcuts (NFR-054; P14.2-FE-05): Ctrl K palette, Alt S/P/R/Y/J/C create, Ctrl S save, Ctrl Enter primary.
+  const shortcutState = useRef({ can, navigate, toast })
+  shortcutState.current = { can, navigate, toast }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const a = shortcutFor(e, isMac())
+      if (!a) return
+      const { can: allowed, navigate: go, toast: say } = shortcutState.current
+      if (a.kind === 'palette') { e.preventDefault(); setPaletteOpen((o) => !o); return }
+      if (a.kind === 'create') {
+        e.preventDefault()
+        if (allowed(a.permission)) { setPaletteOpen(false); go(a.path) } else say({ tone: 'info', title: `${a.label}: your role cannot do this` })
+        return
+      }
+      const button = shortcutButton(a.kind)
+      if (a.kind === 'save') e.preventDefault() // never the browser's "Save page"
+      if (button) { e.preventDefault(); button.click() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  useEffect(() => { setPaletteOpen(false) }, [pathname])
 
   // Phone drawer (P1.5-FE-01): closes after navigating and when the window grows past the phone layout; opens with
   // the current module expanded.
@@ -147,7 +175,8 @@ export function Shell() {
   }
 
   const profileItems = [{ icon: 'users', label: me?.name ?? '', description: me?.email ?? '' },
-    { icon: 'settings', label: 'Settings', description: 'Security', onClick: () => { setProfileOpen(false); navigate('/settings/security') } }, '-' as const,
+    { icon: 'settings', label: 'Settings', description: 'Company, people and you', onClick: () => { setProfileOpen(false); navigate('/settings') } },
+    { icon: 'building-2', label: 'Create a company', onClick: () => { setProfileOpen(false); navigate('/companies/new') } }, '-' as const,
     { icon: 'log-out', label: 'Sign out', danger: true, onClick: () => { setProfileOpen(false); void signOut() } }]
   const companyMenu = [{ heading: 'Switch company', label: '' }, ...companies.map((c) => ({
     icon: c.company_id === companyId ? 'check' : 'building-2', label: c.company_name, description: c.role, onClick: () => void chooseCompany(c.company_id),
@@ -160,7 +189,7 @@ export function Shell() {
   }
 
   return (
-    <div data-theme="light" className="lf-shell" style={{ background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px' }}>
+    <div data-theme={look.theme} data-density={look.density} data-text-size={look.textSize} data-reduce-motion={look.reduceMotion ? 'true' : undefined} className="lf-shell" style={{ background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px' }}>
       <div className="lf-shell-side" id="lf-sidebar" ref={companyZone} style={{ flex: 'none', alignSelf: 'stretch', position: 'relative' }}
         onClickCapture={(e) => { if (companies.length > 1 && (e.target as Element).closest('.lf-company')) setCompanyOpen((o) => !o) }}>
         <Sidebar compact={compact} company={{ name: company?.company_name ?? '—', meta: companies.length > 1 ? `BDT · ${companies.length} companies` : 'BDT' }} user={{ name: me?.name ?? '', role: company?.role ?? '' }}>
@@ -200,6 +229,9 @@ export function Shell() {
             </svg>
           </button>
           <span className="lf-mobilebar-title">{crumbs[crumbs.length - 1]}</span>
+          <button type="button" className="lf-mobilebar-btn" aria-label="Search" data-testid="mobile-search" onClick={() => setPaletteOpen(true)}>
+            <Icon name="search" size={20} />
+          </button>
           <button type="button" className="lf-mobilebar-btn" aria-label={`${unread} notifications`} data-testid="mobile-bell" onClick={() => setBellOpen((o) => !o)}
             style={{ position: 'relative' }}>
             <Icon name="bell" size={20} />
@@ -234,7 +266,7 @@ export function Shell() {
         </NavDrawer>
         <div className="lf-shell-top" data-scrolled={scrolled}>
           <Topbar breadcrumbs={crumbs} company={company?.company_name} fy={fyName} notifications={unread} user={me?.name} onCreateItem={quickCreate}
-            onNotifications={() => setBellOpen((o) => !o)} />
+            onNotifications={() => setBellOpen((o) => !o)} onSearch={() => setPaletteOpen(true)} />
           {bellOpen && <NotificationPanel onClose={() => setBellOpen(false)} />}
           {/* The design opens the profile menu from the avatar (Shell.dc.html "profileItems"); Settings opens Security, the only built settings page. */}
           <div ref={avatarZone} style={{ position: 'absolute', right: 16, top: 0, bottom: 0, width: 40 }}>
@@ -246,6 +278,7 @@ export function Shell() {
             )}
           </div>
         </div>
+        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
         <main ref={scroller} className="lf-shell-scroll" tabIndex={-1} aria-label="Page content">
           <div ref={sentinel} className="lf-shell-sentinel" aria-hidden />
           <div className="lf-page">
@@ -310,4 +343,26 @@ function useSidebarMode() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   return { compact, toggle }
+}
+
+/**
+ * K13 Appearance (P15.2-FE-08): the user's saved theme (light, dark or the device's), density, text size and reduced
+ * motion. The theme also goes on <html> so dialogs and menus rendered outside the shell follow it.
+ */
+function useAppearance() {
+  const prefs = usePreferences()
+  const [dark, setDark] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const on = () => setDark(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  const p = prefs.data
+  const theme: 'light' | 'dark' = p?.theme === 'dark' || (p?.theme === 'system' && dark) ? 'dark' : 'light'
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    return () => { delete document.documentElement.dataset.theme }
+  }, [theme])
+  return { theme, density: p?.density ?? 'default', textSize: p?.text_size ?? 'm', reduceMotion: !!p?.reduce_motion }
 }

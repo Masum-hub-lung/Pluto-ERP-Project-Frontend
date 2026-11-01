@@ -6,13 +6,14 @@ import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { ResponsiveDialog } from '../../components/ResponsiveDialog'
 import { ds } from '../../ds'
+import { CompanySecurityCard, PasswordCard, SessionsCard } from './SecurityExtras'
 import { SettingsLayout } from './SettingsLayout'
 
 type Step = null | { kind: 'setup'; setup: TwoFactorSetup } | { kind: 'codes'; codes: string[] } | { kind: 'disable' }
 
 /**
- * K14 Security, 2-step verification row (07 §5, FR-004). The design's other rows (password, company-wide
- * requirement, idle sign-out, sessions) belong to the Settings module and are not in this release.
+ * K14 Security (07 §5, FR-004; backlog P15.2-FE-09): 2-step verification here; password, signed-in devices and the
+ * Owner's company switches in SecurityExtras.
  */
 export function Security() {
   const { Card, Switch, Button, Banner, Field, Input, Badge } = ds()
@@ -100,6 +101,10 @@ export function Security() {
           </div>
         </div>
       </Card>
+
+      <PasswordCard />
+      <SessionsCard />
+      <CompanySecurityCard />
 
       {step?.kind === 'setup' && (
         <ResponsiveDialog testId="two-factor-setup" title="Turn on 2-step verification" description="Scan the code with an authenticator app (for example Google Authenticator or Microsoft Authenticator), then enter the 6-digit code it shows."

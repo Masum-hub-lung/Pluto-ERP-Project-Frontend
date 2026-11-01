@@ -7,7 +7,7 @@ import { formatTaka } from '../../lib/format'
  * The paper statement of a ReportData (backlog P9.2-FE-01): the API's columns and rows, indented by `depth`, with
  * headings, subtotals and totals in bold and the totals row last. Amount cells show the API's decimal string through
  * formatTaka (a negative stays negative, in brackets); nothing is added up here. A row with `ledger_id` drills into
- * the ledger (H7) when `onOpen` is given. The table scrolls inside its card on narrow screens.
+ * the ledger (H7) when `onOpen` is given, as does any row carrying a `url` (dashboard lenses). The table scrolls inside its card on narrow screens.
  */
 const STRONG = new Set(['heading', 'subtotal', 'total', 'closing'])
 
@@ -35,7 +35,7 @@ export function StatementTable({ report, onOpen, cell, totalsLabel = 'Total', te
         </thead>
         <tbody>
           {rows.map((r, i) => {
-            const open = onOpen && (r.ledger_id || r.party_id) && (r.kind === 'ledger' || r.kind === 'party' || r.kind === 'heading') ? () => onOpen(r) : undefined
+            const open = onOpen && (typeof r.url === 'string' || ((r.ledger_id || r.party_id) && (r.kind === 'ledger' || r.kind === 'party' || r.kind === 'heading'))) ? () => onOpen(r) : undefined
             return (
               <tr key={`${r.key ?? r.kind}-${r.id ?? r.ledger_id ?? ''}-${i}`} className={`k-${r.kind}${STRONG.has(r.kind) ? ' strong' : ''}${open ? ' link' : ''}`}
                 onClick={open} tabIndex={open ? 0 : undefined} onKeyDown={open ? (e) => { if (e.key === 'Enter') open() } : undefined} data-kind={r.kind}>

@@ -126,3 +126,12 @@
 @media (prefers-reduced-motion: reduce) {
   .lf-navdrawer-panel, .lf-navdrawer-backdrop, .lf-mobilebar { transition: none !important; }
 }
+
+/* K13 Appearance (P15.2-FE-08): text size, compact tables, reduced motion. */
+.lf-shell[data-text-size="s"] { font-size: 13px !important; }
+.lf-shell[data-text-size="l"] { font-size: 16px !important; }
+.lf-shell[data-text-size="l"] .lf-page { font-size: 16px; }
+.lf-shell[data-density="compact"] table td, .lf-shell[data-density="compact"] table th { padding-top: 4px; padding-bottom: 4px; }
+.lf-shell[data-reduce-motion="true"] *, .lf-shell[data-reduce-motion="true"] *::before, .lf-shell[data-reduce-motion="true"] *::after {
+  transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important;
+}

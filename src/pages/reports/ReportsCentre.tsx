@@ -2,6 +2,14 @@ import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../auth/session'
 import { ds } from '../../ds'
 import { useListParams } from '../../lib/useListParams'
+import { dhakaToday } from '../../api/platform'
+import { ExportButton } from '../../components/ExportButton'
+
+/** Last month as YYYY-MM (Dhaka), the month-end pack's default period. */
+export function lastMonth(today: string = dhakaToday()): string {
+  const [y, m] = today.split('-').map(Number)
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`
+}
 
 /**
  * J1 Reports centre (backlog P9.2-FE-06; 02 #page-j1): find any report. Statements, books, receivables/payables and
@@ -53,7 +61,9 @@ export function ReportsCentre() {
 
   return (
     <>
-      <PageHeader title="Reports" description="Find any report: statements, books, receivables and payables, operations. Reports read posted vouchers only." />
+      <PageHeader title="Reports" description="Find any report: statements, books, receivables and payables, operations. Reports read posted vouchers only."
+        actions={can('reports.financial') ? <ExportButton kind="export_pack" formats={['xlsx', 'pdf', 'both']} label={`Month-end pack (${lastMonth()})`}
+          input={{ period: lastMonth() }} testId="month-end-pack" /> : undefined} />
       <div style={{ maxWidth: 420, marginBottom: 16 }}>
         <Input icon="search" placeholder="Find a report" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Find a report" />
       </div>

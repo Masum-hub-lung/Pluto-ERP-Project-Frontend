@@ -31,7 +31,8 @@ test('active item is the longest matching path on segment boundaries', () => {
 })
 
 test('landing: built modules first, else customers, else the first permitted module', () => {
-  assert.equal(landingPath(OWNER), '/sales') // Sales is built (P10), so it is home for roles that see it
+  assert.equal(landingPath(OWNER), '/dashboard') // the dashboard (P14) is home for every role that may view it
+  assert.equal(landingPath(role(['sales.view', 'parties.view'])), '/sales') // without dashboard.view: Sales (P10)
   assert.equal(landingPath(role(['parties.view'])), '/customers')
   assert.equal(landingPath(STORE), '/inventory')
   assert.equal(landingPath(role([])), '/settings/security')

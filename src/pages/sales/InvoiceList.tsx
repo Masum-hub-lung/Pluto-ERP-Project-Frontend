@@ -14,6 +14,7 @@ import { useListParams } from '../../lib/useListParams'
 import { shortDate } from '../purchases/BillList'
 import { BulkPostInvoices } from './BulkPostInvoices'
 import { InvoiceStatusBadge } from './InvoiceStatusBadge'
+import { ExportButton } from '../../components/ExportButton'
 
 /**
  * E2 Sales invoice list (Trade.dc.html E2; backlog P5.2-FE-02): status tabs, search, customer and date filters — all in
@@ -91,7 +92,11 @@ export function InvoiceList() {
   return (
     <>
       <PageHeader title="Sales invoices" description="Every invoice to your customers, with what each still owes."
-        actions={newInvoice ? <Button variant="primary" icon="plus" onClick={newInvoice} data-testid="new-invoice">New invoice</Button> : undefined} />
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <ExportButton kind="list" source="getSalesInvoices" formats={['xlsx', 'csv']}
+            filters={{ ...(TAB_FILTERS[tab] ?? {}), q, party_id: partyId || undefined, date_from: from, date_to: to, sort }} />
+          {newInvoice && <Button variant="primary" icon="plus" onClick={newInvoice} data-testid="new-invoice">New invoice</Button>}
+        </div>} />
       <div style={{ marginBottom: 12, overflowX: 'auto' }} data-testid="invoice-tabs">
         <Tabs key={tab} items={TABS} value={tab} onChange={(v) => set({ tab: v === 'all' ? null : v })} />
       </div>

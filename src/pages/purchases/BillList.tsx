@@ -10,6 +10,7 @@ import { ProblemBanner } from '../../components/ProblemBanner'
 import { formatTaka } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
 import { BillStatusBadge } from './BillStatusBadge'
+import { ExportButton } from '../../components/ExportButton'
 
 /**
  * F2 Purchase bill list (Pur-List.dc.html): status tabs, search, supplier and date filters — all in the URL — then the
@@ -82,7 +83,11 @@ export function BillList() {
   return (
     <>
       <PageHeader title="Purchase bills" description="Every bill from your suppliers, with what you still owe on each."
-        actions={newBill ? <Button variant="primary" icon="plus" onClick={newBill} data-testid="new-bill">New bill</Button> : undefined} />
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <ExportButton kind="list" source="getPurchaseBills" formats={['xlsx', 'csv']}
+            filters={{ ...(TAB_FILTERS[tab] ?? {}), q, party_id: partyId || undefined, date_from: from, date_to: to, sort }} />
+          {newBill && <Button variant="primary" icon="plus" onClick={newBill} data-testid="new-bill">New bill</Button>}
+        </div>} />
       <div style={{ marginBottom: 12, overflowX: 'auto' }} data-testid="bill-tabs">
         <Tabs key={tab} items={TABS} value={tab} onChange={(v) => set({ tab: v === 'all' ? null : v })} />
       </div>

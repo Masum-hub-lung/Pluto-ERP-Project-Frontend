@@ -24,6 +24,8 @@ interface SessionValue {
   can: (permission: string) => boolean
   signIn: (email: string, password: string) => Promise<SignInResult>
   completeTwoFactor: (challengeToken: string, answer: { code: string } | { recovery_code: string }) => Promise<void>
+  /** Start the session from a LoginResponse another endpoint returned (accepting an invitation, S3). */
+  signInWith: (r: LoginResponse) => Promise<void>
   /** After turning 2-step on or off: new access token (carries the second factor) and fresh /me. */
   reload: () => Promise<void>
   signOut: () => Promise<void>
@@ -144,8 +146,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(() => ({
     status, me, companyId: api.getCompany(), twoFactorBlocked, signedOutByUser,
     can: (p) => (me?.permissions ?? []).includes(p),
-    signIn, completeTwoFactor, reload, signOut, switchCompany,
-  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, reload, signOut, switchCompany])
+    signIn, completeTwoFactor, signInWith: finishSignIn, reload, signOut, switchCompany,
+  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, signOut, switchCompany])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
