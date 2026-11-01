@@ -10,6 +10,7 @@ import { dhakaToday } from './platform'
  * instead of being invalidated by every mutation.
  */
 export type ReportPath = 'income' | 'expenses' | 'inventory/summary' | 'inventory/low-stock' | 'inventory/valuation' | 'sales' | 'sales-returns' | 'purchases' | 'purchase-returns' | 'trial-balance' | 'profit-and-loss' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'receivables-aging' | 'payables-aging'
+  | 'lc/register' | 'lc/status' | 'lc/outstanding' | 'lc/expiry' | 'lc/documents' | 'lc/amendments' | 'lc/charges' | 'lc/cost'
 export type ReportFormat = 'xlsx' | 'pdf' | 'csv'
 export type ReportQuery = Record<string, string | undefined>
 
