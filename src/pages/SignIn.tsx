@@ -148,6 +148,7 @@ export function SignIn() {
             onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <Button variant="primary" type="submit" block loading={busy} disabled={busy}>Sign in</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/forgot-password')} data-testid="forgot-password">Forgot your password?</Button>
       </form>
       )}
     </div>

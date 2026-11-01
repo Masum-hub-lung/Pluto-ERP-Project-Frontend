@@ -88,6 +88,23 @@ const CreditNoteForm = lazy(() => sales().then((m) => ({ default: m.NoteForm }))
 const Security = lazy(() => import('../pages/settings').then((m) => ({ default: m.Security })))
 const FinancialYears = lazy(() => import('../pages/settings').then((m) => ({ default: m.FinancialYears })))
 const AccountingDefaults = lazy(() => import('../pages/settings').then((m) => ({ default: m.AccountingDefaults })))
+const CompanyProfile = lazy(() => import('../pages/settings').then((m) => ({ default: m.CompanyProfile })))
+const Preferences = lazy(() => import('../pages/settings').then((m) => ({ default: m.Preferences })))
+const Region = lazy(() => import('../pages/settings').then((m) => ({ default: m.Region })))
+const InvoiceDesign = lazy(() => import('../pages/settings').then((m) => ({ default: m.InvoiceDesign })))
+const TaxSettings = lazy(() => import('../pages/settings').then((m) => ({ default: m.TaxSettings })))
+const Users = lazy(() => import('../pages/settings').then((m) => ({ default: m.Users })))
+const UserDetails = lazy(() => import('../pages/settings').then((m) => ({ default: m.UserDetails })))
+const Roles = lazy(() => import('../pages/settings').then((m) => ({ default: m.Roles })))
+const NotificationSettings = lazy(() => import('../pages/settings').then((m) => ({ default: m.NotificationSettings })))
+const Appearance = lazy(() => import('../pages/settings').then((m) => ({ default: m.Appearance })))
+const Backups = lazy(() => import('../pages/settings').then((m) => ({ default: m.Backups })))
+const SettingsHome = lazy(() => import('../pages/settings').then((m) => ({ default: m.SettingsHome })))
+const authPages = () => import('../pages/AuthPages')
+const ForgotPassword = lazy(() => authPages().then((m) => ({ default: m.ForgotPassword })))
+const ResetPassword = lazy(() => authPages().then((m) => ({ default: m.ResetPassword })))
+const AcceptInvitation = lazy(() => authPages().then((m) => ({ default: m.AcceptInvitation })))
+const CreateCompany = lazy(() => authPages().then((m) => ({ default: m.CreateCompany })))
 const accounting = () => import('../pages/accounting')
 const AccountingOverview = lazy(() => accounting().then((m) => ({ default: m.AccountingOverview })))
 const ChartOfAccounts = lazy(() => accounting().then((m) => ({ default: m.ChartOfAccounts })))
@@ -110,6 +127,11 @@ const Aging = lazy(() => reports().then((m) => ({ default: m.Aging })))
 const TradeReport = lazy(() => reports().then((m) => ({ default: m.TradeReport })))
 const ReturnReport = lazy(() => reports().then((m) => ({ default: m.ReturnReport })))
 const TradeOverview = lazy(() => reports().then((m) => ({ default: m.TradeOverview })))
+const dashboard = () => import('../pages/dashboard')
+const Dashboard = lazy(() => dashboard().then((m) => ({ default: m.Dashboard })))
+const Lens = lazy(() => dashboard().then((m) => ({ default: m.Lens })))
+const SearchResults = lazy(() => import('../pages/search/SearchResults').then((m) => ({ default: m.SearchResults })))
+const NotificationCentre = lazy(() => import('../pages/notifications/NotificationCentre').then((m) => ({ default: m.NotificationCentre })))
 // Dev-only (P1.2-FE-07): created only in development builds, so production ships no chunk for it.
 const PickersDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/PickersDemo').then((m) => ({ default: m.PickersDemo }))) : null
 const DocumentDemo = import.meta.env.DEV ? lazy(() => import('../pages/dev/DocumentDemo').then((m) => ({ default: m.DocumentDemo }))) : null
@@ -138,6 +160,10 @@ const crumbs = (...c: string[]) => ({ crumbs: c }) satisfies RouteHandle
 
 export const router = createBrowserRouter([
   { path: '/sign-in', element: <SignIn /> },
+  // Signed out (S2, S3; P15.2-FE-11).
+  { path: '/forgot-password', element: <Suspense fallback={null}><ForgotPassword /></Suspense> },
+  { path: '/reset-password', element: <Suspense fallback={null}><ResetPassword /></Suspense> },
+  { path: '/invite/:token', element: <Suspense fallback={null}><AcceptInvitation /></Suspense> },
   {
     element: <RequireAuth><Shell /></RequireAuth>,
     children: [
@@ -237,7 +263,19 @@ export const router = createBrowserRouter([
       { path: 'purchases/payments/new', handle: crumbs('Purchases', 'Supplier payment'), element: guarded('purchases.create', lazyPage(<PaymentForm />, 'form')) },
       { path: 'purchases/payments/:id', handle: crumbs('Purchases', 'Payment'), element: guarded('purchases.view', lazyPage(<PaymentDetails />, 'detail')) },
       { path: 'inventory/movements', handle: crumbs('Inventory', 'Movements'), element: guarded('inventory.view', lazyPage(<MovementList />, 'list')) },
-      { path: 'settings', element: <Navigate to="/settings/security" replace /> },
+      { path: 'settings', element: lazyPage(<SettingsHome />, 'form') },
+      { path: 'settings/company', handle: crumbs('Settings', 'Company profile'), element: lazyPage(<CompanyProfile />, 'form') },
+      { path: 'settings/preferences', handle: crumbs('Settings', 'Preferences'), element: lazyPage(<Preferences />, 'form') },
+      { path: 'settings/region', handle: crumbs('Settings', 'Currency and region'), element: lazyPage(<Region />, 'form') },
+      { path: 'settings/invoice', handle: crumbs('Settings', 'Invoice design'), element: lazyPage(<InvoiceDesign />, 'form') },
+      { path: 'settings/tax', handle: crumbs('Settings', 'Tax'), element: lazyPage(<TaxSettings />, 'list') },
+      { path: 'settings/users', handle: crumbs('Settings', 'Users'), element: lazyPage(<Users />, 'list') },
+      { path: 'settings/users/:id', handle: crumbs('Settings', 'Users', 'User'), element: lazyPage(<UserDetails />, 'detail') },
+      { path: 'settings/roles', handle: crumbs('Settings', 'Roles and permissions'), element: lazyPage(<Roles />, 'form') },
+      { path: 'settings/notifications', handle: crumbs('Settings', 'Notifications'), element: lazyPage(<NotificationSettings />, 'form') },
+      { path: 'settings/appearance', handle: crumbs('Settings', 'Appearance'), element: lazyPage(<Appearance />, 'form') },
+      { path: 'settings/backup', handle: crumbs('Settings', 'Backup and export'), element: lazyPage(<Backups />, 'form') },
+      { path: 'companies/new', handle: crumbs('Create a company'), element: lazyPage(<CreateCompany />, 'form') },
       { path: 'settings/security', handle: crumbs('Settings', 'Security'), element: lazyPage(<Security />, 'form') },
       { path: 'settings/financial-years', handle: crumbs('Settings', 'Financial years'), element: lazyPage(<FinancialYears />, 'form') },
       { path: 'settings/accounting', handle: crumbs('Settings', 'Accounting defaults'), element: guarded('accounting.view', lazyPage(<AccountingDefaults />, 'form')) },
@@ -255,6 +293,13 @@ export const router = createBrowserRouter([
       { path: 'accounting/vouchers/:id/edit', handle: crumbs('Accounting', 'Edit voucher'), element: lazyPage(<VoucherEdit />, 'form') },
       ...unbuiltRoutes(),
       // Reports (P9.2): the hub for reports.view; financial statements need reports.financial (DEC-13).
+      // Dashboards, search and notifications (P14.2-FE-01..06). Lenses check their own permissions (DEC-13).
+      { path: 'dashboard', handle: crumbs('Dashboard'), element: guarded('dashboard.view', lazyPage(<Dashboard />, 'report')) },
+      ...(['financial', 'sales', 'expenses', 'receivables', 'payables', 'cash', 'inventory'] as const).map((lens) => ({
+        path: `dashboard/${lens}`, handle: crumbs('Dashboard', ({ financial: 'Financial', sales: 'Sales', expenses: 'Expenses', receivables: 'Receivables', payables: 'Payables',
+          cash: 'Cash and bank', inventory: 'Inventory alerts' })[lens]), element: guarded('dashboard.view', lazyPage(<Lens lens={lens} />, 'report')) })),
+      { path: 'search', handle: crumbs('Search'), element: lazyPage(<SearchResults />, 'list') },
+      { path: 'notifications', handle: crumbs('Notifications'), element: lazyPage(<NotificationCentre />, 'list') },
       { path: 'reports', handle: crumbs('Reports'), element: guarded('reports.view', lazyPage(<ReportsCentre />, 'list')) },
       { path: 'reports/trial-balance', handle: crumbs('Reports', 'Trial balance'), element: guarded('reports.financial', lazyPage(<TrialBalance />, 'report')) },
       { path: 'reports/profit-and-loss', handle: crumbs('Reports', 'Profit and loss'), element: guarded('reports.financial', lazyPage(<ProfitAndLoss />, 'report')) },

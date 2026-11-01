@@ -9,6 +9,7 @@ import { ListCard } from '../../components/ListCard'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { shortDate } from '../purchases/BillList'
 import { canEnter, entryTypeLabel, VOUCHER_TYPES, VoucherStatusBadge } from './common'
+import { ExportButton } from '../../components/ExportButton'
 
 /**
  * H8 Vouchers and day book (Acc-Vouchers.dc.html; backlog P7.2-FE-07): every journal entry — vouchers and the entries
@@ -46,13 +47,16 @@ export function VoucherList() {
   return (
     <>
       <PageHeader eyebrow="Accounting" title="Vouchers" description="Journals, payments, receipts and contras, and every entry posted by documents."
-        actions={types.length > 0 && (
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <ExportButton kind="list" source="getVouchers" formats={['xlsx', 'csv']} filters={{ entry_type: type, status, date_from: from, date_to: to, q, sort }} />
+          {types.length > 0 && (
           <div style={{ position: 'relative' }}>
             <Button variant="primary" icon="plus" iconRight="chevron-down" onClick={() => setMenu((m) => !m)} data-testid="new-voucher">New voucher</Button>
             {menu && <Menu style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', minWidth: 200, zIndex: 10 }}
               items={types.map((t) => ({ label: `${t.label} (${t.prefix})`, onClick: () => { setMenu(false); navigate(`/accounting/vouchers/new/${t.path}`) } }))} />}
           </div>
-        )} />
+          )}
+        </div>} />
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <div style={{ overflowX: 'auto', marginBottom: 8 }}>
         <Tabs key={type} items={TABS} value={type} onChange={(t) => set({ entry_type: t || null })} />

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import type { ReportData } from '../../api/contract.gen'
+import { exportFilters, JOB_REPORTS, LARGE_REPORT_ROWS, reportSource, saveFile, useExportJob } from '../../api/exports'
 import { downloadReport, type ReportFormat, type ReportPath, type ReportQuery } from '../../api/reports'
+import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { periodText } from '../../lib/reportPeriod'
@@ -12,7 +14,8 @@ import './report.css'
 /**
  * Frame of every financial report (H15–H19, J6, J7; 02 "Toolbar … paper statement; agreement check; aside checks";
  * backlog P9.2-FE-01): page header with Print (browser print of the loaded view, print stylesheet in report.css) and
- * the Export menu (xlsx, pdf, csv through the authenticated client; needs reports.export), the filter bar, the
+ * the Export menu (xlsx, pdf, csv through the authenticated client; needs reports.export; a report of more than 500 rows
+ * goes through an export job instead — queued, polled, then downloaded; P14.2-FE-07), the filter bar, the
  * report's agreement checks, then the paper statement and an optional aside. Everything shown comes from the API.
  */
 export function ReportLayout({ title, description, path, query, report, loading, error, onRetry, filters, aside, children }: {
@@ -26,7 +29,7 @@ export function ReportLayout({ title, description, path, query, report, loading,
       <PageHeader title={title} description={description}
         actions={<div className="lf-report-actions">
           <Button variant="secondary" icon="printer" onClick={() => window.print()} disabled={!report}>Print</Button>
-          <ExportMenu path={path} query={query} disabled={!report} />
+          <ExportMenu path={path} query={query} disabled={!report} large={(report?.rows.length ?? 0) > LARGE_REPORT_ROWS} />
         </div>} />
       <div className="lf-report-filters" role="group" aria-label="Report filters">{filters}</div>
       <ProblemBanner error={error} onRetry={onRetry} />
@@ -55,22 +58,33 @@ export function ReportLayout({ title, description, path, query, report, loading,
   )
 }
 
-function ExportMenu({ path, query, disabled }: { path: ReportPath; query: ReportQuery; disabled: boolean }) {
+function ExportMenu({ path, query, disabled, large }: { path: ReportPath; query: ReportQuery; disabled: boolean; large: boolean }) {
   const { Button, Menu } = ds()
   const { can } = useSession()
   const toast = useToast()
+  const job = useExportJob()
+  const idem = useIdempotencyKey()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   if (!can('reports.export')) return null
+  const background = large && JOB_REPORTS.has(path)
 
   async function run(format: ReportFormat) {
     setOpen(false)
     setBusy(true)
-    toast({ tone: 'info', title: 'Preparing the export', description: `${format.toUpperCase()} file of this report.` })
+    toast({ tone: 'info', title: 'Preparing the export', description: background
+      ? 'This report is large, so it is prepared in the background; the file downloads when it is ready.' : `${format.toUpperCase()} file of this report.` })
     try {
-      await downloadReport(path, query, format)
+      if (background) {
+        const done = await job.start({ kind: 'report', format, source: reportSource(path), filters: exportFilters(query) }, idem.key)
+        idem.reset()
+        if (done.download_url) saveFile(done.download_url, done.file_name)
+      } else {
+        await downloadReport(path, query, format)
+      }
       toast({ tone: 'positive', title: 'Export ready', description: 'The file has been downloaded.' })
     } catch (e) {
+      idem.reset()
       toast({ tone: 'negative', title: 'Could not export', description: e instanceof Error ? e.message : 'Try again in a moment.' })
     } finally {
       setBusy(false)

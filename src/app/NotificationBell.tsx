@@ -15,6 +15,12 @@ export function useUnreadCount() {
   return q.data?.meta.total ?? 0
 }
 
+/** The page a notification opens (approval requests open the L4 drawer instead). */
+export function notificationPath(n: Pick<Notification, 'link_type' | 'link_id'>): string | null {
+  if (!n.link_id) return null
+  return ({ journal_entries: `/accounting/vouchers/${n.link_id}`, sales_invoices: `/sales/invoices/${n.link_id}`, purchase_bills: `/purchases/bills/${n.link_id}` } as Record<string, string>)[n.link_type ?? ''] ?? null
+}
+
 export function NotificationPanel({ onClose }: { onClose: () => void }) {
   const { Button, EmptyState, Skeleton } = ds()
   const navigate = useNavigate()
@@ -37,7 +43,8 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
   const open = (n: Notification) => {
     if (!n.read_at) read.mutate(n.id)
     if (n.link_type === 'approval_requests' && n.link_id) { setApproval(n.link_id); return }
-    if (n.link_type === 'journal_entries' && n.link_id) { onClose(); navigate(`/accounting/vouchers/${n.link_id}`) }
+    const path = notificationPath(n)
+    if (path) { onClose(); navigate(path) }
   }
   const rows = list.data?.data ?? []
 
@@ -48,7 +55,10 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
           background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-2, var(--shadow-1))' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--line)' }}>
           <strong>Notifications</strong>
-          <Button variant="ghost" size="sm" disabled={readAll.isPending || !rows.some((n) => !n.read_at)} onClick={() => readAll.mutate()} data-testid="read-all">Mark all read</Button>
+          <span style={{ display: 'flex', gap: 4 }}>
+            <Button variant="ghost" size="sm" disabled={readAll.isPending || !rows.some((n) => !n.read_at)} onClick={() => readAll.mutate()} data-testid="read-all">Mark all read</Button>
+            <Button variant="ghost" size="sm" onClick={() => { onClose(); navigate('/notifications') }} data-testid="see-all-notifications">See all</Button>
+          </span>
         </div>
         {list.isPending && <div style={{ padding: 14 }}><Skeleton height={48} /></div>}
         {!list.isPending && rows.length === 0 && <EmptyState icon="bell" title="Nothing new" description="Approvals and alerts appear here." />}
