@@ -7,6 +7,15 @@ import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { assertNoPageScroll, launch, newPage as open, signIn, signOut, OWNER, PASSWORD, STORE, VIEWER, VIEWPORTS } from './helpers.mjs'
 
+
+/** In-app navigation without a page reload (the dashboard is the landing page since P14; a reload would rotate the
+ *  refresh token, and two quick reloads can trip reuse detection). */
+async function go(page, path) {
+  await page.waitForLoadState('networkidle')
+  await page.evaluate((p) => { history.pushState({}, '', p); dispatchEvent(new PopStateEvent('popstate')) }, path)
+  await page.waitForURL((u) => u.pathname + u.search === path, { waitUntil: 'commit' })
+}
+
 let browser
 before(async () => { browser = await launch() })
 after(async () => { await browser?.close() })
@@ -32,7 +41,7 @@ test('sign-in: redirect, generic error, then success', async () => {
 test('customer workflow: validate, create, warn on duplicate, search, edit, conflict, deactivate', async () => {
   const { context, page, errors } = await newPage()
   await signIn(page, OWNER)
-  await page.goto('/customers') // Owner and Viewer land on the dashboard since P14
+  await go(page, '/customers') // Owner and Viewer land on the dashboard since P14
 
   // B2: client-side validation with the API's messages
   await page.getByTestId('new-customer').click()
@@ -80,7 +89,7 @@ test('customer workflow: validate, create, warn on duplicate, search, edit, conf
   await page.getByRole('cell', { name: /CUS-0002/ }).waitFor()
   await page.getByText('2 active · 0 inactive').waitFor()
   assert.equal(await page.getByTestId('tile-customers').textContent(), '2')
-  await page.getByLabel('Search').fill('CUS-0002')
+  await page.getByRole('textbox', { name: 'Search' }).fill('CUS-0002')
   await page.waitForURL(/q=CUS-0002/)
   await page.getByRole('cell', { name: /CUS-0001/ }).waitFor({ state: 'detached' })
   await page.getByRole('cell', { name: /CUS-0002/ }).waitFor()
@@ -145,7 +154,7 @@ test('customer workflow: validate, create, warn on duplicate, search, edit, conf
 test('roles: viewer can read but not create; store keeper cannot open customers', async () => {
   const { context, page, errors } = await newPage()
   await signIn(page, VIEWER)
-  await page.goto('/customers') // Owner and Viewer land on the dashboard since P14
+  await go(page, '/customers') // Owner and Viewer land on the dashboard since P14
   await page.getByRole('cell', { name: /CUS-0002/ }).waitFor()
   assert.equal(await page.getByTestId('new-customer').count(), 0, 'no New customer button for Viewer')
   await page.goto('/customers/new')
@@ -172,7 +181,7 @@ test('roles: viewer can read but not create; store keeper cannot open customers'
 test('add form: Save and add another, then the discard-changes dialog', async () => {
   const { context, page, errors } = await newPage()
   await signIn(page, OWNER)
-  await page.goto('/customers') // Owner and Viewer land on the dashboard since P14
+  await go(page, '/customers') // Owner and Viewer land on the dashboard since P14
   await page.goto('/customers/new')
   await page.getByLabel('Customer name').fill('Karim Distributors')
   await page.getByLabel('Mobile number').fill('01911223344')
@@ -207,7 +216,7 @@ test('add form: Save and add another, then the discard-changes dialog', async ()
 test('reactivate an inactive customer and delete one without history', async () => {
   const { context, page, errors } = await newPage()
   await signIn(page, OWNER)
-  await page.goto('/customers') // Owner and Viewer land on the dashboard since P14
+  await go(page, '/customers') // Owner and Viewer land on the dashboard since P14
 
   // CUS-0001 was made inactive in the workflow test
   await page.goto('/customers?status=inactive')
@@ -221,7 +230,7 @@ test('reactivate an inactive customer and delete one without history', async () 
   await page.getByRole('cell', { name: /CUS-0001/ }).waitFor()
 
   // CUS-0002 has no transactions: delete after typing its name
-  await page.getByLabel('Search').fill('CUS-0002')
+  await page.getByRole('textbox', { name: 'Search' }).fill('CUS-0002')
   await page.getByRole('cell', { name: /CUS-0002/ }).click()
   await page.waitForURL(/\/customers\/\d+$/)
   const url = page.url()
@@ -256,7 +265,7 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
     const phone = viewport.width < 640 // list rows become cards
     const { context, page, errors } = await newPage({ viewport, isMobile: phone, hasTouch: narrow })
     await signIn(page, OWNER)
-    await page.goto('/customers') // Owner and Viewer land on the dashboard since P14
+    await go(page, '/customers') // Owner and Viewer land on the dashboard since P14
     await assertNoPageScroll(page, `${name} landing page`)
 
     if (narrow) {

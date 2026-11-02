@@ -86,7 +86,7 @@ test('supplier workflow: validate, group, local and international, duplicate, fi
   // C1: tile, search, country filter; filters survive a reload
   await page.goto('/suppliers')
   await page.getByText('3 active · 0 inactive').waitFor()
-  await page.getByLabel('Search').fill('Guangzhou')
+  await page.getByRole('textbox', { name: 'Search' }).fill('Guangzhou')
   await page.waitForURL(/q=Guangzhou/)
   await page.getByRole('cell', { name: /SUP-0001/ }).waitFor({ state: 'detached' })
   await page.getByRole('cell', { name: /SUP-0003/ }).waitFor()

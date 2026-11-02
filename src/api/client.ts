@@ -75,6 +75,7 @@ export class ApiClient {
   getCompany() { return this.companyId }
 
   async request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<{ data: T; meta: ResponseMeta }> {
+    const sentWith = this.accessToken
     const res = await this.send(method, path, opts)
     if (res.status === 401 && !opts.noRefresh) {
       const problem = await readProblem(res)
@@ -91,7 +92,8 @@ export class ApiClient {
       const problem = await readProblem(res)
       // On a company-scoped call this means "this sign-in has no second factor". On DELETE /me/two-factor
       // (not company-scoped) it only means 2-step cannot be turned off, which the page reports itself.
-      if (problem.code === 'two_factor_required_by_company' && (opts.company ?? true) && this.companyId !== null) this.onTwoFactorRequired?.()
+      // Only for the current token: a request sent before 2-step was turned on (and the session refreshed) may answer late.
+      if (problem.code === 'two_factor_required_by_company' && (opts.company ?? true) && this.companyId !== null && sentWith === this.accessToken) this.onTwoFactorRequired?.()
       throw new ApiError(problem, res.headers)
     }
     const meta: ResponseMeta = { status: res.status, etag: res.headers.get('ETag'), headers: res.headers }

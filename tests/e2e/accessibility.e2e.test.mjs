@@ -126,7 +126,8 @@ test('keyboard only: sign in, Ctrl K to a page, focus always visible', async () 
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('type')), 'password')
   await page.keyboard.type(PASSWORD)
   await page.keyboard.press('Enter')
-  await page.waitForURL((u) => !u.pathname.startsWith('/sign-in'))
+  // Wait for the landing page itself: '/' redirects to the dashboard and remounts the shell.
+  await page.waitForURL((u) => !u.pathname.startsWith('/sign-in') && u.pathname !== '/')
   await settle(page)
   // Command palette by keyboard.
   await page.keyboard.press('Control+k')

@@ -117,3 +117,17 @@ test('a company 2-step requirement calls onTwoFactorRequired; a wrong 2-step cod
   assert.equal(ended, 0)
   assert.equal(c.hasAccessToken(), true)
 })
+
+test('a 2-step refusal sent with an older token (before 2-step was turned on) does not block the new session', async () => {
+  let c: ApiClient
+  ;({ c } = client((call) => {
+    if (call.url.includes('/parties')) c.setAccessToken('tok-with-otp') // the session is refreshed while this request is in flight
+    return problem(403, 'two_factor_required_by_company')
+  }))
+  let required = 0
+  c!.onTwoFactorRequired = () => { required++ }
+  c!.setAccessToken('tok-password-only')
+  c!.setCompany(7)
+  await assert.rejects(c!.request('GET', '/parties'), (e: unknown) => e instanceof ApiError && e.code === 'two_factor_required_by_company')
+  assert.equal(required, 0)
+})

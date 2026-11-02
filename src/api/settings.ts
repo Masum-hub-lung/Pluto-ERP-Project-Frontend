@@ -99,6 +99,8 @@ export function useMembers(f: { q?: string; status?: string; page?: number } = {
     queryKey: k('members', f),
     queryFn: async () => (await api.request<{ data: Member[]; meta: PageMeta }>('GET', '/users', { query: { ...f, per_page: 50 } })).data,
     placeholderData: keepPreviousData,
+    // Invitees join from their own browser: show who has joined every time the page opens.
+    staleTime: 0, refetchOnMount: 'always',
   })
 }
 

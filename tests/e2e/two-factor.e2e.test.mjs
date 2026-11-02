@@ -11,6 +11,15 @@ before(async () => { browser = await launch() })
 after(async () => { await browser?.close() })
 
 // Each E2E file starts from a fresh company (scripts/e2e.sh): the customer list this file opens needs one customer.
+/** Signed in and on a page (Owner and Viewer land on the dashboard since P14). */
+const landed = (u) => !u.pathname.startsWith('/sign-in') && u.pathname !== '/'
+/** In-app navigation without a reload (a reload rotates the refresh token). */
+async function go(page, path) {
+  await page.waitForLoadState('networkidle')
+  await page.evaluate((p) => { history.pushState({}, '', p); dispatchEvent(new PopStateEvent('popstate')) }, path)
+  await page.waitForURL((u) => u.pathname === path, { waitUntil: 'commit' })
+}
+
 test('owner adds a customer (API)', async () => {
   const { context, page } = await newPage(browser)
   const api = apiFor(page)
@@ -27,6 +36,9 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   // K14 from the profile menu
   await page.getByTestId('profile-menu').click()
   await page.getByRole('menuitem', { name: /Settings/ }).click()
+  // Since P15 Settings opens the first section the role may use; Security is one rail click away.
+  await page.waitForURL(/\/settings\//)
+  if (!/\/settings\/security$/.test(page.url())) await page.getByRole('button', { name: 'Security', exact: true }).first().click()
   await page.waitForURL(/\/settings\/security$/)
   await page.getByRole('heading', { name: 'Security' }).waitFor()
   await page.getByText('Off', { exact: true }).first().waitFor()
@@ -62,7 +74,8 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   await page.getByText('That code is not valid. Check your authenticator app and try again.').waitFor()
   await page.getByLabel('Authenticator code').fill(totp(secret, 1))
   await page.getByRole('button', { name: 'Verify and sign in' }).click()
-  await page.waitForURL(/\/customers/)
+  await page.waitForURL(landed)
+  await go(page, '/customers')
   await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
 
   // A reload keeps the session (the refresh token carries the second factor)
@@ -75,7 +88,7 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   await page.getByRole('button', { name: 'Use a recovery code' }).click()
   await page.getByLabel('Recovery code').fill(codes[0])
   await page.getByRole('button', { name: 'Verify and sign in' }).click()
-  await page.waitForURL(/\/customers/)
+  await page.waitForURL(landed)
   await signOut(page)
   await signIn(page, VIEWER, { expect2fa: true })
   await page.getByRole('button', { name: 'Use a recovery code' }).click()
@@ -84,28 +97,29 @@ test('turn on 2-step, sign in with a code and with recovery codes, then turn it 
   await page.getByText('That recovery code is not valid or was already used').waitFor()
   await page.getByLabel('Recovery code').fill(codes[1].toLowerCase())
   await page.getByRole('button', { name: 'Verify and sign in' }).click()
-  await page.waitForURL(/\/customers/)
+  await page.waitForURL(landed)
 
   // Turn off: needs the password
   await page.goto('/settings/security')
   await page.getByTestId('two-factor-switch').locator('label').click()
   await page.getByText('Turn off 2-step verification?').waitFor()
-  await page.getByLabel('Password').fill('not the password')
+  await page.getByRole('dialog').getByLabel('Password').fill('not the password')
   await page.getByRole('button', { name: 'Turn off', exact: true }).click()
   await page.getByText('The password is not correct').waitFor()
-  await page.getByLabel('Password').fill(PASSWORD)
+  await page.getByRole('dialog').getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: 'Turn off', exact: true }).click()
   await page.getByText('2-step verification is off').waitFor()
 
   // Back to password-only sign-in
   await signOut(page)
   await signIn(page, VIEWER)
+  await go(page, '/customers')
   await page.getByRole('heading', { name: 'Customers', exact: true }).waitFor()
   assert.deepEqual(errors, [])
   await context.close()
 })
 
-test('cancelling the set-up keeps 2-step off; other settings sections are placeholders', async () => {
+test('cancelling the set-up keeps 2-step off', async () => {
   const { context, page, errors } = await newPage(browser)
   await signIn(page, VIEWER)
   await page.goto('/settings/security')
@@ -117,10 +131,6 @@ test('cancelling the set-up keeps 2-step off; other settings sections are placeh
   await page.reload()
   await page.getByText('Off', { exact: true }).first().waitFor()
 
-  // Other settings sections are honest placeholders
-  await page.getByRole('button', { name: 'Company profile' }).click()
-  await page.getByTestId('state-not-in-release').waitFor()
-  await page.getByText('Settings › Company profile is not in this release yet').waitFor()
   assert.deepEqual(errors, [])
   await context.close()
 })
@@ -155,7 +165,7 @@ test('a company that requires 2-step sends a password-only sign-in to Security u
     // While required, it cannot be turned off
     await page.goto('/settings/security')
     await page.getByTestId('two-factor-switch').locator('label').click()
-    await page.getByLabel('Password').fill(PASSWORD)
+    await page.getByRole('dialog').getByLabel('Password').fill(PASSWORD)
     await page.getByRole('button', { name: 'Turn off', exact: true }).click()
     await page.getByRole('dialog').getByText('Your company requires 2-step verification').waitFor()
     assert.equal(await page.getByText('Sign in again with your authenticator code').count(), 0, 'not mistaken for a sign-in problem')
