@@ -92,6 +92,8 @@ Design system through `ds()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amo
 | LC dialogs (LC-DrawerCharge, LC-DlgPay, LC-DlgClose with the 422 checks, landed cost, amendment, lot, document, status change) and the LC status badge | `ChargeDialog`, `PayDialog`, `CloseDialog`, `LandedCostDialog`, `AmendmentDialog`, `ShipmentDialog`, `DocumentDialog`, `TransitionDialog`, `LcStatusBadge`, `PayChargeDialog` | `pages/lc/LcDialogs.tsx`, `pages/lc/LcDetails.tsx` | `<ChargeDialog lc={lc} onClose={close} />` (without `lc` it asks for the LC, as on M7) |
 | M3 LC form values ↔ API body; an edit drops fields the LC resource does not return unless touched | `lcSchema`, `toLcInput`, `lcToForm`, `editBody`, `missingForSubmit` | `lib/lcSchema.ts` | `update.mutateAsync({ input: editBody(toLcInput(v, false), dirtyFields), version })` |
 | F3 import mode (LC, lot, currency, rate; opened by `/purchases/bills/new?lc=<id>&lot=<id>`) | `ImportFields` | `pages/purchases/ImportFields.tsx` | `<ImportFields values={values} register={register} setValue={setValue} errors={errors} />` |
+| Error tracking (Sentry, only when `VITE_SENTRY_DSN` is set; no personal data, bodies or URL queries; private source maps when `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` are set at build) | `initMonitoring`, `scrubEvent`, `stripQuery` | `lib/monitoring.ts`, `vite.config.ts` | called once in `main.tsx`; never log amounts or names with `console.error` (they would reach Sentry breadcrumbs) |
+| Accessibility and responsive audit of every page (axe WCAG A/AA serious+critical = fail; 1440/1200/1024/390 px; keyboard-only sign-in and Ctrl K) | `PAGES` list | `tests/e2e/accessibility.e2e.test.mjs` | add each new page's path to `PAGES`; CI runs all E2E nightly (`.github/workflows/e2e.yml`) |
 | Inventory detail header (actions → More menu on phones) and recent movements card | `DetailHeader`, `RecentMovements` | `pages/inventory/parts.tsx` | `<RecentMovements productId={p.id} costs={can('inventory.view_costs')} />` |
 
 Try the pickers on the dev-only page `/dev/pickers` and the document editor parts on `/dev/document` (`npm run dev`; not in production builds).
@@ -101,7 +103,7 @@ Try the pickers on the dev-only page `/dev/pickers` and the document editor part
 npm run dev                         # http://localhost:5173, /api → VITE_DEV_API_TARGET (default Docker backend :8080)
 npm run typecheck && npm test && npm run build
 ./scripts/sync-contract.sh          # after a backend PR marked "Contract changed"
-E2E_PASSWORD=<10+ chars> ./scripts/e2e.sh   # Playwright E2E against the backend's E2E stack (:8081); pluto_e2e is reset before each file (E2E_ONLY=<name> runs one)
+E2E_PASSWORD=<10+ chars> ./scripts/e2e.sh   # Playwright E2E against the backend's E2E stack (:8081); pluto_e2e is reset before each file (E2E_ONLY=<name> runs one); CI: .github/workflows/e2e.yml (nightly, main, manual)
 ./scripts/point-backend.sh <url>    # point Vercel at a new tunnel URL (runbook in the backend repo)
 ```
 Backend once: `cd ../backend && ./scripts/setup.sh` (demo sign-in `owner@pluto.local`).

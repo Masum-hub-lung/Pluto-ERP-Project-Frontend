@@ -3,9 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { loadDesignSystem } from './ds'
+import { initMonitoring } from './lib/monitoring'
 import './app/responsive.css'
 
 /** Boot: load the prebuilt Pluto design-system bundle (it uses this app's React), then render. */
+initMonitoring() // Sentry, only when VITE_SENTRY_DSN is set (P17.2-FE-02)
 const root = createRoot(document.getElementById('root')!)
 
 loadDesignSystem().then(async () => {

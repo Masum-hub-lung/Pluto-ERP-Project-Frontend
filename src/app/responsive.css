@@ -31,3 +31,8 @@
   /* Page titles wrap instead of pushing the page wider. */
   .lf-page h1 { overflow-wrap: anywhere; }
 }
+
+/* Accessibility (P17.2-FE-01, axe colour-contrast): the top-bar search hint and the keyboard hints inside buttons were
+   below 4.5:1. Same tokens, darker step; no opacity on text over the brand colour. */
+:root body .lf-search-trigger { color: var(--ink-muted); }
+:root body .lf-btn .lf-btn-kbd, :root body .lf-btn-kbd { opacity: 1; }
