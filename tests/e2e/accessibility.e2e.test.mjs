@@ -29,7 +29,7 @@ export const PAGES = [
   '/sales/returns', '/sales/returns/new', '/sales/credit-notes/new',
   '/purchases', '/purchases/bills', '/purchases/bills/new', '/purchases/orders', '/purchases/orders/new', '/purchases/payments', '/purchases/payments/new',
   '/purchases/returns', '/purchases/returns/new', '/purchases/debit-notes/new',
-  '/lc', '/lc/list', '/lc/new', '/lc/amendments', '/lc/documents', '/lc/charges', '/lc/reports',
+  '/lc', '/lc/list', '/lc/new', '/lc/amendments', '/lc/documents', '/lc/charges', '/lc/banks', '/lc/loans', '/lc/fx-revaluation', '/lc/reports',
   '/banking', '/banking/accounts', '/banking/accounts/new', '/banking/transactions', '/banking/cash-book', '/banking/bank-book',
   '/banking/received', '/banking/paid', '/banking/cash-transfer', '/banking/bank-transfer',
   '/income', '/income/list', '/income/new', '/income/categories', '/income/report',

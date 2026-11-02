@@ -85,3 +85,20 @@ test('an import bill sends the LC, lot and currency; a blank rate is left to the
   assert.equal('letter_of_credit_id' in local, false)
   assert.equal('currency_code' in local, false)
 })
+
+test('LC finance lives inside the LC portal: banks, loans and FX revaluation (the last needs accounting.view)', async () => {
+  const { visibleNav } = await import('../../src/app/nav')
+  const lcChildren = (perms: string[]) => visibleNav((p: string) => perms.includes(p)).flatMap((s) => s.items).find((i) => i.label === 'LC Management')!.children!.map((c) => c.path)
+  const full = lcChildren(['lc.view', 'lc.create', 'accounting.view'])
+  for (const p of ['/lc/banks', '/lc/loans', '/lc/fx-revaluation']) assert.ok(full.includes(p), p)
+  assert.ok(!lcChildren(['lc.view']).includes('/lc/fx-revaluation'))
+  assert.ok(lcChildren(['lc.view']).includes('/lc/loans'))
+})
+
+test('loan and financing labels', async () => {
+  const { FINANCED_BY, LOAN_KIND, LOAN_STATUS } = await import('../../src/api/lcFinance')
+  assert.equal(FINANCED_BY.own, 'Own funds')
+  assert.equal(FINANCED_BY.ltr, 'Bank finance (LTR)')
+  assert.equal(LOAN_KIND.pad, 'PAD')
+  assert.equal(LOAN_STATUS.repaid!.tone, 'positive')
+})

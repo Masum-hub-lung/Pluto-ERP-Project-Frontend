@@ -32,18 +32,19 @@ import { LcStatusBadge, PayChargeDialog } from './LcDetails'
 const card = { ...panel, padding: '16px 20px' } as const
 const h2 = { margin: '0 0 8px', font: '650 16px/24px var(--font-sans)' } as const
 
-function LcNav({ current }: { current: string }) {
+export function LcNav({ current }: { current: string }) {
   const { Segmented } = ds()
   const navigate = useNavigate()
   const items = [{ value: '/lc', label: 'Overview' }, { value: '/lc/list', label: 'All LCs' }, { value: '/lc/amendments', label: 'Amendments' },
-    { value: '/lc/documents', label: 'Documents' }, { value: '/lc/charges', label: 'Charges and cost' }, { value: '/lc/reports', label: 'Reports' }]
+    { value: '/lc/documents', label: 'Documents' }, { value: '/lc/charges', label: 'Charges and cost' }, { value: '/lc/banks', label: 'Banks and limits' },
+    { value: '/lc/loans', label: 'Loans' }, { value: '/lc/fx-revaluation', label: 'FX revaluation' }, { value: '/lc/reports', label: 'Reports' }]
   return <div style={{ marginBottom: 16, overflowX: 'auto' }}><Segmented size="sm" value={current} options={items} onChange={(v) => navigate(v)} /></div>
 }
 
 interface OverviewRow { id: number; lc_number: string; party: string; bank: string | null; status: string; currency_code: string; amount: string; outstanding_foreign: string; expiry_date: string | null; days_to_expiry: number | null }
 interface OverviewMeta {
   pipeline: Array<{ status: string; count: number }>; by_bank: Array<{ bank: string; count: number; planned_bdt: string }>
-  deadlines: Array<{ lc_id: number; lc_number: string; kind: string; date: string }>; recent: Array<{ action: string; type: string; id: number; user: string | null; at: string }>
+  deadlines: Array<{ lc_id: number; lc_number: string; kind: string; date: string; url?: string }>; recent: Array<{ action: string; type: string; id: number; user: string | null; at: string }>
 }
 
 /** M1 LC dashboard. */
@@ -63,6 +64,7 @@ export function LcDashboard() {
     { key: 'expiring', n: Number(t.expiring_15), label: 'expiring within 15 days', to: '/lc/list?group=active&attention=true' },
     { key: 'documents', n: Number(t.documents_attention), label: 'documents missing or discrepant', to: '/lc/documents' },
     { key: 'charges', n: Number(t.unpaid_charges), label: 'charges not paid', to: '/lc/charges?status=unpaid' },
+    { key: 'loans', n: Number(t.loans_due_7 ?? 0), label: 'loans due within 7 days or overdue', to: '/lc/loans?status=open' },
   ].filter((a) => a.n > 0)
   const columns: DataColumn[] = [
     { key: 'lc_number', label: 'LC', mono: true }, { key: 'party', label: 'Supplier' },
@@ -78,6 +80,7 @@ export function LcDashboard() {
         <SummaryTile label="Commitments" value={formatTaka(String(t.active_planned_bdt), { symbol: true })} sub="At planning rates" testId="kpi-commitments" />
         <SummaryTile label="Outstanding" value={formatTaka(String(t.outstanding_bdt), { symbol: true })} sub="Not yet paid, at planning rates" testId="kpi-outstanding" />
         <SummaryTile label="Margin held" value={formatTaka(String(t.margin_held), { symbol: true })} sub={`${formatTaka(String(t.goods_in_transit), { symbol: true })} in transit`} testId="kpi-margin" />
+        <SummaryTile label="PAD/LTR loans" value={formatTaka(String(t.loans_outstanding ?? '0.00'), { symbol: true })} sub={`${t.loans_open ?? 0} open`} testId="kpi-loans" />
       </div>
       {alerts.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }} data-testid="lc-alerts">
@@ -106,7 +109,7 @@ export function LcDashboard() {
             <h2 style={h2}>Next 30 days</h2>
             {(m.deadlines ?? []).length === 0 ? <p style={{ margin: 0, color: 'var(--ink-muted)' }}>No deadlines.</p> : (
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 6 }}>
-                {m.deadlines.map((d, i) => <li key={i}><Link to={`/lc/${d.lc_id}`} className="lf-code">{d.lc_number}</Link> {d.kind} · {shortDate(d.date)}</li>)}
+                {m.deadlines.map((d, i) => <li key={i}><Link to={d.url ?? `/lc/${d.lc_id}`} className="lf-code">{d.lc_number}</Link> {d.kind} · {shortDate(d.date)}</li>)}
               </ul>
             )}
           </section>
@@ -412,9 +415,11 @@ const REPORTS: Array<{ key: string; label: string; description: string }> = [
   { key: 'amendments', label: 'Amendments', description: 'Amendment history' },
   { key: 'charges', label: 'Charges and payments', description: 'Every charge and payment' },
   { key: 'cost', label: 'Import cost', description: 'Landed cost per LC' },
+  { key: 'loans', label: 'PAD/LTR loans', description: 'Bank loans on LC payments, with the interest due today' },
+  { key: 'exposure', label: 'Bank exposure', description: 'LC and loan limits, use and room per bank' },
 ]
 
-/** M8 LC reports: eight tabs on the shared report layout (Print, Export). */
+/** M8 LC reports: ten tabs on the shared report layout (Print, Export). */
 export function LcReports() {
   const { Tabs, Select, Field } = ds()
   const navigate = useNavigate()
@@ -422,7 +427,7 @@ export function LcReports() {
   const { get, set } = useListParams()
   const banks = useMoneyAccounts({ purpose: 'payments' })
   const def = REPORTS.find((r) => r.key === report) ?? REPORTS[0]!
-  const query = { date_from: get('date_from') || undefined, date_to: get('date_to') || undefined, bank_account_id: get('bank') || undefined, segment: report === 'status' ? get('segment') || undefined : undefined }
+  const query = { date_from: get('date_from') || undefined, date_to: get('date_to') || undefined, bank_account_id: get('bank') || undefined, segment: report === 'status' || report === 'loans' ? get('segment') || undefined : undefined }
   const r = useReport(`lc/${def.key}` as ReportPath, query)
   return (
     <>
@@ -439,6 +444,8 @@ export function LcReports() {
             options={[{ value: '', label: 'All banks' }, ...(banks.data ?? []).filter((a) => a.account_type !== 'cash').map((a) => ({ value: String(a.id), label: a.name }))]} /></Field></div>
           {report === 'status' && <div style={{ width: 180 }}><Field label="Segment" htmlFor="lc-seg"><Select id="lc-seg" value={get('segment')} onChange={(e) => set({ segment: e.target.value || null })}
             options={[{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'expired', label: 'Expired' }, { value: 'closed', label: 'Closed' }]} /></Field></div>}
+          {report === 'loans' && <div style={{ width: 180 }}><Field label="Loans" htmlFor="lc-loan-seg"><Select id="lc-loan-seg" value={get('segment')} onChange={(e) => set({ segment: e.target.value || null })}
+            options={[{ value: '', label: 'Open' }, { value: 'all', label: 'All' }]} /></Field></div>}
         </>}>
         {r.data && <StatementTable report={r.data} onOpen={(row) => { if (typeof row.url === 'string') navigate(row.url) }} testId={`lc-report-${def.key}`} />}
       </ReportLayout>

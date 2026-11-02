@@ -6,6 +6,7 @@ import {
   chargeLabel, DOC_STATUS, fetchLcPdf, LC_STATUS, lcActions, lcEditable, lcLive, PAYMENT_KIND, SHIPMENT_STATUS, useAmendmentStatus, useLc, useLcCostSummary, usePayCharge,
   useReverseLcItem, useUpdateLcDocument, type Reversible,
 } from '../../api/lc'
+import { FINANCED_BY } from '../../api/lcFinance'
 import { useMoneyAccounts } from '../../api/money'
 import { dhakaToday } from '../../api/platform'
 import { useToast } from '../../app/toast'
@@ -262,6 +263,8 @@ function Money({ lc, onReverse, onPayCharge }: { lc: LetterOfCredit; onReverse: 
             columns={[{ key: 'date', label: 'Date' }, { key: 'kind', label: 'Kind' }, { key: 'amount_foreign', label: lc.currency_code, align: 'right', mono: true },
               { key: 'bank_rate', label: 'Rate', align: 'right', mono: true }, { key: 'bdt', label: 'Taka (৳)', type: 'amount' }, { key: 'margin', label: 'Margin applied (৳)', type: 'amount' },
               { key: 'fx', label: 'FX difference (৳)', type: 'amount' },
+              { key: 'financed_by', label: 'Paid with', render: (v: string, row: LcPayment) => row.lc_loan_id
+                ? <Link to={`/lc/loans/${row.lc_loan_id}`} data-testid={`loan-link-${row.id}`}>{FINANCED_BY[v] ?? v}</Link> : (FINANCED_BY[v] ?? v) },
               { key: 'status', label: 'Status', render: (v: string) => <Badge tone={v === 'reversed' ? 'negative' : 'positive'}>{v}</Badge> }]}
             rowActions={(r: LcPayment) => editable && r.status === 'posted' && can('lc.edit')
               ? <Button size="sm" variant="ghost" onClick={() => onReverse('lc-payments', r.id, `this ${PAYMENT_KIND[r.payment_kind]?.toLowerCase()}`)}>Reverse</Button> : null}

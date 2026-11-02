@@ -36,3 +36,10 @@
    below 4.5:1. Same tokens, darker step; no opacity on text over the brand colour. */
 :root body .lf-search-trigger { color: var(--ink-muted); }
 :root body .lf-btn .lf-btn-kbd, :root body .lf-btn-kbd { opacity: 1; }
+
+/* Tall dialogs on short screens (P16.5, LC-DlgPay with bank-finance terms): the body scrolls, the head and footer stay
+   on screen. The design-system dialog has no max height of its own. */
+@media (min-width: 640px) {
+  .lf-dialog { max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }
+  .lf-dialog > .lf-dialog-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: var(--space-4); }
+}
