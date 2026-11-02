@@ -6,6 +6,7 @@ import {
   useRecordLcPayment, useUpdateShipment,
 } from '../../api/lc'
 import { useTaxRules } from '../../api/inventory'
+import { useBankFacilities } from '../../api/lcFinance'
 import { useMoneyAccounts } from '../../api/money'
 import { dhakaToday } from '../../api/platform'
 import { useBills } from '../../api/purchases'
@@ -144,6 +145,13 @@ export function PayDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => 
   const [account, setAccount] = useState(lc.issuing_bank ? String(lc.issuing_bank.id) : '')
   const [margin, setMargin] = useState('')
   const [reference, setReference] = useState('')
+  const [financing, setFinancing] = useState<'own' | 'bank'>('own')
+  const [loanKind, setLoanKind] = useState<'pad' | 'ltr'>('ltr')
+  const [loanRate, setLoanRate] = useState('')
+  const [tenor, setTenor] = useState('')
+  const facilities = useBankFacilities()
+  const facility = (facilities.data ?? []).find((f) => String(f.money_account_id) === account)
+  const financed = financing === 'bank' && kind !== 'usance_acceptance'
   const [error, setError] = useState<unknown>(null)
   const errs = fieldErrors(error)
   const held = String((lc.money_position as Record<string, unknown> | null)?.margin_held ?? '0.00')
@@ -155,8 +163,10 @@ export function PayDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => 
       const p = await pay.mutateAsync({ idempotencyKey: idem.key, input: {
         payment_kind: kind, payment_date: date, amount_foreign: amount.trim(), bank_rate: rate.trim(), money_account_id: Number(account) || 0,
         margin_applied: kind !== 'usance_acceptance' && margin.trim() ? margin.trim() : undefined, bank_reference: reference.trim() || null,
+        ...(financed ? { financed_by: loanKind, loan: { loan_kind: loanKind, ...(loanRate.trim() ? { interest_rate_pct: loanRate.trim() } : {}), ...(tenor.trim() ? { tenor_days: Number(tenor) } : {}) } } : {}),
       } })
       idem.reset()
+      if (p.lc_loan_id) toast({ tone: 'info', title: `${loanKind.toUpperCase()} loan opened`, description: 'See it under LC Management › Loans.' })
       toast({ tone: 'positive', title: `${lc.currency_code} ${p.amount_foreign} recorded at ${p.bank_rate}`,
         description: `${formatTaka(p.amount_bdt, { symbol: true })}${p.fx_difference !== '0.00' ? ` · exchange difference ${formatTaka(p.fx_difference, { symbol: true })}` : ''}` })
       onClose()
@@ -182,7 +192,26 @@ export function PayDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => 
           </Field>
           <Field label="Paid on" htmlFor="pay-date" required error={errs.payment_date}><Input id="pay-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         </div>
-        <AccountSelect id="pay-account" label="Debited from" value={account} onChange={setAccount} error={errs.money_account_id} />
+        {kind !== 'usance_acceptance' && <Field label="Paid with">
+          <Segmented value={financing} onChange={(v) => setFinancing(v as typeof financing)}
+            options={[{ value: 'own', label: 'Own funds' }, { value: 'bank', label: 'Bank finance (PAD/LTR)' }]} />
+        </Field>}
+        <AccountSelect id="pay-account" label={financed ? 'Financing bank' : 'Debited from'} value={account} onChange={setAccount} error={errs.money_account_id} />
+        {financed && (
+          <div style={{ display: 'grid', gap: 12 }} data-testid="pay-loan-terms">
+            <p style={{ margin: 0, color: 'var(--ink-muted)' }}>The bank pays the supplier and lends you the amount after margin. Blank terms take the bank's defaults
+              {facility ? ` (${facility.interest_rate_pct} %, ${facility.loan_tenor_days} days, actual/${facility.day_count})` : ' (set them under LC Management › Banks and limits)'}.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+              <Field label="Loan type"><Segmented value={loanKind} onChange={(v) => setLoanKind(v as typeof loanKind)} options={[{ value: 'pad', label: 'PAD' }, { value: 'ltr', label: 'LTR' }]} /></Field>
+              <Field label="Interest rate (% a year)" htmlFor="pay-loan-rate" error={errs['loan.interest_rate_pct']}>
+                <Input id="pay-loan-rate" inputMode="decimal" align="right" mono value={loanRate} onChange={(e) => setLoanRate(e.target.value)} placeholder={facility?.interest_rate_pct ?? ''} />
+              </Field>
+              <Field label="Tenor (days)" htmlFor="pay-loan-tenor" error={errs['loan.tenor_days']}>
+                <Input id="pay-loan-tenor" inputMode="numeric" align="right" mono value={tenor} onChange={(e) => setTenor(e.target.value.replace(/\D/g, ''))} placeholder={facility ? String(facility.loan_tenor_days) : ''} />
+              </Field>
+            </div>
+          </div>
+        )}
         {kind !== 'usance_acceptance' && (
           <Field label="Margin applied (৳)" htmlFor="pay-margin" error={errs.margin_applied} hint={`Margin held for this LC: ${formatTaka(held, { symbol: true })}`}>
             <Input id="pay-margin" inputMode="decimal" align="right" mono value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="0.00" invalid={!!errs.margin_applied} />

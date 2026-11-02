@@ -65,6 +65,10 @@ const LcAmendments = lazy(() => lcPages().then((m) => ({ default: m.LcAmendments
 const LcDocuments = lazy(() => lcPages().then((m) => ({ default: m.LcDocuments })))
 const LcCharges = lazy(() => lcPages().then((m) => ({ default: m.LcCharges })))
 const LcReports = lazy(() => lcPages().then((m) => ({ default: m.LcReports })))
+const LcBanks = lazy(() => lcPages().then((m) => ({ default: m.LcBanks })))
+const LcLoans = lazy(() => lcPages().then((m) => ({ default: m.LcLoans })))
+const LcLoanDetails = lazy(() => lcPages().then((m) => ({ default: m.LcLoanDetails })))
+const LcFxRevaluation = lazy(() => lcPages().then((m) => ({ default: m.LcFxRevaluation })))
 const banking = () => import('../pages/banking')
 const MoneyAccountList = lazy(() => banking().then((m) => ({ default: m.MoneyAccountList })))
 const MoneyAccountForm = lazy(() => banking().then((m) => ({ default: m.MoneyAccountForm })))
@@ -224,6 +228,10 @@ export const router = createBrowserRouter([
       { path: 'lc/charges', handle: crumbs('LC Management', 'Charges and cost'), element: guarded('lc.view', lazyPage(<LcCharges />, 'list')) },
       { path: 'lc/reports', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
       { path: 'lc/reports/:report', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
+      { path: 'lc/banks', handle: crumbs('LC Management', 'Banks and limits'), element: guarded('lc.view', lazyPage(<LcBanks />, 'list')) },
+      { path: 'lc/loans', handle: crumbs('LC Management', 'Loans'), element: guarded('lc.view', lazyPage(<LcLoans />, 'list')) },
+      { path: 'lc/loans/:id', handle: crumbs('LC Management', 'Loan'), element: guarded('lc.view', lazyPage(<LcLoanDetails />, 'detail')) },
+      { path: 'lc/fx-revaluation', handle: crumbs('LC Management', 'FX revaluation'), element: guarded('accounting.view', lazyPage(<LcFxRevaluation />, 'report')) },
       { path: 'lc/:id', handle: crumbs('LC Management', 'LC'), element: guarded('lc.view', lazyPage(<LcDetails />, 'detail')) },
       { path: 'lc/:id/edit', handle: crumbs('LC Management', 'Edit LC'), element: guarded('lc.edit', lazyPage(<LcForm mode="edit" />, 'form')) },
       { path: 'banking', handle: crumbs('Cash and bank', 'Overview'), element: guarded('banking.view', lazyPage(<BankingOverview />, 'detail')) },

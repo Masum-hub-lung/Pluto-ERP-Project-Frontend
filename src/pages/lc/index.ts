@@ -2,3 +2,4 @@
 export { LcDashboard, LcList, LcAmendments, LcDocuments, LcCharges, LcReports } from './LcPages'
 export { LcForm } from './LcForm'
 export { LcDetails } from './LcDetails'
+export { LcBanks, LcLoans, LcLoanDetails, LcFxRevaluation } from './LcFinancePages'

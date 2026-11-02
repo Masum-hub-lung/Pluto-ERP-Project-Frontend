@@ -27,7 +27,8 @@ export const NAV: NavSection[] = [
       { ...page('LC Management', '/lc', 'lc.view', true), icon: 'file-text', children: [
         page('Overview', '/lc', 'lc.view', true), page('All LCs', '/lc/list', 'lc.view', true), page('New LC', '/lc/new', 'lc.create', true),
         page('Amendments', '/lc/amendments', 'lc.view', true), page('Documents', '/lc/documents', 'lc.view', true),
-        page('Charges and cost', '/lc/charges', 'lc.view', true), page('Reports', '/lc/reports', 'lc.view', true),
+        page('Charges and cost', '/lc/charges', 'lc.view', true), page('Banks and limits', '/lc/banks', 'lc.view', true),
+        page('Loans', '/lc/loans', 'lc.view', true), page('FX revaluation', '/lc/fx-revaluation', 'accounting.view', true), page('Reports', '/lc/reports', 'lc.view', true),
       ] },
       { ...page('Customers', '/customers', 'parties.view', true), icon: 'users', children: [
         page('All customers', '/customers', 'parties.view', true), page('Add customer', '/customers/new', 'parties.create', true),
