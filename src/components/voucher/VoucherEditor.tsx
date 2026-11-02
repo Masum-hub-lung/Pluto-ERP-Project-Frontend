@@ -146,17 +146,17 @@ export function VoucherEditor({ initial, voucher, heading }: { initial: VoucherF
           actions={type === 'journal' && calc.result && !calc.result.balanced
             ? <Button variant="ghost" size="sm" icon="scale" onClick={putDifference} data-testid="put-difference">Put difference on last line</Button> : undefined}>
           <div style={{ overflowX: 'auto' }}>
-            <div role="table" aria-label="Voucher lines" style={{ minWidth: 640 }}>
-              <div role="row" style={{ display: 'grid', gridTemplateColumns: lineGrid, gap: 8, padding: '8px 16px', borderBottom: '1px solid var(--line)', font: '600 12px/16px var(--font-sans)', color: 'var(--ink-muted)' }}>
-                <span role="columnheader">{type === 'contra' ? 'Account' : 'Ledger'}</span>
-                {type !== 'journal' && <span role="columnheader">Against</span>}
-                <span role="columnheader">Line narration</span>
-                {type === 'journal' ? <><span role="columnheader" style={{ textAlign: 'right' }}>Debit (৳)</span><span role="columnheader" style={{ textAlign: 'right' }}>Credit (৳)</span></>
-                  : <span role="columnheader" style={{ textAlign: 'right' }}>Amount (৳)</span>}
+            <div role="group" aria-label="Voucher lines" style={{ minWidth: 640 }}>
+              <div aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: lineGrid, gap: 8, padding: '8px 16px', borderBottom: '1px solid var(--line)', font: '600 12px/16px var(--font-sans)', color: 'var(--ink-muted)' }}>
+                <span>{type === 'contra' ? 'Account' : 'Ledger'}</span>
+                {type !== 'journal' && <span>Against</span>}
+                <span>Line narration</span>
+                {type === 'journal' ? <><span style={{ textAlign: 'right' }}>Debit (৳)</span><span style={{ textAlign: 'right' }}>Credit (৳)</span></>
+                  : <span style={{ textAlign: 'right' }}>Amount (৳)</span>}
                 <span />
               </div>
               {s.lines.map((l, i) => (
-                <div key={l.key} role="row" data-testid={`vline-${i}`} style={{ padding: '8px 16px', borderBottom: '1px solid var(--line)' }}>
+                <div key={l.key} role="group" aria-label={`Line ${i + 1}`} data-testid={`vline-${i}`} style={{ padding: '8px 16px', borderBottom: '1px solid var(--line)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: lineGrid, gap: 8, alignItems: 'start' }}>
                     {type === 'contra'
                       ? <Select aria-label={`Account, line ${i + 1}`} value={String(accounts.data?.find((a) => a.ledger_id === l.ledgerId)?.id ?? '')}

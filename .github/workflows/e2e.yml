@@ -1,0 +1,71 @@
+# End-to-end tests in CI (backlog P0.8-FE-02 / P17.2-FE-02): the real backend (Docker, MySQL 8, Redis) from the backend
+# repo, this app's production build on vite preview, and every tests/e2e/*.e2e.test.mjs file (Playwright, Chromium),
+# with pluto_e2e reset before each file (scripts/e2e.sh). Slow (tens of minutes), so it runs nightly, on main and on
+# demand — not on every pull request; the quick checks stay in ci.yml.
+# Secrets: BACKEND_REPO_TOKEN (fine-grained, read-only "Contents" on Pluto-ERP-Project-Backend) when that repo is private.
+# The E2E password is random per run; nothing else is needed.
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 20 * * *'   # 02:30 Asia/Dhaka
+  workflow_dispatch:
+    inputs:
+      backend_ref:
+        description: Backend branch or tag to test against
+        default: main
+      only:
+        description: Run only the E2E files whose name contains this (empty = all)
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: e2e (Playwright against the Docker backend)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: frontend
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/Pluto-ERP-Project-Backend
+          ref: ${{ inputs.backend_ref || 'main' }}
+          token: ${{ secrets.BACKEND_REPO_TOKEN || github.token }}
+          path: backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Random E2E and demo passwords for this run
+        run: |
+          echo "E2E_PASSWORD=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)" >> "$GITHUB_ENV"
+          echo "PLUTO_OWNER_PASSWORD=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)" >> "$GITHUB_ENV"
+      - name: Backend (Docker stack, migrations, demo data)
+        working-directory: backend
+        run: ./scripts/setup.sh
+      - name: Frontend dependencies and Chromium
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: E2E
+        working-directory: frontend
+        env:
+          BACKEND_DIR: ${{ github.workspace }}/backend
+          E2E_ONLY: ${{ inputs.only }}
+        run: ./scripts/e2e.sh
+      - name: Backend logs on failure
+        if: failure()
+        working-directory: backend
+        run: docker compose --profile e2e logs --tail=300 app-e2e nginx-e2e

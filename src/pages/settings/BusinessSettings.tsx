@@ -307,7 +307,7 @@ function InvoicePreview({ inv, showTaxNo, company, logo, taxNo }: { inv: Invoice
         <div style={{ textAlign: 'right' }}><strong style={{ fontSize: 16, color: banded ? '#fff' : accent }}>INVOICE</strong><div>INV-2026-0001 · 13 Oct 2026</div></div>
       </div>
       <div style={{ padding: '14px 24px', flex: 1 }}>
-        <div style={{ marginBottom: 12 }}><span style={{ opacity: 0.6 }}>Bill to</span><br /><strong>Karim Distributors</strong><br />Mirpur 10, Dhaka</div>
+        <div style={{ marginBottom: 12 }}><span style={{ color: '#5f6b76' }}>Bill to</span><br /><strong>Karim Distributors</strong><br />Mirpur 10, Dhaka</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr style={{ background: minimal ? 'transparent' : `${accent}1A`, color: accent }}>
             {['Item', 'Qty', 'Price', 'Amount'].map((h, i) => <th key={h} style={{ textAlign: i ? 'right' : 'left', padding: '6px 4px', borderBottom: `1px solid ${accent}` }}>{h}</th>)}
@@ -320,7 +320,7 @@ function InvoicePreview({ inv, showTaxNo, company, logo, taxNo }: { inv: Invoice
         </table>
         <div style={{ textAlign: 'right', marginTop: 10, fontSize: 13 }}><strong>Total ৳ 37,300.00</strong></div>
         {inv.show_words && <div style={{ marginTop: 6, fontStyle: 'italic' }}>Taka thirty-seven thousand three hundred only</div>}
-        {inv.show_bank && <div style={{ marginTop: 14 }}><span style={{ opacity: 0.6 }}>Pay to</span><br />Sonali Bank · 0012345678</div>}
+        {inv.show_bank && <div style={{ marginTop: 14 }}><span style={{ color: '#5f6b76' }}>Pay to</span><br />Sonali Bank · 0012345678</div>}
       </div>
       <div style={{ padding: '10px 24px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 12 }}>
         <span style={{ opacity: 0.7 }}>{inv.footer_note ?? ''}</span>
