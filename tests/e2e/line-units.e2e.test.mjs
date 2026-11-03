@@ -219,6 +219,10 @@ test('the item search list opens fully visible above the line table (1440, 1024,
     await shot(page, `picker-${name}`)
     await list.getByRole('option', { name: /Lux soap 100g/ }).click()
     assert.equal(await unitOf(page), 'pcs')
+    // The cursor stays in the box after choosing: a click must still open the list to pick another item
+    await input.click()
+    await page.getByRole('listbox').getByRole('option', { name: /Lux soap 100g/ }).waitFor()
+    await page.keyboard.press('Escape')
     await assertNoPageScroll(page, `/sales/invoices/new at ${name}`)
     assert.deepEqual(errors, [])
     await context.close()

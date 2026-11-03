@@ -100,10 +100,18 @@ export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, re
         aria-activedescendant={activeId} value={text} placeholder={placeholder} invalid={invalid} disabled={disabled} icon="search" autoComplete="off"
         onChange={(e) => { typed.current = true; setText(e.target.value); setState({ open: true, active: -1 }); if (e.target.value === '') onChange(null) }}
         onFocus={() => setState((s) => ({ ...s, open: true }))}
+        // A click opens the list even when the box already has the cursor (it keeps it after an item is chosen, so
+        // onFocus does not fire again). With an item chosen, its name is selected: typing searches anew, and the list
+        // shows every item so another can be picked.
+        onClick={(e) => {
+          if (state.open || disabled) return
+          if (value && !typed.current) e.currentTarget.select()
+          setState({ open: true, active: -1 })
+        }}
         onBlur={() => setTimeout(() => { setState({ open: false, active: -1 }); if (typed.current) { typed.current = false; setText(value ? itemLabel(value) : '') } }, 120)}
         onKeyDown={onKeyDown} />
       {state.open && pos && createPortal(
-        <ul id={listId} role="listbox" data-testid="async-select-list" style={{ position: 'fixed', zIndex: 120, ...pos, boxSizing: 'border-box', margin: 0, padding: 4, listStyle: 'none',
+        <ul id={listId} role="listbox" data-testid="async-select-list" onMouseDown={(e) => e.preventDefault() /* keeps the cursor in the box: dragging the scrollbar does not close the list */} style={{ position: 'fixed', zIndex: 120, ...pos, boxSizing: 'border-box', margin: 0, padding: 4, listStyle: 'none',
           overflowY: 'auto', background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px', textAlign: 'left',
           border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-2, 0 8px 24px rgb(0 0 0 / .12))' }}>
           {loading && items.length === 0 && <li style={{ padding: '8px 10px', color: 'var(--ink-muted)' }}>Searching…</li>}
