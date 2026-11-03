@@ -35,7 +35,7 @@ test('toBillInput sends only complete lines, as strings', () => {
   assert.equal(input.supplier_bill_no, 'CST-0918')
   assert.equal(input.due_date, null)
   assert.equal(input.warehouse_id, 2)
-  assert.deepEqual(input.lines, [{ product_id: 7, description: null, quantity: '10', unit_cost: '846.00', discount_pct: undefined, tax_rule_id: 4 }])
+  assert.deepEqual(input.lines, [{ product_id: 7, unit_id: null, description: null, quantity: '10', unit_cost: '846.00', discount_pct: undefined, tax_rule_id: 4 }])
 })
 
 test('billToForm restores a stored draft', () => {

@@ -30,7 +30,8 @@ import { Forbidden, NotFound } from '../../components/states'
  * Quantities never change here (BR-003): on-hand is read only. D4 details arrive in P11, so saving returns to D1.
  */
 const FIELDS = ['item_type', 'name', 'code', 'category_id', 'stock_group_id', 'unit_id', 'barcode', 'selling_price', 'wholesale_price', 'last_purchase_cost',
-  'tax_rule_id', 'income_ledger_id', 'expense_ledger_id', 'is_active', 'warehouses.*.reorder_level', 'warehouses.*.reorder_qty'] as const
+  'tax_rule_id', 'income_ledger_id', 'expense_ledger_id', 'is_active', 'warehouses.*.reorder_level', 'warehouses.*.reorder_qty',
+  'units', 'units.*.unit_id', 'units.*.factor'] as const
 const ADD_UNIT = '__add__'
 
 export function ProductForm({ mode }: { mode: 'add' | 'edit' }) {
@@ -58,7 +59,7 @@ function usePurposeLedgers(purpose: 'income_for_product') {
 }
 
 function Form({ mode, product }: { mode: 'add' | 'edit'; product: Product | null }) {
-  const { Card, Field, Input, Select, Button, Banner, Badge, Segmented, PageHeader } = ds()
+  const { Card, Field, Input, Select, Button, IconButton, Banner, Badge, Segmented, PageHeader } = ds()
   const navigate = useNavigate()
   const toast = useToast()
   const { can } = useSession()
@@ -96,6 +97,7 @@ function Form({ mode, product }: { mode: 'add' | 'edit'; product: Product | null
   const { register, control, handleSubmit, setError, reset, watch, setValue, formState: { errors, isDirty, isSubmitting, submitCount } } =
     useForm<ProductFormValues, unknown, ProductFormParsed>({ resolver: zodResolver(productSchema), defaultValues: defaults, mode: 'onSubmit' })
   const { fields } = useFieldArray({ control, name: 'warehouses' })
+  const extra = useFieldArray({ control, name: 'units' })
   const guard = useUnsavedChangesBlocker(isDirty, 'Your changes to this item have not been saved.')
 
   // Saved ledgers shown by name; a new product's income account starts as 4101 (the sales_default mapping).
@@ -206,6 +208,8 @@ function Form({ mode, product }: { mode: 'add' | 'edit'; product: Product | null
   const options = (rows: { id: number; name: string; parent_id?: number | null }[] | undefined, none: string) =>
     [{ value: '', label: none }, ...(rows ?? []).map((r) => ({ value: String(r.id), label: r.parent_id ? `— ${r.name}` : r.name }))]
   const active = watch('is_active')
+  const baseUnit = units.data?.find((u) => String(u.id) === watch('unit_id'))?.name ?? ''
+  const watchedUnits = watch('units') ?? []
 
   return (
     <form onSubmit={handleSubmit(onValid)} noValidate data-testid="product-form">
@@ -254,6 +258,39 @@ function Form({ mode, product }: { mode: 'add' | 'edit'; product: Product | null
                   <Input id="p-barcode" mono {...register('barcode')} invalid={!!err('barcode')} placeholder="Optional" />
                 </Field>
               </>}
+            </div>
+          </Card>
+
+          <Card title="Other units" subtitle={`Units this item is also bought or sold in, e.g. 1 box = 12 ${baseUnit || 'pcs'}. Stock is always counted in ${baseUnit || 'the base unit'}.`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} data-testid="product-units">
+              {extra.fields.length === 0 && <span style={{ color: 'var(--ink-muted)' }}>Only {baseUnit || 'the base unit'}.</span>}
+              {extra.fields.map((f, i) => {
+                const taken = new Set(watchedUnits.filter((_, j) => j !== i).map((u) => u.unit_id))
+                const choices = (units.data ?? []).filter((u) => String(u.id) !== watch('unit_id') && !taken.has(String(u.id)))
+                const rowError = err(`units.${i}.unit_id`) ?? err(`units.${i}.factor`)
+                return (
+                  <div key={f.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                    <span>1</span>
+                    <div style={{ width: 140 }}>
+                      <Select aria-label={`Unit ${i + 1}`} {...register(`units.${i}.unit_id`)} invalid={!!err(`units.${i}.unit_id`)}
+                        options={[{ value: '', label: 'Choose…' }, ...choices.map((u) => ({ value: String(u.id), label: u.name }))]} />
+                    </div>
+                    <span>=</span>
+                    <div style={{ width: 120 }}>
+                      <Input aria-label={`${baseUnit || 'Base units'} in unit ${i + 1}`} align="right" mono inputMode="decimal" placeholder="12"
+                        {...register(`units.${i}.factor`)} invalid={!!err(`units.${i}.factor`)} />
+                    </div>
+                    <span>{baseUnit || 'base units'}</span>
+                    <IconButton icon="trash-2" label={`Remove unit ${i + 1}`} size="sm" onClick={() => extra.remove(i)} />
+                    {rowError && <span role="alert" style={{ color: 'var(--negative)', fontSize: 12, flexBasis: '100%' }}>{rowError}</span>}
+                  </div>
+                )
+              })}
+              {err('units') && <span role="alert" style={{ color: 'var(--negative)', fontSize: 12 }}>{err('units')}</span>}
+              <div>
+                <Button variant="secondary" icon="plus" size="sm" disabled={!watch('unit_id')} data-testid="add-product-unit"
+                  onClick={() => extra.append({ unit_id: '', factor: '' })}>Add a unit</Button>
+              </div>
             </div>
           </Card>
 

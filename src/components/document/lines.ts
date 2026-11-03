@@ -7,6 +7,8 @@ import type { CalculatedLine, Product } from '../../api/contract.gen'
  */
 export interface LineValues {
   product: Product | null
+  /** The line's unit (BR-069, P10.7): the item's base unit or one of its extra units; '' = the base unit. */
+  unit_id: string
   description: string
   quantity: string
   price: string
@@ -16,7 +18,7 @@ export interface LineValues {
   po_line_id?: number | null
 }
 
-export const emptyLine = (): LineValues => ({ product: null, description: '', quantity: '', price: '', discount_pct: '', tax_rule_id: '' })
+export const emptyLine = (): LineValues => ({ product: null, unit_id: '', description: '', quantity: '', price: '', discount_pct: '', tax_rule_id: '' })
 
 const qtyRx = /^\d{1,15}(\.\d{1,3})?$/
 const costRx = /^\d{1,14}(\.\d{1,4})?$/

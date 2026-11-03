@@ -38,7 +38,7 @@ test('toInvoiceInput sends only complete lines, as strings', () => {
   assert.equal(input.due_date, null)
   assert.equal(input.payment_term_id, 5)
   assert.equal(input.warehouse_id, 2)
-  assert.deepEqual(input.lines, [{ product_id: 7, description: null, quantity: '10', unit_price: '950.00', discount_pct: '2', tax_rule_id: 4 }])
+  assert.deepEqual(input.lines, [{ product_id: 7, unit_id: null, description: null, quantity: '10', unit_price: '950.00', discount_pct: '2', tax_rule_id: 4 }])
 })
 
 test('delivery details round-trip and only changes need a PATCH', () => {
@@ -61,4 +61,13 @@ test('invoiceToForm restores a stored draft', () => {
   assert.equal(v.lines[0]!.price, '940.00')
   assert.equal(v.lines[0]!.discount_pct, '')
   assert.equal(invoiceToForm(null, null, '2026-10-24').date, '2026-10-24')
+})
+
+test('a line in another unit sends its unit id, and the tier price comes from that unit (BR-069)', () => {
+  const input = toInvoiceInput(form({ lines: [{ ...emptyLine(), product: oil, unit_id: '6', quantity: '2', price: '11280.00' }] }))
+  assert.equal(input.lines[0].unit_id, 6)
+  const box = { unit_id: 6, name: 'box', factor: '12.000000', decimals: 0, is_base: false, selling_price: '11280.00', wholesale_price: '10800.00' }
+  assert.equal(tierPrice(oil, karim, box), '11280.00')
+  assert.equal(tierPrice(oil, { ...karim, price_tier: 'wholesale' } as Party, box), '10800.00')
+  assert.equal(tierPrice(oil, karim), '940.00', 'no unit: the item price')
 })
