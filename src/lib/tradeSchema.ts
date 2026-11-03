@@ -76,7 +76,7 @@ export const orderSchema = z.object({
 })
 
 const lineOut = (l: LineValues) => ({
-  product_id: l.product!.id, description: l.description.trim() || null, quantity: l.quantity.trim(),
+  product_id: l.product!.id, unit_id: l.unit_id ? Number(l.unit_id) : null, description: l.description.trim() || null, quantity: l.quantity.trim(),
   discount_pct: l.discount_pct.trim() || undefined, tax_rule_id: l.tax_rule_id ? Number(l.tax_rule_id) : null,
 })
 
@@ -110,14 +110,14 @@ export function orderCalcInput(v: OrderFormValues): PurchaseBillInput {
 }
 
 interface StoredLine {
-  product_id: number; product_code: string; product_name: string; unit: string; description?: string | null; quantity: string
+  product_id: number; product_code: string; product_name: string; unit: string; unit_id?: number | null; description?: string | null; quantity: string
   unit_price?: string; unit_cost?: string; discount_pct?: string | null; tax_rule_id?: number | null
 }
 
 function linesToForm(lines: StoredLine[]): LineValues[] {
   const out = lines.map((l): LineValues => ({
     product: { id: l.product_id, code: l.product_code, name: l.product_name, unit: l.unit, track_stock: true } as Product,
-    description: l.description ?? '', quantity: l.quantity, price: l.unit_price ?? l.unit_cost ?? '',
+    unit_id: l.unit_id ? String(l.unit_id) : '', description: l.description ?? '', quantity: l.quantity, price: l.unit_price ?? l.unit_cost ?? '',
     discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '', tax_rule_id: l.tax_rule_id ? String(l.tax_rule_id) : '',
   }))
   return out.length ? out : [emptyLine()]
@@ -148,4 +148,4 @@ export const orderFieldMap: Record<string, keyof OrderFormValues> = {
   party_id: 'party', order_date: 'date', expected_date: 'expected_date', warehouse_id: 'warehouse_id', payment_term_id: 'payment_term_id',
   exchange_rate: 'exchange_rate', notes: 'notes', internal_note: 'internal_note',
 }
-export const LINE_FIELDS = ['lines.*.product', 'lines.*.quantity', 'lines.*.price', 'lines.*.discount_pct', 'lines.*.tax_rule_id', 'lines.*.description']
+export const LINE_FIELDS = ['lines.*.product', 'lines.*.unit_id', 'lines.*.quantity', 'lines.*.price', 'lines.*.discount_pct', 'lines.*.tax_rule_id', 'lines.*.description']

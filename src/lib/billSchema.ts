@@ -73,7 +73,7 @@ export function toBillInput(v: BillFormValues): PurchaseBillInput {
     lines: completeIndexes(v.lines).map((i) => {
       const l = v.lines[i]!
       return {
-        product_id: l.product!.id, description: l.description.trim() || null, quantity: l.quantity.trim(), unit_cost: l.price.trim(),
+        product_id: l.product!.id, unit_id: l.unit_id ? Number(l.unit_id) : null, description: l.description.trim() || null, quantity: l.quantity.trim(), unit_cost: l.price.trim(),
         discount_pct: l.discount_pct.trim() || undefined, tax_rule_id: l.tax_rule_id ? Number(l.tax_rule_id) : null,
         ...(v.purchase_order_id && l.po_line_id ? { purchase_order_line_id: l.po_line_id } : {}),
       }
@@ -83,7 +83,7 @@ export function toBillInput(v: BillFormValues): PurchaseBillInput {
 
 /** The bill resource's line (contract types it loosely as a record). */
 interface BillLine {
-  product_id: number; product_code: string; product_name: string; unit: string; description: string | null; quantity: string; unit_cost: string
+  product_id: number; product_code: string; product_name: string; unit: string; unit_id?: number | null; description: string | null; quantity: string; unit_cost: string
   discount_pct: string | null; tax_rule_id: number | null; purchase_order_line_id?: number | null
 }
 
@@ -95,7 +95,7 @@ export function billToForm(b: PurchaseBill | null, party: Party | null, today: s
   }
   const lines = (b.lines as unknown as BillLine[]).map((l): LineValues => ({
     product: { id: l.product_id, code: l.product_code, name: l.product_name, unit: l.unit, track_stock: true } as Product,
-    description: l.description ?? '', quantity: l.quantity, price: l.unit_cost, discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '',
+    unit_id: l.unit_id ? String(l.unit_id) : '', description: l.description ?? '', quantity: l.quantity, price: l.unit_cost, discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '',
     tax_rule_id: l.tax_rule_id ? String(l.tax_rule_id) : '', po_line_id: l.purchase_order_line_id ?? null,
   }))
   // Contract gap (noted on PEP-140): the bill resource has no notes/internal_note yet, so they reload empty.

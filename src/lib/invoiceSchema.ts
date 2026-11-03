@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { DeliveryUpdate, Party, Product, SalesInvoice, SalesInvoiceInput } from '../api/contract.gen'
+import type { DeliveryUpdate, Party, Product, ProductUnit, SalesInvoice, SalesInvoiceInput } from '../api/contract.gen'
 import { completeIndexes, emptyLine, isBlankLine, isCompleteLine, type LineValues } from '../components/document/lines'
 
 /**
@@ -54,9 +54,13 @@ export const invoiceSchema = z.object({
   }
 })
 
-/** The price a chosen item starts with: the wholesale price for a wholesale customer (if the item has one), else the selling price. */
-export function tierPrice(p: Product, party: Party | null): string {
-  return party?.price_tier === 'wholesale' && p.wholesale_price ? p.wholesale_price : p.selling_price
+/**
+ * The price a chosen item starts with: the wholesale price for a wholesale customer (if the item has one), else the
+ * selling price; per the line's unit when one is given (the API's per-unit prices, BR-069).
+ */
+export function tierPrice(p: Product, party: Party | null, unit?: ProductUnit): string {
+  const src = unit ?? p
+  return party?.price_tier === 'wholesale' && src.wholesale_price ? src.wholesale_price : src.selling_price
 }
 
 /** Form values → API body; only complete lines are sent, in form order (see completeIndexes). */
@@ -73,7 +77,7 @@ export function toInvoiceInput(v: InvoiceFormValues): SalesInvoiceInput {
     lines: completeIndexes(v.lines).map((i) => {
       const l = v.lines[i]!
       return {
-        product_id: l.product!.id, description: l.description.trim() || null, quantity: l.quantity.trim(), unit_price: l.price.trim(),
+        product_id: l.product!.id, unit_id: l.unit_id ? Number(l.unit_id) : null, description: l.description.trim() || null, quantity: l.quantity.trim(), unit_price: l.price.trim(),
         discount_pct: l.discount_pct.trim() || undefined, tax_rule_id: l.tax_rule_id ? Number(l.tax_rule_id) : null,
       }
     }),
@@ -106,7 +110,7 @@ export function invoiceToForm(inv: SalesInvoice | null, party: Party | null, tod
   }
   const lines = inv.lines.map((l): LineValues => ({
     product: { id: l.product_id, code: l.product_code, name: l.product_name, unit: l.unit, track_stock: true } as Product,
-    description: l.description ?? '', quantity: l.quantity, price: l.unit_price, discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '',
+    unit_id: l.unit_id ? String(l.unit_id) : '', description: l.description ?? '', quantity: l.quantity, price: l.unit_price, discount_pct: l.discount_pct && !/^0+(\.0+)?$/.test(l.discount_pct) ? l.discount_pct : '',
     tax_rule_id: l.tax_rule_id ? String(l.tax_rule_id) : '',
   }))
   // Contract gap (noted on PEP-149): the invoice resource has no notes/internal_note/payment_term_id, so they reload empty.

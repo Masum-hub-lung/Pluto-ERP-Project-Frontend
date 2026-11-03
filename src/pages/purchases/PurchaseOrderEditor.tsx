@@ -256,7 +256,7 @@ function Editor({ mode, order, party }: { mode: 'new' | 'edit'; order: PurchaseO
       <div style={{ height: 16 }} />
       <Card title="Items">
         <LineGrid control={control} register={register} watch={watch} setValue={setValue} errors={errors} side="purchase"
-          results={mapResults(calc.result?.lines, indexes)} taxRules={taxRules.data ?? []} defaultPrice={(p) => p.last_purchase_cost ?? '0.00'} />
+          results={mapResults(calc.result?.lines, indexes)} taxRules={taxRules.data ?? []} defaultPrice={(p, u) => (u ? u.last_purchase_cost : p.last_purchase_cost) ?? '0.00'} />
       </Card>
       <div className="lf-grid" style={{ alignItems: 'start', marginTop: 16 }}>
         <div className="lf-c8" style={{ minWidth: 0 }}>

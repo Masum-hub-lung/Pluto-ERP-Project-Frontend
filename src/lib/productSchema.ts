@@ -9,6 +9,7 @@ import type { Product, ProductInput } from '../api/contract.gen'
 const moneyRx = /^\d{1,16}(\.\d{1,2})?$/
 const costRx = /^\d{1,14}(\.\d{1,4})?$/
 const qtyRx = /^\d{1,15}(\.\d{1,3})?$/
+const factorRx = /^\d{1,12}(\.\d{1,6})?$/
 const optional = (rx: RegExp, message: string) => z.union([z.literal(''), z.string().trim().regex(rx, message)])
 
 export const productSchema = z.object({
@@ -32,6 +33,11 @@ export const productSchema = z.object({
     reorder_level: optional(qtyRx, 'Up to 3 decimals'),
     reorder_qty: optional(qtyRx, 'Up to 3 decimals'),
   })),
+  /** Extra units (BR-069, P10.7): 1 of unit_id = factor base units. */
+  units: z.array(z.object({
+    unit_id: z.string().min(1, 'Choose a unit'),
+    factor: z.string().trim().regex(factorRx, 'Enter a number with up to 6 decimals').refine((v) => !/^0*(\.0*)?$/.test(v), 'Enter a number above 0'),
+  })),
 })
 
 export type ProductFormValues = z.input<typeof productSchema>
@@ -39,20 +45,22 @@ export type ProductFormParsed = z.output<typeof productSchema>
 
 export const emptyProduct: Readonly<ProductFormValues> = Object.freeze({
   item_type: 'product', name: '', code: '', category_id: '', stock_group_id: '', unit_id: '', barcode: '', selling_price: '', wholesale_price: '',
-  last_purchase_cost: '', tax_rule_id: '', income_ledger_id: '', expense_ledger_id: '', is_active: true, warehouses: [],
+  last_purchase_cost: '', tax_rule_id: '', income_ledger_id: '', expense_ledger_id: '', is_active: true, warehouses: [], units: [],
 })
 
 /**
- * Product → form values. The Product schema has no unit_id or expense_ledger_id (contract gaps noted on PEP-102/111):
- * the unit is matched by name by the caller; the expense account is left empty and only sent when changed.
+ * Product → form values. The Product schema has no expense_ledger_id (contract gap noted on PEP-102/111): the expense
+ * account is left empty and only sent when changed. The unit comes from `unit_id` (P10.7; `unitId`, matched by name by
+ * the caller, is the fallback); `units` lists the extra units (the base unit row is left out).
  */
 export function toProductForm(p: Product, unitId: string, warehouses: { id: number; name: string }[]): ProductFormValues {
   const levels = new Map((p.warehouses ?? []).map((l) => [l.warehouse_id, l]))
   return {
     item_type: p.item_type, name: p.name, code: p.code, category_id: p.category ? String(p.category.id) : '', stock_group_id: p.stock_group ? String(p.stock_group.id) : '',
-    unit_id: unitId, barcode: p.barcode ?? '', selling_price: p.selling_price, wholesale_price: p.wholesale_price ?? '', last_purchase_cost: p.last_purchase_cost ?? '',
+    unit_id: p.unit_id ? String(p.unit_id) : unitId, barcode: p.barcode ?? '', selling_price: p.selling_price, wholesale_price: p.wholesale_price ?? '', last_purchase_cost: p.last_purchase_cost ?? '',
     tax_rule_id: p.tax_rule_id ? String(p.tax_rule_id) : '', income_ledger_id: String(p.income_ledger_id), expense_ledger_id: '', is_active: p.is_active,
     warehouses: warehouses.map((w) => ({ warehouse_id: w.id, name: w.name, reorder_level: trimZeros(levels.get(w.id)?.reorder_level), reorder_qty: trimZeros(levels.get(w.id)?.reorder_qty) })),
+    units: (p.units ?? []).filter((u) => !u.is_base).map((u) => ({ unit_id: String(u.unit_id), factor: trimZeros(u.factor) })),
   }
 }
 
@@ -78,6 +86,7 @@ export function toProductInput(v: ProductFormParsed, mode: 'add' | 'edit'): Prod
   }
   if (v.code.trim() || mode === 'edit') input.code = v.code.trim() ? v.code.trim().toUpperCase() : undefined
   if (v.expense_ledger_id || mode === 'add') input.expense_ledger_id = id(v.expense_ledger_id)
+  input.units = v.units.map((u) => ({ unit_id: Number(u.unit_id), factor: u.factor.trim() }))
   if (!service) input.warehouses = v.warehouses.map((w) => ({ warehouse_id: w.warehouse_id, reorder_level: w.reorder_level || '0', reorder_qty: w.reorder_qty || '0' }))
   return input
 }

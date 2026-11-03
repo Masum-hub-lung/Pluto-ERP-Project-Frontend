@@ -236,7 +236,7 @@ function Editor({ mode, quote, party }: { mode: 'new' | 'edit'; quote: Quotation
       <div style={{ height: 16 }} />
       <Card title="Items">
         <LineGrid control={control} register={register} watch={watch} setValue={setValue} errors={errors} side="sale"
-          results={mapResults(calc.result?.lines, indexes)} taxRules={taxRules.data ?? []} defaultPrice={(p) => tierPrice(p, values.party)} />
+          results={mapResults(calc.result?.lines, indexes)} taxRules={taxRules.data ?? []} defaultPrice={(p, u) => tierPrice(p, values.party, u)} />
       </Card>
       <div className="lf-grid" style={{ alignItems: 'start', marginTop: 16 }}>
         <div className="lf-c8" style={{ minWidth: 0 }}>

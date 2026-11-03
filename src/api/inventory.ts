@@ -169,15 +169,20 @@ export function useProducts(f: ProductListFilters) {
 }
 
 export function useProduct(id: number) {
-  return useQuery({
+  return useQuery(productQuery(id))
+}
+
+/** One product's query (same cache as useProduct), for useQueries over many products, e.g. the units of saved document lines. */
+export function productQuery(id: number) {
+  return {
     queryKey: keys.product(api.getCompany(), id),
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal }: { signal: AbortSignal }) => {
       const r = await api.request<{ data: Product }>('GET', `/products/${id}`, { signal })
       return { product: r.data.data, etag: r.meta.etag }
     },
     retry: notFoundRetry,
     enabled: id > 0,
-  })
+  }
 }
 
 function useProductRefresh() {

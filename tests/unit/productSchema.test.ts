@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { emptyProduct, productSchema, toProductInput, trimZeros } from '../../src/lib/productSchema'
+import type { Product } from '../../src/api/contract.gen'
+import { emptyProduct, productSchema, toProductForm, toProductInput, trimZeros } from '../../src/lib/productSchema'
 
 const values = (over: Record<string, unknown> = {}) => productSchema.parse({
   ...emptyProduct, name: ' Soybean oil 5L jar ', unit_id: '4', selling_price: '920.00', income_ledger_id: '31',
@@ -48,4 +49,20 @@ test('trimZeros shows API quantities without trailing zeros, and zero as empty',
   assert.equal(trimZeros('0.000'), '')
   assert.equal(trimZeros(null), '')
   assert.equal(trimZeros('100'), '100')
+})
+
+test('extra units (BR-069): sent as unit id and factor text; a zero factor or a missing unit is refused', () => {
+  const input = toProductInput(values({ units: [{ unit_id: '6', factor: ' 12 ' }, { unit_id: '7', factor: '144' }] }), 'edit')
+  assert.deepEqual(input.units, [{ unit_id: 6, factor: '12' }, { unit_id: 7, factor: '144' }])
+  assert.deepEqual(toProductInput(values(), 'edit').units, [], 'no rows: the item keeps only its base unit')
+  for (const bad of [{ unit_id: '6', factor: '0' }, { unit_id: '6', factor: '0.000' }, { unit_id: '6', factor: '-2' }, { unit_id: '6', factor: '1.1234567' }, { unit_id: '', factor: '12' }]) {
+    assert.equal(productSchema.safeParse({ ...values(), units: [bad] }).success, false, JSON.stringify(bad))
+  }
+})
+
+test('toProductForm reads the base unit id and the extra units without the base row', () => {
+  const form = toProductForm({ item_type: 'product', name: 'Lux soap', code: 'PRD-0001', unit: 'pcs', unit_id: 4, selling_price: '55.00', income_ledger_id: 31,
+    is_active: true, units: [{ unit_id: 4, name: 'pcs', factor: '1.000000', is_base: true }, { unit_id: 6, name: 'box', factor: '12.000000', is_base: false }] } as unknown as Product, '', [])
+  assert.equal(form.unit_id, '4')
+  assert.deepEqual(form.units, [{ unit_id: '6', factor: '12' }])
 })

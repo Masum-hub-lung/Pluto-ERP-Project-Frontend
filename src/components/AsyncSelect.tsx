@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ds } from '../ds'
 import { comboKey, type ComboKey } from '../lib/combobox'
 
@@ -20,6 +21,11 @@ export interface AsyncSelectProps<T> {
  * Search-as-you-type select for big lists (parties, ledgers, products): never loads every row. Typing searches
  * after 250 ms; ↑ ↓ Enter Esc work; "No matches" when empty. ARIA combobox pattern (role, aria-expanded,
  * aria-activedescendant) so screen readers announce the highlighted option.
+ *
+ * The list is rendered in a portal on document.body with fixed positioning, so a scrolling or clipping parent (the
+ * document line grid's table, a card, a dialog body) never cuts it off. It sits under the input, at least as wide as
+ * the input (320 px minimum, never past the viewport), flips above when there is not enough room below, and follows
+ * the input on scroll and resize.
  */
 export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, renderItem, placeholder = 'Type to search', invalid, disabled, id, ...rest }: AsyncSelectProps<T>) {
   const { Input, Icon } = ds()
@@ -29,6 +35,30 @@ export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, re
   const [state, setState] = useState({ open: false, active: -1 })
   const [loading, setLoading] = useState(false)
   const typed = useRef(false)
+  const anchor = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<React.CSSProperties | null>(null)
+
+  useLayoutEffect(() => {
+    if (!state.open) { setPos(null); return }
+    const place = () => {
+      const el = anchor.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const vw = document.documentElement.clientWidth
+      const vh = window.innerHeight
+      const width = Math.min(Math.max(r.width, 320), vw - 16)
+      const left = Math.max(8, Math.min(r.left, vw - width - 8))
+      const below = vh - r.bottom - 12
+      const above = r.top - 12
+      const up = below < 200 && above > below
+      const maxHeight = Math.max(120, Math.min(280, up ? above : below))
+      setPos(up ? { left, width, bottom: vh - r.top + 4, maxHeight } : { left, width, top: r.bottom + 4, maxHeight })
+    }
+    place()
+    window.addEventListener('scroll', place, true)
+    window.addEventListener('resize', place)
+    return () => { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place) }
+  }, [state.open])
 
   useEffect(() => { if (!typed.current) setText(value ? itemLabel(value) : '') }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -65,16 +95,17 @@ export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, re
 
   const activeId = state.open && state.active >= 0 ? `${listId}-${state.active}` : undefined
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={anchor} style={{ position: 'relative' }}>
       <Input id={id} role="combobox" aria-label={rest['aria-label']} aria-expanded={state.open} aria-controls={listId} aria-autocomplete="list"
         aria-activedescendant={activeId} value={text} placeholder={placeholder} invalid={invalid} disabled={disabled} icon="search" autoComplete="off"
         onChange={(e) => { typed.current = true; setText(e.target.value); setState({ open: true, active: -1 }); if (e.target.value === '') onChange(null) }}
         onFocus={() => setState((s) => ({ ...s, open: true }))}
         onBlur={() => setTimeout(() => { setState({ open: false, active: -1 }); if (typed.current) { typed.current = false; setText(value ? itemLabel(value) : '') } }, 120)}
         onKeyDown={onKeyDown} />
-      {state.open && (
-        <ul id={listId} role="listbox" style={{ position: 'absolute', zIndex: 30, left: 0, right: 0, top: 'calc(100% + 4px)', margin: 0, padding: 4, listStyle: 'none',
-          maxHeight: 280, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-2, 0 8px 24px rgb(0 0 0 / .12))' }}>
+      {state.open && pos && createPortal(
+        <ul id={listId} role="listbox" data-testid="async-select-list" style={{ position: 'fixed', zIndex: 120, ...pos, boxSizing: 'border-box', margin: 0, padding: 4, listStyle: 'none',
+          overflowY: 'auto', background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px', textAlign: 'left',
+          border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-2, 0 8px 24px rgb(0 0 0 / .12))' }}>
           {loading && items.length === 0 && <li style={{ padding: '8px 10px', color: 'var(--ink-muted)' }}>Searching…</li>}
           {!loading && items.length === 0 && <li role="option" aria-disabled="true" aria-selected="false" style={{ padding: '8px 10px', color: 'var(--ink-muted)' }}>No matches</li>}
           {items.map((it, i) => (
@@ -86,7 +117,8 @@ export function AsyncSelect<T>({ value, onChange, search, itemKey, itemLabel, re
               {value && itemKey(value) === itemKey(it) && <span style={{ marginLeft: 'auto', color: 'var(--brand)' }}><Icon name="check" size={14} /></span>}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </div>
   )
