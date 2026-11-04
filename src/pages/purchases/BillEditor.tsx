@@ -5,7 +5,6 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { api, ApiError } from '../../api/client'
 import type { Party, PurchaseBill } from '../../api/contract.gen'
 import { useTaxRules, useWarehouses } from '../../api/inventory'
-import { useLc } from '../../api/lc'
 import { useParty } from '../../api/parties'
 import { dhakaToday } from '../../api/platform'
 import { calculateBill, useBill, useCreateBill, useDeleteBill, usePostBill, useUpdateBill } from '../../api/purchases'
@@ -21,10 +20,11 @@ import { DeleteDialog } from '../../components/DeleteDialog'
 import { DocumentFooter } from '../../components/document/DocumentFooter'
 import { DocumentHeader } from '../../components/document/DocumentHeader'
 import { LineGrid } from '../../components/document/LineGrid'
-import { completeIndexes, mapResults, remapLineErrors } from '../../components/document/lines'
+import { completeIndexes, emptyLine, mapResults, remapLineErrors } from '../../components/document/lines'
 import { PartyPanel } from '../../components/document/PartyPanel'
 import { FromPoField, poToLines } from './FromPoField'
 import { ImportFields } from './ImportFields'
+import { loadLcForBill, type LcFill } from './FromLc'
 import { PostDialog } from '../../components/document/PostDialog'
 import { TotalsPanel } from '../../components/document/TotalsPanel'
 import { useCalculate } from '../../components/document/useCalculate'
@@ -38,6 +38,8 @@ import { Forbidden, NotFound } from '../../components/states'
  * opens F4 instead. Every figure comes from POST /purchase-bills/calculate (300 ms after the last change). "Save and
  * post" saves, then asks in the PostDialog; a new bill is first saved and reopened at its edit route with ?post=1.
  * Import mode (P16): the Import card (LC, lot, currency, rate) opens from M4's "Receive goods" (?lc=…&lot=…) or by hand.
+ * Choosing an LC (even before the supplier) fills the supplier, currency, lot, rate and, when the LC is raised against
+ * a purchase order, that order's lines still to come (FromLc.ts; the server refuses more than the order expects, BR-056).
  */
 export function BillEditor({ mode }: { mode: 'new' | 'edit' }) {
   const { can } = useSession()
@@ -98,19 +100,43 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
   }, [warehouses.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const values = watch()
-  // F3 import mode from M4 "Receive goods": /purchases/bills/new?lc=<id>&lot=<id> prefills the supplier, LC, lot and currency.
+  // F3 import mode from M4 "Receive goods": /purchases/bills/new?lc=<id>&lot=<id> fills the bill from the LC, as picking it does.
   const lcParam = mode === 'new' ? Number(params.get('lc')) || 0 : 0
-  const fromLc = useLc(lcParam)
-  const lcParty = useParty(fromLc.data?.party.id ?? 0)
   const [importOpen, setImportOpen] = useState(false)
+  const [lcLoading, setLcLoading] = useState(false)
+  const [lcNote, setLcNote] = useState<LcFill['note']>(null)
+  const lcPick = useRef(0) // the latest pick wins when the user changes the LC while one is still loading
+
+  async function applyLc(id: string, lot?: string | null) {
+    const pick = ++lcPick.current
+    setValue('letter_of_credit_id', id, { shouldDirty: true })
+    setValue('lc_shipment_id', '', { shouldDirty: true })
+    setLcNote(null)
+    if (!id) return
+    setLcLoading(true)
+    try {
+      const f = await loadLcForBill(Number(id))
+      if (pick !== lcPick.current) return
+      setValue('party', f.party, { shouldDirty: true })
+      setValue('currency_code', f.lc.currency_code, { shouldDirty: true })
+      // Before any LC payment the server's rate is the planning rate; once paid it is the payments' rate, so stay blank.
+      setValue('exchange_rate', /^0+(\.0+)?$/.test(f.lc.paid_foreign) ? f.lc.planning_rate : '', { shouldDirty: true })
+      const lots = f.lc.shipments ?? []
+      const chosenLot = lot && lots.some((s) => String(s.id) === lot) ? lot : lots.length === 1 ? String(lots[0].id) : ''
+      setValue('lc_shipment_id', chosenLot, { shouldDirty: true })
+      setValue('purchase_order_id', f.po ? String(f.po.id) : '', { shouldDirty: true })
+      if (f.po) setValue('warehouse_id', String(f.po.warehouse_id), { shouldDirty: true })
+      if (f.po) setValue('lines', f.lines.length ? f.lines : [emptyLine()], { shouldDirty: true })
+      setLcNote(f.note)
+    } catch (e) {
+      if (pick === lcPick.current) setFormError(e)
+    } finally {
+      if (pick === lcPick.current) setLcLoading(false)
+    }
+  }
   useEffect(() => {
-    if (!fromLc.data || !lcParty.data || watch('letter_of_credit_id')) return
-    setValue('party', lcParty.data.party, { shouldDirty: true })
-    setValue('letter_of_credit_id', String(fromLc.data.id), { shouldDirty: true })
-    setValue('currency_code', fromLc.data.currency_code, { shouldDirty: true })
-    const lot = params.get('lot')
-    if (lot) setValue('lc_shipment_id', lot, { shouldDirty: true })
-  }, [fromLc.data, lcParty.data]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (lcParam && !watch('letter_of_credit_id')) void applyLc(String(lcParam), params.get('lot'))
+  }, [lcParam]) // eslint-disable-line react-hooks/exhaustive-deps
   const indexes = completeIndexes(values.lines)
   // Calculate needs the same required fields as saving; the supplier's bill number is not used in any figure, so a
   // placeholder stands in until it is typed.
@@ -264,7 +290,7 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
       </Card>
       {(importOpen || lcParam > 0 || !!values.letter_of_credit_id || (!!values.currency_code && values.currency_code !== 'BDT')) ? <>
         <div style={{ height: 16 }} />
-        <ImportFields values={values} register={register} setValue={setValue} errors={errors as never} />
+        <ImportFields values={values} register={register} setValue={setValue} errors={errors as never} onPickLc={(id) => void applyLc(id)} loading={lcLoading} note={lcNote} />
       </> : can('lc.view') && (
         <p style={{ margin: '8px 0 0' }}><Button size="sm" variant="ghost" icon="ship" onClick={() => setImportOpen(true)} data-testid="bill-import-open">Import against an LC or in a foreign currency</Button></p>
       )}

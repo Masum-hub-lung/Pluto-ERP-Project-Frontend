@@ -3,18 +3,22 @@ import type { UseFormRegister, UseFormSetValue } from 'react-hook-form'
 import { useLc, useLcs } from '../../api/lc'
 import { ds } from '../../ds'
 import type { BillFormValues } from '../../lib/billSchema'
+import type { LcFill } from './FromLc'
 
 /**
  * F3 import mode (backlog P16.2-FE, F3 "Receive goods" from M4): the LC and lot this bill receives, the LC's currency and
  * the rate. Unit costs are entered in that currency; the bill's taka figures come from POST /purchase-bills/calculate.
  * A blank rate lets the server take the LC's payment rate, else its planning rate (06 §12.5).
+ * The LC can be chosen before the supplier: `onPickLc` then fills the supplier, currency, lot, rate and the lines of
+ * the order the LC is raised against (FromLc.ts); `note` says what could not be filled.
  */
-export function ImportFields({ values, register, setValue, errors }: {
+export function ImportFields({ values, register, setValue, errors, onPickLc, loading, note }: {
   values: BillFormValues; register: UseFormRegister<BillFormValues>; setValue: UseFormSetValue<BillFormValues>; errors: Record<string, { message?: string } | undefined>
+  onPickLc: (id: string) => void; loading: boolean; note: LcFill['note']
 }) {
-  const { Card, Field, Select, Input } = ds()
+  const { Card, Field, Select, Input, Banner } = ds()
   const partyId = values.party?.id ?? 0
-  const lcs = useLcs({ party_id: partyId || undefined, per_page: 100 }, partyId > 0)
+  const lcs = useLcs({ party_id: partyId || undefined, per_page: 100 })
   const lcId = Number(values.letter_of_credit_id) || 0
   const lc = useLc(lcId)
   // The LC fixes the bill's currency.
@@ -26,9 +30,11 @@ export function ImportFields({ values, register, setValue, errors }: {
   return (
     <div data-testid="bill-import"><Card title="Import" subtitle="Goods received against a letter of credit, in its currency">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-        <Field label="Letter of credit" htmlFor="f-lc" error={errors.letter_of_credit_id?.message}>
-          <Select id="f-lc" value={values.letter_of_credit_id ?? ''} onChange={(e) => { setValue('letter_of_credit_id', e.target.value, { shouldDirty: true }); setValue('lc_shipment_id', '', { shouldDirty: true }) }} invalid={!!errors.letter_of_credit_id}
-            options={[{ value: '', label: partyId ? 'No LC' : 'Choose the supplier first' }, ...usable.map((l) => ({ value: String(l.id), label: `${l.lc_number} · ${l.currency_code} ${l.outstanding_foreign} open` }))]} />
+        <Field label="Letter of credit" htmlFor="f-lc" error={errors.letter_of_credit_id?.message}
+          hint={loading ? 'Loading the LC…' : values.letter_of_credit_id ? undefined : 'Fills the supplier, currency and the items still to come'}>
+          <Select id="f-lc" value={values.letter_of_credit_id ?? ''} onChange={(e) => onPickLc(e.target.value)} invalid={!!errors.letter_of_credit_id} disabled={loading} data-testid="bill-lc"
+            options={[{ value: '', label: usable.length ? 'No LC' : 'No open LCs' }, ...usable.map((l) => ({ value: String(l.id),
+              label: `${l.lc_number}${partyId ? '' : ` · ${l.party.name}`}${l.purchase_order_number ? ` · ${l.purchase_order_number}` : ''} · ${l.currency_code} ${l.outstanding_foreign} open` }))]} />
         </Field>
         {lcId > 0 && (
           <Field label="Shipment lot" htmlFor="f-lot" error={errors.lc_shipment_id?.message}>
@@ -45,6 +51,7 @@ export function ImportFields({ values, register, setValue, errors }: {
           </Field>
         )}
       </div>
+      {note && <div style={{ marginTop: 16 }} data-testid="bill-lc-note"><Banner tone={note.tone} title={note.title}>{note.text}</Banner></div>}
     </Card></div>
   )
 }
