@@ -115,6 +115,11 @@ test('TC-E2E-006: raise, submit and open an LC; charges, lot, import bill, payme
   await page.getByTestId('bill-import').waitFor()
   await page.waitForFunction((id) => document.querySelector('#f-lc')?.value === String(id), ids.lc)
   assert.equal(await page.locator('#f-currency').inputValue(), 'USD')
+  // No purchase order behind this LC: the lines stay manual, with the LC's goods as a reference; nothing paid yet, so
+  // the rate is the planning rate (BR-056 work, FromLc.ts).
+  await page.getByTestId('bill-lc-note').getByText(/is not linked to a purchase order/).waitFor()
+  await page.getByTestId('bill-lc-note').getByText(/20,000 kg crude palm oil/).waitFor()
+  assert.match(await page.locator('#f-rate').inputValue(), /^121\.50/)
   const bill = await api('POST', '/purchase-bills', { party_id: ids.supplier, supplier_bill_no: 'SEO-CI-88', bill_date: today, warehouse_id: ids.warehouse, letter_of_credit_id: ids.lc,
     lines: [{ product_id: ids.oil, quantity: '20000', unit_cost: '1.92' }] })
   assert.equal(bill.status, 201, JSON.stringify(bill.body))
@@ -222,6 +227,53 @@ test('LC pages fit phone, tablet and desktop widths', async () => {
     }
     await context.close()
   }
+})
+
+test('F3: choosing an LC raised against a PO fills the bill; the server refuses more than the order expects (BR-056)', async () => {
+  const { context, page, errors } = await newPage()
+  const api = apiFor(page)
+  await signIn(page, OWNER)
+  const ok = (r, s = 201) => assert.equal(r.status, s, JSON.stringify(r.body))
+  const po = await api('POST', '/purchase-orders', { party_id: ids.supplier, order_date: today, warehouse_id: ids.warehouse, currency_code: 'USD', exchange_rate: '121.500000',
+    lines: [{ product_id: ids.oil, quantity: '1000', unit_cost: '1.90' }] })
+  ok(po)
+  ok(await api('POST', `/purchase-orders/${po.body.data.id}/send`, { to: ['exports@straits.example'] }), 200)
+  const lc = await api('POST', '/letters-of-credit', { party_id: ids.supplier, purchase_order_id: po.body.data.id, goods_description: '1,000 kg crude palm oil', tenor: 'sight',
+    incoterm: 'CFR Chattogram', currency_code: 'USD', amount: '1900.00', tolerance_pct: '5', planning_rate: '121.50', issuing_bank_account_id: ids.bank, expiry_date: expiry })
+  ok(lc)
+  ok(await api('POST', `/letters-of-credit/${lc.body.data.id}/transition`, { action: 'submit' }, { 'If-Match': `W/"${lc.body.data.version}"` }), 200)
+  const sub = (await api('GET', `/letters-of-credit/${lc.body.data.id}`)).body.data
+  ok(await api('POST', `/letters-of-credit/${sub.id}/transition`, { action: 'mark_opened', bank_reference: 'SBL/LC/2026/0420', date: today }, { 'If-Match': `W/"${sub.version}"` }), 200)
+
+  // New bill, no supplier yet: pick the LC; supplier, currency, order and its 1,000 kg line are filled.
+  await page.goto('/purchases/bills/new')
+  await page.getByTestId('bill-import-open').click()
+  await page.locator('#f-lc').selectOption(String(lc.body.data.id))
+  await page.waitForFunction(() => document.querySelector('[aria-label="Quantity, line 1"]')?.value === '1000.000')
+  assert.equal(await page.locator('#f-currency').inputValue(), 'USD')
+  assert.equal(await page.getByTestId('from-po').inputValue(), String(po.body.data.id))
+  await page.getByText('Straits Edible Oils').first().waitFor()
+  assert.equal(await page.getByTestId('bill-lc-note').count(), 0)
+
+  // 1,050 kg is the order plus the LC's 5 % tolerance; 1,051 is refused, on the line.
+  await page.locator('[aria-label="Quantity, line 1"]').fill('1051')
+  await page.getByTestId('line-errors-0').getByText(/Only 1050\.000 .* is left on PO-/).waitFor()
+  const line = (await api('GET', `/purchase-orders/${po.body.data.id}`)).body.data.lines[0]
+  const body = (q) => ({ party_id: ids.supplier, supplier_bill_no: `SEO-PO-${q}`, bill_date: today, warehouse_id: ids.warehouse, purchase_order_id: po.body.data.id,
+    letter_of_credit_id: lc.body.data.id, currency_code: 'USD', exchange_rate: '121.500000', lines: [{ product_id: ids.oil, quantity: q, unit_cost: '1.90', purchase_order_line_id: line.id }] })
+  const over = await api('POST', '/purchase-bills', body('1051'))
+  assert.deepEqual([over.status, over.body.code], [422, 'order_qty_exceeded'])
+  const fine = await api('POST', '/purchase-bills', body('1050'))
+  ok(fine)
+  ok(await api('POST', `/purchase-bills/${fine.body.data.id}/post`, {}), 200)
+
+  // Everything received: picking the LC again says so.
+  await page.goto('/purchases/bills/new')
+  await page.getByTestId('bill-import-open').click()
+  await page.locator('#f-lc').selectOption(String(lc.body.data.id))
+  await page.getByTestId('bill-lc-note').getByText('Everything on this LC has already been billed').waitFor()
+  assert.deepEqual(errors, [])
+  await context.close()
 })
 
 test('the books still agree (pluto:integrity)', () => {
