@@ -1,21 +1,12 @@
-# public/ds/pluto · prebuilt design system
+# public/ds/pluto · design-system assets
 
-`components/bundle.js` and `bundle.css` are the prebuilt Pluto design system (React components, loaded at runtime by `src/ds.ts`; typed there as `PlutoLibrary` and used through `ds()`). Fonts and `tokens.json` sit next to them; the token variables are in `/lf-theme.css`.
+Fonts (`fonts/`) and the design tokens (`tokens.json`) of the Pluto design system. The token variables the app reads are in
+`/lf-theme.css`.
 
-The bundle was built under the old product name. For the rename to Pluto (backlog P1.7-FE-02) it was patched by hand in three places:
+The components themselves are source code now: `src/design/components.tsx` (React) and `src/design/pluto.css` (styles),
+used through `ds()` in `src/ds.ts`. They were ported one-to-one from the old prebuilt bundle (UI redesign step 1, Nov 2026;
+every component rendered identical HTML before the bundle was removed), including its Pluto-name and `Segmented`
+`type="button"` patches. The CSS class prefix `lf-` is unchanged on purpose (decision C17).
 
-| Where in `bundle.js` | Was | Now |
-|---|---|---|
-| header comment `@ds-bundle` | `"namespace"` set to the old product name | `"namespace":"Pluto"` |
-| last line (the global it publishes) | `window.<old name>=Object.assign(…)` | `window.Pluto=Object.assign(window.Pluto\|\|{},…)` |
-| `Logo` component word | the old product name | `"Pluto"` |
-
-A fourth patch fixes a bug (backlog P6.2, found in the E7 receipt form): `Segmented` rendered its options as `<button>` without a type, so inside a `<form>` choosing an option submitted the form.
-
-| Where in `bundle.js` | Was | Now |
-|---|---|---|
-| `Segmented` option button | `R.createElement("button",{key:o.value,role:"radio",…` | `…{key:o.value,type:"button",role:"radio",…` |
-
-If the bundle is ever rebuilt or replaced, repeat these patches (or build it with the Pluto names) and check that a case-insensitive search of `public/` for the old product name finds nothing.
-
-The CSS class prefix `lf-` is unchanged on purpose (decision C17): it is invisible to users and goes away when the design system is rebuilt from source.
+The look is "A+ Paper Ledger" (owner's choice, 12 Nov 2026): navy brand `--brand`, gold `--gold`, paper sidebar in the light
+theme (`src/app/shell.css`). Mock-ups: the "Pluto ERP Redesign" canvas on claude.ai.

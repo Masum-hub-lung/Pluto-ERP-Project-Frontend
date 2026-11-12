@@ -6,16 +6,17 @@
 
 :root, [data-theme="light"] {
   --paper: #f6f4ef; --surface: #ffffff; --surface-sunken: #efece5; --surface-raised: #ffffff;
-  --surface-hover: #f3f0ea; --surface-selected: #e8f3f0; --line: #e4dfd5; --line-strong: #838a96;
+  --surface-hover: #f3f0ea; --surface-selected: #e8eef6; --line: #e4dfd5; --line-strong: #838a96;
   --ink: #13202f; --ink-muted: #566170; --ink-subtle: #6b7480;
   --navy-900: #0e1a2b; --navy-800: #16263b; --navy-700: #20344d; --navy-line: #24364f;
   --on-navy: #e9eef5; --on-navy-muted: #93a2b6;
-  --brand: #0f7b6c; --brand-hover: #0b665a; --on-brand: #ffffff; --brand-ink: #0b6b5e; --brand-soft: #e3f2ee;
-  --accent: #8f6118; --accent-soft: #f8efdf; --focus: #0f7b6c;
+  /* A+ Paper Ledger (redesign, Nov 2026): ledger navy brand, gold second accent; teal retired so brand and "positive" no longer look alike. */
+  --brand: #1f3a5f; --brand-hover: #172d4a; --on-brand: #ffffff; --brand-ink: #1f3a5f; --brand-soft: #e8eef6;
+  --accent: #8f6118; --accent-soft: #f8efdf; --gold: #c9a227; --focus: #1f3a5f;
   --positive: #0e7a55; --positive-soft: #e2f3ea; --negative: #b4372a; --negative-soft: #fbe9e6;
   --warning: #8f5a00; --warning-soft: #fbf0db; --info: #2e5c9a; --info-soft: #e6eef8;
-  --debit-wash: #f7fbfa; --credit-wash: #fbf9f4;
-  --chart-1: #0f7b6c; --chart-2: #3e5573; --chart-3: #a9741f; --chart-4: #7fb3a7; --chart-5: #c4b293; --chart-grid: #ebe7df;
+  --debit-wash: #f6f8fb; --credit-wash: #fbf9f4;
+  --chart-1: #1f3a5f; --chart-2: #c9a227; --chart-3: #6b8cb5; --chart-4: #a7b8cf; --chart-5: #c4b293; --chart-grid: #ebe7df;
   --shadow-1: 0 1px 2px rgba(19,32,47,0.05), 0 1px 1px rgba(19,32,47,0.03);
   --shadow-2: 0 8px 24px rgba(19,32,47,0.12), 0 2px 6px rgba(19,32,47,0.06);
   --shadow-3: 0 24px 56px rgba(14,26,43,0.20), 0 4px 12px rgba(14,26,43,0.08);
@@ -23,16 +24,16 @@
 }
 [data-theme="dark"] {
   --paper: #0b1320; --surface: #121c2b; --surface-sunken: #0e1724; --surface-raised: #182436;
-  --surface-hover: #172234; --surface-selected: #13302d; --line: #233147; --line-strong: #66778f;
+  --surface-hover: #172234; --surface-selected: #182a44; --line: #233147; --line-strong: #66778f;
   --ink: #e8ecf1; --ink-muted: #9aa6b6; --ink-subtle: #8392a6;
   --navy-900: #08101c; --navy-800: #101b2b; --navy-700: #1a2a40; --navy-line: #1d2c42;
   --on-navy: #e9eef5; --on-navy-muted: #8a99ad;
-  --brand: #3dbaa5; --brand-hover: #5ccbb8; --on-brand: #04211c; --brand-ink: #5fd0bc; --brand-soft: #12332f;
-  --accent: #d9a54a; --accent-soft: #33281a; --focus: #5fd0bc;
+  --brand: #7fa6d9; --brand-hover: #9bbbe4; --on-brand: #0b1320; --brand-ink: #9bbbe4; --brand-soft: #1a2a40;
+  --accent: #d9a54a; --accent-soft: #33281a; --gold: #d9a54a; --focus: #9bbbe4;
   --positive: #4cc38a; --positive-soft: #133024; --negative: #f07a6c; --negative-soft: #3a1a17;
   --warning: #e8b04b; --warning-soft: #3a2c12; --info: #8db4ea; --info-soft: #182a44;
-  --debit-wash: #122321; --credit-wash: #1a1d22;
-  --chart-1: #3dbaa5; --chart-2: #8ea3c0; --chart-3: #d9a54a; --chart-4: #2f6f64; --chart-5: #6e624d; --chart-grid: #1f2b3d;
+  --debit-wash: #141f30; --credit-wash: #1a1d22;
+  --chart-1: #7fa6d9; --chart-2: #d9a54a; --chart-3: #8ea3c0; --chart-4: #3e5573; --chart-5: #6e624d; --chart-grid: #1f2b3d;
   --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
   --shadow-2: 0 8px 24px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
   --shadow-3: 0 24px 56px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);

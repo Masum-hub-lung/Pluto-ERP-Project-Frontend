@@ -24,7 +24,7 @@ React 19 + TypeScript SPA for **Pluto ERP** (repos, Jira project PEP and Vercel 
 12. The product is **Pluto** (owner decision, 21 Oct 2026; Jira PEP-440): use Pluto in UI text, code identifiers, storage keys (`pluto.*` via `lib/prefs.ts`) and docs. The old product name must not come back (PEP-446 checks). Only the hidden design-system CSS prefix `lf-` stays (decision C17).
 
 ## Shared components (keep this catalogue current)
-Design system through `ds()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `PlutoLibrary`; the prebuilt bundle and its patches are described in `public/ds/README.md`). Place the logo yourself with `components/Logo.tsx`, not the bundle's `Logo`. App shell: `src/app/Shell.tsx`, guards `src/app/guards.tsx` (RequireAuth, RequirePermission), toasts `src/app/toast.tsx` (`useToast`). Pattern pages: `src/pages/customers/*`.
+Design system through `ds()` (`src/ds.ts`): Button, IconButton, Icon, Badge, Amount, Field, Input, Select, Segmented, Tabs, Card, DataTable, Pagination, PageHeader, Banner, Toast, Dialog, EmptyState, Skeleton, Menu, Switch, Logo, Sidebar, NavSection, NavItem, NavSubItem, Topbar (props typed in `PlutoLibrary`; source in `src/design/components.tsx` + `src/design/pluto.css`, see `public/ds/README.md`). Place the logo yourself with `components/Logo.tsx`, not the design system's `Logo`. App shell: `src/app/Shell.tsx`, guards `src/app/guards.tsx` (RequireAuth, RequirePermission), toasts `src/app/toast.tsx` (`useToast`). Pattern pages: `src/pages/customers/*`.
 
 | Use | Component / hook | File | Example |
 |---|---|---|---|
@@ -112,7 +112,7 @@ Backend once: `cd ../backend && ./scripts/setup.sh` (demo sign-in `owner@pluto.l
 
 ## Frontend recipe
 ### 5.1 Stack and folders
-React 19 · TypeScript strict · Vite · React Router 6 · TanStack Query 5 · React Hook Form + zod · **Pluto design system** (prebuilt bundle at `public/ds/pluto/components/bundle.js`, typed in `src/ds.ts`, used through `ds()`).
+React 19 · TypeScript strict · Vite · React Router 6 · TanStack Query 5 · React Hook Form + zod · **Pluto design system** (source in `src/design/`, typed in `src/ds.ts`, used through `ds()`).
 ```
 src/
   api/client.ts            fetch wrapper (token in memory, refresh, X-Company-Id, Idempotency-Key, If-Match, ApiError)
