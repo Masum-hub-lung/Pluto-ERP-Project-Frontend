@@ -147,6 +147,16 @@ test('sales staff invoice 2 products + 1 service: warning, preview, post once, s
   await page.locator('tbody a', { hasText: /INV-\d{4}-0001/ }).click()
   await page.getByTestId('invoice-number').getByText(/INV-\d{4}-0001/).waitFor()
 
+  // Split view (PEP-479): at desktop width a row opens the preview beside the list; its button opens E5.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await go(page, '/sales/invoices')
+  await page.locator('tbody tr', { hasText: /INV-\d{4}-0001/ }).locator('td').nth(2).click()
+  await page.waitForURL(/\/sales\/invoices\?preview=\d+$/)
+  await page.getByTestId('invoice-preview').getByText(/INV-\d{4}-0001/).waitFor()
+  await page.getByTestId('preview-figure').waitFor()
+  await page.getByTestId('open-full').click()
+  await page.getByTestId('invoice-number').getByText(/INV-\d{4}-0001/).waitFor()
+
   await page.setViewportSize(VIEWPORTS.phone)
   for (const u of ['/sales/invoices', '/sales/invoices/new', `/sales/invoices/${inv.main}`, `/sales/invoices/${inv.main}/preview`]) {
     await go(page, u); await page.waitForTimeout(300); await assertNoPageScroll(page, u)

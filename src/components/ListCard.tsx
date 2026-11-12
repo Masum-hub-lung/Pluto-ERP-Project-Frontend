@@ -44,7 +44,7 @@ export function ListCard({ toolbar, filters, meta, onPage, children, label, card
           {toolbar}
           {filters && (phone
             ? <Button variant="secondary" icon="sliders-horizontal" onClick={() => setSheet(true)} data-testid="list-filters">Filters</Button>
-            : <><span className="lf-listcard-spacer" />{filters}</>)}
+            : <><span className="lf-listcard-spacer" /><div className="lf-listcard-filters">{filters}</div></>)}
         </div>
       )}
       <div className="lf-listcard-scroll">{body}</div>

@@ -53,6 +53,9 @@
 .lf-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lf-code { font: 450 12.5px/18px var(--font-mono); }
 .lf-serif { font-family: var(--font-serif); }
+.lf-mono { font-family: var(--font-mono); }
+.lf-link { color: var(--brand-ink); text-decoration: none; }
+.lf-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 .lf-rowlink { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); }
 .lf-rowlink:first-child { border-top: 0; }
 .lf-quick { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); text-decoration: none; font: 600 14px/20px var(--font-sans); cursor: pointer; transition: background-color .12s, border-color .12s; }

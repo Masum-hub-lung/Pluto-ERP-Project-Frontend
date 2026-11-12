@@ -35,7 +35,7 @@ const REASONS: Array<{ value: CancelRequest['reason'] | ''; label: string }> = [
   { value: 'duplicate', label: 'Duplicate bill' }, { value: 'customer_cancelled', label: 'Supplier cancelled the bill' }, { value: 'other', label: 'Other' },
 ]
 
-interface BillLine { line_no: number; product_code: string; product_name: string; unit: string; description: string | null; quantity: string; unit_cost: string
+export interface BillLine { line_no: number; product_code: string; product_name: string; unit: string; description: string | null; quantity: string; unit_cost: string
   discount_pct: string | null; tax_amount: string; line_total: string }
 
 export function BillDetails() {

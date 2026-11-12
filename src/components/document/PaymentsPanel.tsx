@@ -17,7 +17,7 @@ import { ResponsiveDialog } from '../ResponsiveDialog'
  * (POST /allocations), and "Record payment" (E7 for an invoice, F5 for a bill, prefilled). Amounts and balances are the server's;
  * a wrong amount comes back as allocation_exceeds_balance and is shown in the dialog.
  */
-const KIND: Record<string, string> = { receipt: 'Receipt', payment: 'Payment', credit_note: 'Credit note', debit_note: 'Debit note', advance: 'Advance' }
+export const ALLOCATION_KIND: Record<string, string> = { receipt: 'Receipt', payment: 'Payment', credit_note: 'Credit note', debit_note: 'Debit note', advance: 'Advance' }
 
 export function PaymentsPanel({ type, id, number, partyId, status, balance, allocations }: {
   type: 'sales_invoice' | 'purchase_bill'; id: number; number: string; partyId: number; status: string; balance: string; allocations: Allocation[]
@@ -56,7 +56,7 @@ export function PaymentsPanel({ type, id, number, partyId, status, balance, allo
     { key: 'state', label: '', render: (_v, r) => (r.reversed ? <Badge tone="neutral">Removed</Badge>
       : canRemove ? <Button size="sm" variant="ghost" icon="x" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setRemoving(r.a) }} data-testid={`remove-allocation-${r.id}`}>Remove</Button> : null) },
   ]
-  const rows = allocations.map((a) => ({ id: a.id, a, voucher: a.voucher_number, voucherId: a.voucher_id, kind: a.kind, kindLabel: KIND[a.kind] ?? a.kind, date: a.date, amount: a.amount, reversed: a.reversed }))
+  const rows = allocations.map((a) => ({ id: a.id, a, voucher: a.voucher_number, voucherId: a.voucher_id, kind: a.kind, kindLabel: ALLOCATION_KIND[a.kind] ?? a.kind, date: a.date, amount: a.amount, reversed: a.reversed }))
 
   return (
     <Card title="Payments" subtitle={status === 'posted' ? `Open balance ${formatTaka(balance, { symbol: true })}` : undefined} padding="none"
@@ -71,7 +71,7 @@ export function PaymentsPanel({ type, id, number, partyId, status, balance, allo
         : <div style={{ padding: 16 }}><EmptyState icon="hand-coins" title="Nothing paid yet" description={status === 'posted' ? 'Record a payment or apply an advance the party already paid.' : 'Payments can be applied once it is posted.'} /></div>}
       {removing && (
         <ConfirmDialog title={`Remove ${removing.voucher_number} from ${number}?`} confirmLabel="Remove" tone="warning" loading={remove.isPending}
-          description={`${formatTaka(removing.amount, { symbol: true })} goes back to the ${KIND[removing.kind]?.toLowerCase() ?? 'payment'} as unapplied, and ${number} is open for it again.`}
+          description={`${formatTaka(removing.amount, { symbol: true })} goes back to the ${ALLOCATION_KIND[removing.kind]?.toLowerCase() ?? 'payment'} as unapplied, and ${number} is open for it again.`}
           onConfirm={() => void doRemove()} onClose={() => setRemoving(null)} />
       )}
       {applying && <ApplyDialog type={type} id={id} number={number} partyId={partyId} balance={balance} onClose={() => setApplying(false)} />}
@@ -114,7 +114,7 @@ function ApplyDialog({ type, id, number, partyId, balance, onClose }: { type: 's
         {credits.length > 0 && <>
           <Field label="Credit to apply" htmlFor="apply-credit">
             <Select id="apply-credit" value={lineId} onChange={(e) => setLineId(e.target.value)}
-              options={[{ value: '', label: 'Choose…' }, ...credits.map((c) => ({ value: String(c.journal_line_id), label: `${c.number} · ${KIND[c.kind] ?? c.kind} · ${formatTaka(c.unapplied, { symbol: true })} left` }))]} />
+              options={[{ value: '', label: 'Choose…' }, ...credits.map((c) => ({ value: String(c.journal_line_id), label: `${c.number} · ${ALLOCATION_KIND[c.kind] ?? c.kind} · ${formatTaka(c.unapplied, { symbol: true })} left` }))]} />
           </Field>
           <Field label="Amount (৳)" hint={credit ? `Up to ${formatTaka(credit.unapplied, { symbol: true })} on this credit and ${formatTaka(balance, { symbol: true })} on ${number}` : undefined} htmlFor="apply-amount">
             <Input id="apply-amount" mono align="right" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />

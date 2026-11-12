@@ -21,6 +21,9 @@ export interface Owed { total: string; overdue: string; advance: string; parties
 export interface Upcoming { kind: string; id: number; number: string; party: string; party_id: number; due_date: string; amount: string; days: number; url: string }
 export interface RecentTx { id: number; date: string; voucher_number: string; type: string; party: string | null; narration: string | null; amount: string; url: string }
 export interface StockAlert { product_id: number; code: string; name: string; warehouse: string; unit: string | null; on_hand: string; reorder_level: string; status: string; total: number; url: string }
+/** A1 Today feed (PEP-478): vouchers posted since midnight in Dhaka, newest first; `time` is HH:MM in Dhaka. */
+export interface TodayItem { id: number; posted_at: string; time: string; type: string; voucher_number: string; party: string | null; narration: string | null; amount: string; by: string | null; url: string }
+export interface TodayFeed { date: string; count: number; items: TodayItem[] }
 export interface DashBanner { kind: string; tone: 'warning' | 'info'; title: string; body: string | null; url: string | null }
 export interface WidgetFailure { widget: string; ref: string; message: string }
 export interface PeriodInfo { name: DashboardPeriod; date_from: string; date_to: string; label: string; prior_from: string; prior_to: string }
@@ -32,6 +35,7 @@ export const owedOf = (d: DashboardSummary | undefined) => (d?.money_owed ?? {})
 export const upcomingOf = (d: DashboardSummary | undefined) => (d?.upcoming_payments ?? []) as unknown as Upcoming[]
 export const recentOf = (d: DashboardSummary | undefined) => (d?.recent_transactions ?? []) as unknown as RecentTx[]
 export const alertsOf = (d: DashboardSummary | undefined) => (d?.inventory_alerts ?? []) as unknown as StockAlert[]
+export const todayOf = (d: DashboardSummary | undefined) => (d?.today && 'items' in d.today ? d.today : undefined) as unknown as TodayFeed | undefined
 export const bannersOf = (d: DashboardSummary | undefined) => (d?.banners ?? []) as unknown as DashBanner[]
 export const failuresOf = (d: { widget_errors?: Array<Record<string, unknown>> } | undefined) => (d?.widget_errors ?? []) as unknown as WidgetFailure[]
 

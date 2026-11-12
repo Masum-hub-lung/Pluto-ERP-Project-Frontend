@@ -12,7 +12,7 @@ import { ds } from '../ds'
  */
 const pct = (v: string | number | null | undefined) => Math.max(0, Math.min(100, Number(v ?? 0))) // percentages from the API, not money
 
-/** KPI tile (Kpi): label, amount, change against the previous period, sparkline, foot; opens its page. */
+/** KPI tile (Kpi): label, amount, then change against the previous period and foot beside the trend line (A+ layout, PEP-478); opens its page. */
 export function KpiTile({ kpi, invert = false }: { kpi: Kpi; invert?: boolean }) {
   const { Icon } = ds()
   const navigate = useNavigate()
@@ -24,21 +24,23 @@ export function KpiTile({ kpi, invert = false }: { kpi: Kpi; invert?: boolean })
       onKeyDown={(e) => { if (open && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
       style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '14px 18px',
         display: 'flex', flexDirection: 'column', gap: 4, cursor: open ? 'pointer' : undefined, minWidth: 0 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-        <span style={{ font: '600 13px/18px var(--font-sans)', color: 'var(--ink-muted)' }}>{kpi.label}</span>
-        {(kpi.trend_pct?.length ?? 0) > 1 && <Sparkline points={kpi.trend_pct!} tone={good === false ? 'negative' : 'accent'} />}
-      </div>
+      <span style={{ font: '600 13px/18px var(--font-sans)', color: 'var(--ink-muted)' }}>{kpi.label}</span>
       <span className="lf-num" data-testid={`kpi-${kpi.key}-value`} style={{ font: '500 26px/32px var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         color: compareDecimal(kpi.value, '0') < 0 ? 'var(--negative)' : undefined }}>{formatTaka(kpi.value, { symbol: true })}</span>
-      <span style={{ fontSize: 13, color: 'var(--ink-muted)', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        {kpi.delta_pct != null && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontWeight: 600, color: good ? 'var(--positive)' : 'var(--negative)' }}>
-            <Icon name={up ? 'arrow-up-right' : 'arrow-down-right'} size={14} />{up ? '+' : ''}{kpi.delta_pct} %
-          </span>
-        )}
-        {kpi.delta_pct != null && <span>vs last period</span>}
-        {kpi.foot && <span>{kpi.delta_pct != null ? '· ' : ''}{kpi.foot}</span>}
-      </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-end', minHeight: 26 }}>
+        <span style={{ fontSize: 13, lineHeight: '18px', color: 'var(--ink-muted)', display: 'grid', gap: 2, minWidth: 0 }}>
+          {kpi.delta_pct != null && (
+            <span style={{ display: 'flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontWeight: 600, color: good ? 'var(--positive)' : 'var(--negative)' }}>
+                <Icon name={up ? 'arrow-up-right' : 'arrow-down-right'} size={14} />{up ? '+' : ''}{kpi.delta_pct} %
+              </span>
+              <span>vs last period</span>
+            </span>
+          )}
+          {kpi.foot && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kpi.foot}</span>}
+        </span>
+        {(kpi.trend_pct?.length ?? 0) > 1 && <Sparkline points={kpi.trend_pct!} width={88} height={26} tone={good === false ? 'negative' : 'accent'} />}
+      </div>
     </div>
   )
 }
@@ -48,7 +50,7 @@ export function Sparkline({ points, width = 72, height = 22, tone = 'accent' }: 
   const n = points.length
   const xy = points.map((p, i) => [1 + (i / Math.max(1, n - 1)) * (width - 2), height - 2 - (pct(p) / 100) * (height - 4)])
   const d = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
-  const colour = tone === 'negative' ? 'var(--negative)' : 'var(--accent, var(--ink))'
+  const colour = tone === 'negative' ? 'var(--negative)' : 'var(--chart-1)'
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true" style={{ flex: 'none' }}>
       <path d={`${d} L${xy[n - 1][0]} ${height} L${xy[0][0]} ${height} Z`} fill={colour} opacity={0.12} />
@@ -63,7 +65,7 @@ export interface BarGroup { key: string; label: string; values: Record<string, {
 
 /** Vertical grouped bars (12 months of revenue vs expenses, net profit by month); hover shows the amounts. */
 export function BarChart({ series, groups, height = 180, label, testId }: { series: BarSeries[]; groups: BarGroup[]; height?: number; label: string; testId?: string }) {
-  const colour = { accent: 'var(--accent, var(--ink))', muted: 'var(--ink-muted)', negative: 'var(--negative)' }
+  const colour = { accent: 'var(--chart-1)', muted: 'var(--chart-2)', negative: 'var(--negative)' }
   return (
     <figure style={{ margin: 0 }} data-testid={testId}>
       <div role="img" aria-label={`${label}: ${groups.map((g) => `${g.label} ${series.map((s) => `${s.label} ${g.values[s.key]?.text}`).join(', ')}`).join('; ')}`}
@@ -74,7 +76,7 @@ export function BarChart({ series, groups, height = 180, label, testId }: { seri
             {series.map((s) => {
               const v = g.values[s.key]
               return <span key={s.key} style={{ width: `${Math.floor(70 / series.length)}%`, minWidth: 3, maxWidth: 18, height: `${Math.max(pct(v?.pct), v && pct(v.pct) > 0 ? 1.5 : 0)}%`,
-                background: v?.negative ? colour.negative : colour[s.tone], borderRadius: '3px 3px 0 0', opacity: s.tone === 'muted' ? 0.45 : 1 }} />
+                background: v?.negative ? colour.negative : colour[s.tone], borderRadius: '3px 3px 0 0', opacity: 1 }} />
             })}
           </div>
         ))}
@@ -86,7 +88,7 @@ export function BarChart({ series, groups, height = 180, label, testId }: { seri
         <figcaption style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: 'var(--ink-muted)' }}>
           {series.map((s) => (
             <span key={s.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 2, background: colour[s.tone], opacity: s.tone === 'muted' ? 0.45 : 1 }} />{s.label}
+              <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 2, background: colour[s.tone] }} />{s.label}
             </span>
           ))}
         </figcaption>
@@ -98,7 +100,7 @@ export function BarChart({ series, groups, height = 180, label, testId }: { seri
 /** Horizontal bar list (by category, aging buckets, by warehouse): name, bar, amount; a row with a link opens it. */
 export function BarList({ rows, testId }: { rows: Array<{ key: string; label: string; value: ReactNode; pct: string; tone?: 'accent' | 'warning' | 'negative'; url?: string; note?: ReactNode }>; testId?: string }) {
   const navigate = useNavigate()
-  const colour = { accent: 'var(--accent, var(--ink))', warning: 'var(--warning, var(--accent))', negative: 'var(--negative)' }
+  const colour = { accent: 'var(--chart-1)', warning: 'var(--gold)', negative: 'var(--negative)' }
   return (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }} data-testid={testId}>
       {rows.map((r) => (
@@ -129,8 +131,8 @@ export function LineChart({ points, first, last, label, height = 140, testId }: 
   return (
     <figure style={{ margin: 0 }} data-testid={testId}>
       <svg viewBox={`0 0 ${w} ${height}`} width="100%" height={height} preserveAspectRatio="none" role="img" aria-label={label}>
-        <path d={`${d} L${w} ${height} L0 ${height} Z`} fill="var(--accent, var(--ink))" opacity={0.1} />
-        <path d={d} fill="none" stroke="var(--accent, var(--ink))" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        <path d={`${d} L${w} ${height} L0 ${height} Z`} fill="var(--chart-1)" opacity={0.1} />
+        <path d={d} fill="none" stroke="var(--chart-1)" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
       </svg>
       <figcaption style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-muted)' }}><span>{first}</span><span>{last}</span></figcaption>
     </figure>

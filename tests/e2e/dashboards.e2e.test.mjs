@@ -80,6 +80,11 @@ test('the owner lands on the dashboard and its figures equal the reports', async
   await page.getByTestId('owed-payable').getByText('৳ 80,000.00').first().waitFor()
   await page.getByTestId('chart-revenue-expenses').waitFor()
   await page.getByTestId('recent-transactions').getByText(ids.invoice.number).waitFor()
+  // Today feed (PEP-478): the API's newest posting of the day is the first row and opens its voucher.
+  const feed = (await api('GET', '/dashboard')).body.data.today
+  assert.ok(feed.count > 0, 'the seed posted vouchers today')
+  await page.getByTestId('today-feed').getByRole('button', { name: new RegExp(feed.items[0].voucher_number) }).first().waitFor()
+  await page.getByText(`${feed.count} posted since midnight`).waitFor()
 
   await page.getByTestId('lens-nav').getByText('Financial', { exact: true }).click()
   await page.waitForURL(/\/dashboard\/financial$/)
