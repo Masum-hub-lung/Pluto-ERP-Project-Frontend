@@ -1,9 +1,9 @@
 import * as React from 'react'
+import { library } from './design/components'
 
 /**
- * The Pluto design system (public/ds/pluto/components/bundle.js, prebuilt; see public/ds/README.md) is a React
- * component library that reads `window.React` and publishes `window.Pluto`. The app shares its React instance with the bundle,
- * loads the bundle once, then renders the designed components directly.
+ * The Pluto design system: React components in src/design/components.tsx (styles src/design/pluto.css, tokens
+ * public/lf-theme.css). Ported one-to-one from the old prebuilt bundle; pages use it through `ds()` with the props typed below.
  */
 type C<P = Record<string, unknown>> = React.ComponentType<P & { children?: React.ReactNode }>
 
@@ -57,23 +57,19 @@ declare global {
   interface Window { React: typeof React; Pluto?: PlutoLibrary }
 }
 
-let loading: Promise<PlutoLibrary> | null = null
+const plutoLibrary = library as unknown as PlutoLibrary
 
-export function loadDesignSystem(src = '/ds/pluto/components/bundle.js'): Promise<PlutoLibrary> {
-  if (window.Pluto) return Promise.resolve(window.Pluto)
+/**
+ * Kept for main.tsx's boot order. The components are now compiled into the app (src/design), so this resolves at once;
+ * `window.Pluto` stays set for code that still looks for the old global.
+ */
+export function loadDesignSystem(): Promise<PlutoLibrary> {
   window.React = React
-  loading ??= new Promise((resolve, reject) => {
-    const s = document.createElement('script')
-    s.src = src
-    s.onload = () => (window.Pluto ? resolve(window.Pluto) : reject(new Error('Pluto design system did not load')))
-    s.onerror = () => reject(new Error('Pluto design system could not be fetched'))
-    document.head.appendChild(s)
-  })
-  return loading
+  window.Pluto = plutoLibrary
+  return Promise.resolve(plutoLibrary)
 }
 
-/** The loaded component library (main.tsx renders only after loadDesignSystem() resolved). */
+/** The component library. */
 export function ds(): PlutoLibrary {
-  if (!window.Pluto) throw new Error('Design system not loaded')
-  return window.Pluto
+  return plutoLibrary
 }

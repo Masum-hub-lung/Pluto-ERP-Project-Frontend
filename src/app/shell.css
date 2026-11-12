@@ -60,6 +60,31 @@
 }
 
 /*
+ * A+ Paper Ledger (redesign, Nov 2026): in the light theme the sidebar and phone menu are paper, not navy. The navy tokens
+ * are redefined inside them only, so every rule above keeps working; the active page is a solid navy pill.
+ * Muted menu text #566170 on #fbfaf7 is 6.0:1. Dark theme keeps the dark sidebar.
+ */
+.lf-sidebar, .lf-navdrawer {
+  --navy-900: #fbfaf7; --navy-800: #f1ede4; --navy-700: #e8eef6; --navy-line: #e4dfd5;
+  --on-navy: #13202f; --on-navy-muted: #566170;
+}
+[data-theme="dark"] .lf-sidebar, [data-theme="dark"] .lf-navdrawer {
+  --navy-900: #08101c; --navy-800: #101b2b; --navy-700: #1a2a40; --navy-line: #1d2c42;
+  --on-navy: #e9eef5; --on-navy-muted: #8a99ad;
+}
+.lf-shell:not([data-theme="dark"]) .lf-sidebar { background: var(--navy-900); }
+.lf-shell:not([data-theme="dark"]) .lf-nav-item:hover, .lf-shell:not([data-theme="dark"]) .lf-nav-subitem:hover { background: var(--navy-800); }
+.lf-shell:not([data-theme="dark"]) .lf-nav-item.is-active { background: var(--brand); color: var(--on-brand); }
+.lf-shell:not([data-theme="dark"]) .lf-nav-item.is-active .lf-icon { color: var(--on-brand); }
+.lf-shell:not([data-theme="dark"]) .lf-nav-item.is-active::before { background: var(--gold); }
+.lf-shell:not([data-theme="dark"]) .lf-nav-subitem.is-active { background: var(--brand-soft); color: var(--brand-ink); }
+.lf-shell:not([data-theme="dark"]) .lf-company { background: var(--surface); backdrop-filter: none; }
+.lf-shell:not([data-theme="dark"]) .lf-company:hover { background: var(--surface); border-color: var(--line-strong); }
+/* The logo on the paper sidebar: the normal (navy) artwork, not the white "reversed" copy. */
+.lf-shell:not([data-theme="dark"]) :is(.lf-sidebar, .lf-navdrawer) .lf-logo.is-reversed::before { background-image: url("/brand/mark.png"); }
+.lf-shell:not([data-theme="dark"]) :is(.lf-sidebar, .lf-navdrawer) .lf-logo.is-reversed .lf-logo-word { background-image: url("/brand/word.png"); }
+
+/*
  * Motion (P1.6-FE-03): the sidebar width slides (the page area follows smoothly because it is the flexible column);
  * labels fade in when it expands. The phone drawer slide is added with the drawer (P1.5-FE-01).
  */

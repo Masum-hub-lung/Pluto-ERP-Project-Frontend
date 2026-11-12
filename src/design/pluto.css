@@ -1,4 +1,4 @@
-/* Pluto design-system components — reads tokens.css custom properties only. */
+/* Pluto design-system components (source; was public/ds/pluto/components/bundle.css). Reads the token variables in /lf-theme.css only. */
 .lf-root, body { font-family: var(--font-sans); color: var(--ink); }
 body { background: var(--paper); margin: 0; font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; }
 .lf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -308,7 +308,7 @@ th.is-right .lf-th-sort { flex-direction: row-reverse; }
 .lf-logo { display: inline-flex; align-items: center; gap: 10px; }
 .lf-logo-tile { fill: var(--navy-900); }
 .lf-logo.is-reversed .lf-logo-tile { fill: var(--navy-700); }
-.lf-logo-bar { fill: #3dbaa5; }
+.lf-logo-bar { fill: var(--gold); }
 .lf-logo-rule { fill: #d9a54a; }
 .lf-logo-word { font: 520 20px/1 var(--font-serif); letter-spacing: -0.01em; color: var(--ink); }
 .lf-logo.is-reversed .lf-logo-word { color: var(--on-navy); }
@@ -322,8 +322,8 @@ th.is-right .lf-th-sort { flex-direction: row-reverse; }
 .lf-sidebar-toggle:hover { background: var(--navy-800); color: var(--on-navy); }
 .lf-company { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-sm); background: var(--navy-800); border: 1px solid var(--navy-line); cursor: pointer; color: var(--on-navy-muted); margin-bottom: 12px; }
 .lf-company:hover { border-color: var(--on-navy-muted); }
-.lf-company:focus-visible, .lf-nav-item:focus-visible, .lf-nav-subitem:focus-visible { outline: 2px solid #5fd0bc; outline-offset: 1px; }
-.lf-company-badge { width: 28px; height: 28px; flex: none; border-radius: 6px; background: #3dbaa5; color: #04211c; display: grid; place-items: center; font: 700 12px/1 var(--font-sans); }
+.lf-company:focus-visible, .lf-nav-item:focus-visible, .lf-nav-subitem:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.lf-company-badge { width: 28px; height: 28px; flex: none; border-radius: 6px; background: var(--brand); color: var(--on-brand); display: grid; place-items: center; font: 700 12px/1 var(--font-sans); }
 .lf-company-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .lf-company-name { font: 600 13.5px/18px var(--font-sans); color: var(--on-navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lf-company-meta { font-size: 12px; line-height: 16px; color: var(--on-navy-muted); }
@@ -337,8 +337,8 @@ th.is-right .lf-th-sort { flex-direction: row-reverse; }
 .lf-nav-item:hover { background: var(--navy-800); color: var(--on-navy); }
 .lf-nav-item:hover .lf-icon { color: var(--on-navy); }
 .lf-nav-item.is-active { background: var(--navy-700); color: var(--on-navy); font-weight: 600; }
-.lf-nav-item.is-active::before { content: ""; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: #3dbaa5; }
-.lf-nav-item.is-active .lf-icon, .lf-nav-item.is-parent-active .lf-icon { color: #5fd0bc; }
+.lf-nav-item.is-active::before { content: ""; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--gold); }
+.lf-nav-item.is-active .lf-icon, .lf-nav-item.is-parent-active .lf-icon { color: var(--brand-ink); }
 .lf-nav-item.is-parent-active { color: var(--on-navy); }
 .lf-sidebar.is-compact .lf-nav-item { justify-content: center; padding: 0; }
 .lf-nav-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

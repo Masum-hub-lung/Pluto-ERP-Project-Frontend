@@ -6,7 +6,7 @@ import { loadDesignSystem } from './ds'
 import { initMonitoring } from './lib/monitoring'
 import './app/responsive.css'
 
-/** Boot: load the prebuilt Pluto design-system bundle (it uses this app's React), then render. */
+/** Boot: set up the Pluto design system (src/design), then render. */
 initMonitoring() // Sentry, only when VITE_SENTRY_DSN is set (P17.2-FE-02)
 const root = createRoot(document.getElementById('root')!)
 
