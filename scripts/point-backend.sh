@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Points the Vercel site at a new backend tunnel URL and redeploys production (backlog P0.6-FE-03).
 #   ./scripts/point-backend.sh https://<words>.trycloudflare.com
-# One-time: npm i -g vercel && vercel login && vercel link (project pluto-erp-frontend).
+# One-time: npm i -g vercel && vercel login && vercel link (project pluto-erp-project-frontend, team pluto).
 # Environment variables only apply to new deployments, which is why this redeploys the current production build. Runbook: backend repo
 # docs/runbooks/tunnel-url-changed.md.
 set -euo pipefail
@@ -14,7 +14,7 @@ echo "==> Checking $URL/api/ready"
 curl -fsS -m 20 "$URL/api/ready" || { echo; echo "The backend does not answer at $URL; fix that first." >&2; exit 1; }
 echo
 cd "$(dirname "$0")/.."
-PROD_HOST="${VERCEL_PROD_HOST:-pluto-erp-project-frontend.vercel.app}"
+PROD_HOST="${VERCEL_PROD_HOST:-pluto-erp-project-frontend-six.vercel.app}"
 for ENV in production preview; do
   vercel env add BACKEND_ORIGIN --environment "$ENV" --value "$URL" --force --yes --sensitive --non-interactive </dev/null >/dev/null 2>&1
   echo "==> BACKEND_ORIGIN ($ENV) = $URL"
