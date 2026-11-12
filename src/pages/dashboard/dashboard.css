@@ -1,0 +1,13 @@
+/* A1 dashboard, A+ Paper Ledger (PEP-478): Today feed. Colours are tokens only (lf-theme.css). */
+.lf-today { list-style: none; margin: 0; padding: 0; display: grid; }
+.lf-today > li + li { border-top: 1px solid var(--line); }
+.lf-today button { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; width: 100%; min-height: 44px; padding: 9px 0;
+  border: 0; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.lf-today button:hover .lf-today-what strong { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 2px; }
+.lf-today button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-xs); }
+.lf-today time { font-size: 12.5px; color: var(--ink-muted); }
+.lf-today-what { display: flex; flex-direction: column; min-width: 0; }
+.lf-today-what strong { font-weight: 600; font-size: 14px; }
+.lf-today-what span { font-size: 12.5px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-today-amount { font-size: 13.5px; }
+.lf-today-more button { display: block; padding: 10px 0 2px; color: var(--brand-ink); font-weight: 600; font-size: 13px; }

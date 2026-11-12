@@ -22,7 +22,7 @@ export interface PlutoLibrary {
   Tabs: C<{ items: Array<{ value: string; label: string; count?: number }>; value?: string; onChange?: (v: string) => void }>
   Card: C<{ title?: string; subtitle?: string; actions?: React.ReactNode; footer?: React.ReactNode; padding?: 'none' | 'sm' | 'md' }>
   DataTable: C<{ columns: DataColumn[]; rows: Array<Record<string, unknown>>; onRowClick?: (row: any) => void; rowActions?: (row: any) => React.ReactNode;
-    emptyState?: React.ReactNode; loading?: boolean; caption?: string }>
+    emptyState?: React.ReactNode; loading?: boolean; caption?: string; /** Row shown in the split-view preview (PEP-479): highlighted. */ activeId?: number | string | null }>
   Pagination: C<{ page: number; pageCount: number; total?: number; pageSize?: number; onChange?: (p: number) => void }>
   PageHeader: C<{ eyebrow?: string; title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode }>
   Banner: C<{ tone?: 'info' | 'positive' | 'negative' | 'warning'; title?: string; action?: React.ReactNode; onDismiss?: () => void }>

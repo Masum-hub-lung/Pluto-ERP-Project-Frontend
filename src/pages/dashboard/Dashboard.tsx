@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { alertsOf, bannersOf, cashOf, monthsOf, owedOf, periodOf, recentOf, upcomingOf, useDashboard, type Owed } from '../../api/dashboard'
+import { alertsOf, bannersOf, cashOf, monthsOf, owedOf, periodOf, recentOf, todayOf, upcomingOf, useDashboard, type Owed, type TodayFeed } from '../../api/dashboard'
 import { useSession } from '../../auth/session'
 import { ds, type DataColumn } from '../../ds'
 import { compareDecimal } from '../../lib/decimal'
@@ -11,12 +11,13 @@ import { WidgetError } from '../../components/WidgetError'
 import { entryTypeLabel } from '../accounting/common'
 import { shortDate } from '../purchases/BillList'
 import { failureOf, greeting, LensNav, PeriodControl, usePeriod } from './common'
+import './dashboard.css'
 
 /**
  * A1 Main dashboard (Dashboard.dc.html 03, 05 dark, 06 tablet, 07 phone; FR-010; backlog P14.2-FE-01): greeting with the
  * period control and two actions, banners (reconciliation — dismissible for the session — and approvals waiting), 4
  * KPI tiles, 12 months of revenue vs expenses, cash position, money owed by age, upcoming payments, quick actions,
- * recent transactions and inventory alerts. All from GET /dashboard; a widget the API could not build shows its own
+ * recent transactions, the Today feed (vouchers posted since midnight; PEP-478) and inventory alerts. All from GET /dashboard; a widget the API could not build shows its own
  * error with the reference (ERR-8). Sales staff and Viewer get no profit, cash or balances (DEC-13): those widgets are
  * simply not there.
  */
@@ -101,13 +102,18 @@ export function Dashboard() {
             )}
           </Widget>
         )}
-        <QuickActions className={fin ? 'lf-c4' : 'lf-c12'} />
-        {can('accounting.view') && (
-          <Widget className={fin ? 'lf-c8' : 'lf-c12'} title="Recent transactions" subtitle="The latest posted vouchers" d={d} widget="recent_transactions" retry={() => void q.refetch()} padding="none"
+        {can('accounting.view') ? (<>
+          <Widget className="lf-c8" title="Recent transactions" subtitle="The latest posted vouchers" d={d} widget="recent_transactions" retry={() => void q.refetch()} padding="none"
             action={<Button size="sm" variant="ghost" iconRight="arrow-right" onClick={() => navigate('/accounting/vouchers')}>All vouchers</Button>}>
             <RecentTable rows={recentOf(d)} loading={!d} />
           </Widget>
-        )}
+          <div className="lf-c4" style={{ display: 'grid', gap: 24, alignContent: 'start', minWidth: 0 }}>
+            <Widget className="" title="Today" subtitle={todayOf(d) && todayOf(d)!.count > 0 ? `${todayOf(d)!.count} posted since midnight` : 'Posted since midnight'} d={d} widget="today" retry={() => void q.refetch()}>
+              <TodayFeedList feed={todayOf(d)} />
+            </Widget>
+            <QuickActions className="" />
+          </div>
+        </>) : <QuickActions className="lf-c12" />}
         {can('inventory.view') && (
           <Widget className="lf-c12" title="Inventory alerts" subtitle="Products at or below their reorder level" d={d} widget="inventory_alerts" retry={() => void q.refetch()}
             action={<Button size="sm" variant="ghost" iconRight="arrow-right" onClick={() => navigate('/inventory/low-stock')}>
@@ -204,6 +210,32 @@ function QuickActions({ className }: { className: string }) {
         </div>
       </Card>
     </div>
+  )
+}
+
+/** Today feed (A+ redesign, PEP-478): time, what was posted, for whom, amount; each row opens its voucher. */
+function TodayFeedList({ feed }: { feed: TodayFeed | undefined }) {
+  const navigate = useNavigate()
+  const items = feed?.items ?? []
+  if (items.length === 0) return <Empty text="Nothing posted yet today" />
+  return (
+    <ol className="lf-today" data-testid="today-feed">
+      {items.map((t) => (
+        <li key={t.id}>
+          <button type="button" onClick={() => navigate(t.url)} title={`${t.voucher_number} · open the voucher`} aria-label={`${t.time} ${entryTypeLabel(t.type)} ${t.voucher_number}${t.party ? `, ${t.party}` : ''}, ${formatTaka(t.amount, { symbol: true })}${t.by ? `, posted by ${t.by}` : ''}`}>
+            <time className="lf-num lf-mono" dateTime={t.posted_at}>{t.time}</time>
+            <span className="lf-today-what">
+              <strong>{entryTypeLabel(t.type)}</strong>
+              <span>{[t.party ?? t.narration ?? t.voucher_number, t.by ? `by ${t.by}` : null].filter(Boolean).join(' · ')}</span>
+            </span>
+            <span className="lf-num lf-today-amount">{formatTaka(t.amount, { symbol: true })}</span>
+          </button>
+        </li>
+      ))}
+      {feed && feed.count > items.length && (
+        <li className="lf-today-more"><button type="button" className="lf-link" onClick={() => navigate('/accounting/vouchers')}>{feed.count - items.length} more today · All vouchers</button></li>
+      )}
+    </ol>
   )
 }
 

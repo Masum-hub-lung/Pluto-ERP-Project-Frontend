@@ -11,10 +11,14 @@ import { formatTaka } from '../../lib/format'
 import { useListParams } from '../../lib/useListParams'
 import { BillStatusBadge } from './BillStatusBadge'
 import { ExportButton } from '../../components/ExportButton'
+import { SplitView, useSplit } from '../../components/SplitView'
+import { BillListPreview } from './BillListPreview'
 
 /**
  * F2 Purchase bill list (Pur-List.dc.html): status tabs, search, supplier and date filters — all in the URL — then the
  * bills with amount and balance from the API; a row opens F4. The list endpoint has no counts, so the tabs show none.
+ * Split view (A+ redesign, PEP-479): on wide screens a row opens a preview beside the list (?preview=id); the number link
+ * and the preview's button open F4.
  */
 const TABS = [
   { value: 'all', label: 'All' }, { value: 'draft', label: 'Drafts' }, { value: 'unpaid', label: 'Unpaid' }, { value: 'part_paid', label: 'Part paid' },
@@ -40,7 +44,9 @@ export function BillList() {
   const { PageHeader, Button, Input, Tabs, Select, DataTable, EmptyState, Field } = ds()
   const { can } = useSession()
   const navigate = useNavigate()
-  const { get, set, search, setSearch, page } = useListParams()
+  const lp = useListParams()
+  const { get, set, search, setSearch, page } = lp
+  const split = useSplit(lp, (id) => `/purchases/bills/${id}`)
   const tab = get('tab', 'all')
   const sort = get('sort', '-bill_date')
   const q = get('q')
@@ -58,7 +64,7 @@ export function BillList() {
     due: shortDate(b.due_date), status: b.status, bill: b, total: b.total, balance: b.status === 'posted' ? b.balance_due : '', // empty, not 0.00: a draft or cancelled document owes nothing yet
   }))
   const columns: DataColumn[] = [
-    { key: 'number', label: 'Bill', mono: true },
+    { key: 'number', label: 'Bill', mono: true, render: (v: string, r) => <a href={`/purchases/bills/${r.id}`} className="lf-link" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/purchases/bills/${r.id}`) }}>{v}</a> },
     { key: 'date', label: 'Date' },
     { key: 'supplier', label: 'Supplier', render: (_v, r) => (
       <span style={{ display: 'flex', flexDirection: 'column', lineHeight: '18px' }}>
@@ -92,6 +98,7 @@ export function BillList() {
         <Tabs key={tab} items={TABS} value={tab} onChange={(v) => set({ tab: v === 'all' ? null : v })} />
       </div>
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
+      <SplitView preview={split.id ? <BillListPreview key={split.id} id={split.id} onClose={split.close} onOpen={() => split.full(split.id)} /> : undefined} list={
       <ListCard label="Purchase bills" meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
         cards={{ columns, rows, loading: list.isPending, onOpen: (r) => navigate(`/purchases/bills/${r.id}`), mobileColumns: ['number', 'supplier', 'date', 'total'], badgeKey: 'status', empty }}
         toolbar={<>
@@ -109,8 +116,10 @@ export function BillList() {
             <Select options={SORTS} value={sort} onChange={(e) => set({ sort: e.target.value })} aria-label="Sort" />
           </div>
         </>}>
-        <DataTable caption="Purchase bills" columns={columns} rows={rows} loading={list.isPending} onRowClick={(r: { id: number }) => navigate(`/purchases/bills/${r.id}`)} />
+        <DataTable caption="Purchase bills" columns={split.id ? columns.filter((c) => !['ref', 'due', 'balance'].includes(c.key)) : columns} rows={rows} loading={list.isPending}
+          onRowClick={(r: { id: number }) => split.open(r)} activeId={split.id || null} />
       </ListCard>
+      } />
     </>
   )
 }

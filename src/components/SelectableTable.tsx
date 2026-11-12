@@ -12,7 +12,7 @@ type Row = Record<string, unknown> & { id: number }
  */
 export function SelectableTable({ columns, rows, actions, ...table }: {
   columns: DataColumn[]; rows: Row[]; actions: (ids: number[], clear: () => void, names: Map<number, string>) => React.ReactNode
-  onRowClick?: (row: any) => void; rowActions?: (row: any) => React.ReactNode; emptyState?: React.ReactNode; loading?: boolean; caption?: string
+  onRowClick?: (row: any) => void; rowActions?: (row: any) => React.ReactNode; emptyState?: React.ReactNode; loading?: boolean; caption?: string; activeId?: number | string | null
 }) {
   const { DataTable, Button } = ds()
   const [selected, setSelected] = useState<number[]>([])

@@ -3,8 +3,9 @@
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-1);
   display: flex; flex-direction: column; min-width: 0;
 }
-.lf-listcard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.lf-listcard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
 .lf-listcard-spacer { flex: 1; }
+.lf-listcard-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; min-width: 0; } /* sort and date filters wrap as one group */
 .lf-listcard-scroll { overflow-x: auto; min-width: 0; }
 .lf-listcard-empty { display: flex; justify-content: center; }
 .lf-listcard-sheet-filters { display: flex; flex-direction: column; gap: 12px; }

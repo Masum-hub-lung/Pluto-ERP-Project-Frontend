@@ -168,6 +168,7 @@ body { background: var(--paper); margin: 0; font-size: 14px; line-height: 20px; 
 
 /* Table */
 .lf-table-wrap { overflow-x: auto; background: var(--surface); }
+.lf-table-wrap:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .lf-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; line-height: 20px; }
 .lf-table th { position: sticky; top: 0; z-index: 1; text-align: left; background: var(--surface-sunken); color: var(--ink-muted); font: 650 11.5px/16px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .lf-table td { padding: 0 12px; height: 40px; border-bottom: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
@@ -184,6 +185,8 @@ body { background: var(--paper); margin: 0; font-size: 14px; line-height: 20px; 
 .lf-table.is-zebra tbody tr:nth-child(even) td { background-color: var(--paper); }
 .lf-table tbody tr.is-selected td { background-color: var(--surface-selected); }
 .lf-table tbody tr.is-clickable { cursor: pointer; }
+.lf-table tbody tr.is-active td { background-color: var(--surface-selected); }
+.lf-table tbody tr.is-active td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
 .lf-table tbody tr.is-group td { font-weight: 650; background: var(--surface); }
 .lf-table tbody tr.is-subtotal td { font-weight: 600; border-top: 1px solid var(--ink-muted); }
 .lf-table tbody tr:last-child td { border-bottom: 1px solid var(--line); }

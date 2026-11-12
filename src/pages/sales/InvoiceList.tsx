@@ -15,12 +15,15 @@ import { shortDate } from '../purchases/BillList'
 import { BulkPostInvoices } from './BulkPostInvoices'
 import { InvoiceStatusBadge } from './InvoiceStatusBadge'
 import { ExportButton } from '../../components/ExportButton'
+import { SplitView, useSplit } from '../../components/SplitView'
+import { InvoiceListPreview } from './InvoiceListPreview'
 
 /**
  * E2 Sales invoice list (Trade.dc.html E2; backlog P5.2-FE-02): status tabs, search, customer and date filters — all in
  * the URL — then the invoices with amount and balance from the API; a row opens E5, the row action downloads the PDF.
  * On the Drafts tab drafts can be selected and posted together (bulk post, per-item results). The list endpoint has
- * no counts, so the tabs show none.
+ * no counts, so the tabs show none. Split view (A+ redesign, PEP-479): on wide screens a row opens a preview beside the list
+ * (?preview=id); the number link and the preview's button open E5.
  */
 const TABS = [
   { value: 'all', label: 'All' }, { value: 'draft', label: 'Drafts' }, { value: 'unpaid', label: 'Unpaid' }, { value: 'part_paid', label: 'Part paid' },
@@ -41,7 +44,9 @@ export function InvoiceList() {
   const { can } = useSession()
   const navigate = useNavigate()
   const toast = useToast()
-  const { get, set, search, setSearch, page } = useListParams()
+  const lp = useListParams()
+  const { get, set, search, setSearch, page } = lp
+  const split = useSplit(lp, (id) => `/sales/invoices/${id}`)
   const tab = get('tab', 'all')
   const sort = get('sort', '-invoice_date')
   const q = get('q')
@@ -59,7 +64,7 @@ export function InvoiceList() {
     due: shortDate(i.due_date), status: i.status, invoice: i, total: i.total, balance: i.status === 'posted' ? i.balance_due : '', // empty, not 0.00: a draft or cancelled document owes nothing yet
   }))
   const columns: DataColumn[] = [
-    { key: 'number', label: 'Invoice', mono: true },
+    { key: 'number', label: 'Invoice', mono: true, render: (v: string, r) => <a href={`/sales/invoices/${r.id}`} className="lf-link" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/sales/invoices/${r.id}`) }}>{v}</a> },
     { key: 'date', label: 'Date' },
     { key: 'customer', label: 'Customer', render: (_v, r) => (
       <span style={{ display: 'flex', flexDirection: 'column', lineHeight: '18px' }}>
@@ -71,6 +76,7 @@ export function InvoiceList() {
     { key: 'total', label: 'Amount (৳)', type: 'amount' },
     { key: 'balance', label: 'Balance (৳)', align: 'right', render: (v: string) => (v ? <span className="lf-num">{formatTaka(v)}</span> : '') }, // drafts: blank, not 0.00
   ]
+  const shown = split.id ? columns.filter((c) => c.key !== 'due' && c.key !== 'balance') : columns // the preview shows them
   const pdf = (r: { id: number; number: string }) => downloadInvoicePdf(r.id, r.number)
     .catch(() => toast({ tone: 'negative', title: `Could not download ${r.number}`, description: 'Try again in a moment.' }))
   const filtered = !!(q || tab !== 'all' || partyId || from || to)
@@ -82,8 +88,8 @@ export function InvoiceList() {
     : <EmptyState icon="receipt-text" title="No sales invoices yet" description="Bill a customer for goods or services. Stock goes out and the customer owes you when you post it."
         action={newInvoice ? <Button variant="primary" icon="plus" onClick={newInvoice}>New invoice</Button> : undefined} />
   const table = {
-    caption: 'Sales invoices', columns, rows, loading: list.isPending, emptyState: empty,
-    onRowClick: (r: { id: number }) => navigate(`/sales/invoices/${r.id}`),
+    caption: 'Sales invoices', columns: shown, rows, loading: list.isPending, emptyState: empty,
+    onRowClick: (r: { id: number }) => split.open(r), activeId: split.id || null,
     rowActions: (r: { id: number; number: string }) => (
       <IconButton icon="download" label={`Download PDF of ${r.number}`} size="sm" onClick={(e: React.MouseEvent) => { e.stopPropagation(); void pdf(r) }} />
     ),
@@ -101,6 +107,7 @@ export function InvoiceList() {
         <Tabs key={tab} items={TABS} value={tab} onChange={(v) => set({ tab: v === 'all' ? null : v })} />
       </div>
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
+      <SplitView preview={split.id ? <InvoiceListPreview key={split.id} id={split.id} onClose={split.close} onOpen={() => split.full(split.id)} /> : undefined} list={
       <ListCard label="Sales invoices" meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
         cards={{ columns, rows, loading: list.isPending, onOpen: (r) => navigate(`/sales/invoices/${r.id}`), mobileColumns: ['number', 'customer', 'date', 'total'], badgeKey: 'status', empty }}
         toolbar={<>
@@ -122,6 +129,7 @@ export function InvoiceList() {
           ? <SelectableTable {...table} actions={(ids, clearSel, names) => <BulkPostInvoices ids={ids} clear={clearSel} names={names} />} />
           : <DataTable {...table} />}
       </ListCard>
+      } />
     </>
   )
 }

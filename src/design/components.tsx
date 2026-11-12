@@ -302,7 +302,7 @@ export function Term({ explain, children }: P) {
   )
 }
 
-export function DataTable({ columns = [], rows = [], totals, density = 'default', selectable, rowActions, sort: sortProp, onRowClick, caption, emptyState, loading, zebra, className }: P) {
+export function DataTable({ columns = [], rows = [], totals, density = 'default', selectable, rowActions, sort: sortProp, onRowClick, caption, emptyState, loading, zebra, className, activeId }: P) {
   const [sort, setSort] = useState<P>(sortProp || null)
   const [selected, setSelected] = useState<Record<string, boolean>>({})
   let data = rows
@@ -317,7 +317,8 @@ export function DataTable({ columns = [], rows = [], totals, density = 'default'
     : c.type === 'amount' ? (r[c.key] == null ? null : <Amount value={r[c.key]} decimals={c.decimals ?? 2} drcr={c.drcr} />) : r[c.key]
   const span = columns.length + (selectable ? 1 : 0) + (rowActions ? 1 : 0)
   return (
-    <div className={cx('lf-table-wrap', className)}>
+    // Focusable region so keyboard users can scroll a wide table on a phone (axe scrollable-region-focusable; PEP-478).
+    <div className={cx('lf-table-wrap', className)} tabIndex={0} role="region" aria-label={caption || 'Table'}>
       <table className={cx('lf-table', density === 'compact' && 'is-compact', zebra && 'is-zebra')}>
         {caption && <caption className="lf-sr">{caption}</caption>}
         <thead>
@@ -358,7 +359,7 @@ export function DataTable({ columns = [], rows = [], totals, density = 'default'
           ) : data.map((r: P, i: number) => {
             const id = r.id ?? i
             return (
-              <tr key={id} className={cx(selected[id] && 'is-selected', r._kind && 'is-' + r._kind, onRowClick && 'is-clickable')} onClick={onRowClick ? () => onRowClick(r) : undefined}>
+              <tr key={id} className={cx(selected[id] && 'is-selected', activeId != null && activeId === r.id && 'is-active', r._kind && 'is-' + r._kind, onRowClick && 'is-clickable')} onClick={onRowClick ? () => onRowClick(r) : undefined}>
                 {selectable && (
                   <td className="lf-td-check" onClick={(e) => e.stopPropagation()}>
                     <Checkbox checked={!!selected[id]} aria-label="Select row" onChange={(on: boolean) => setSelected({ ...selected, [id]: on })} />
