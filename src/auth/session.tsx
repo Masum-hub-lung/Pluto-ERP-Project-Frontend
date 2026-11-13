@@ -47,6 +47,24 @@ function rememberedCompany(): number | null {
   return v ? Number(v) : null
 }
 
+/** This tab's read-only support view (K17; PEP-485): the company a platform admin opened, not one they belong to. */
+const SUPPORT_COMPANY = 'pluto.supportCompany'
+const tabStore = () => { try { return globalThis.sessionStorage ?? null } catch { return null } }
+const supportCompany = () => Number(readPref(SUPPORT_COMPANY, undefined, tabStore())) || null
+function forgetSupportView() { try { tabStore()?.removeItem(SUPPORT_COMPANY) } catch { /* storage unavailable */ } }
+
+/** After POST …/support-access: start the app again inside that company (like switching company, nothing survives). */
+export function startSupportView(companyId: number) {
+  writePref(SUPPORT_COMPANY, String(companyId), tabStore())
+  window.location.assign('/dashboard')
+}
+
+/** After ending the visit (or when it ran out): back to the admin's own company and the platform console. */
+export function leaveSupportView(to = '/platform') {
+  forgetSupportView()
+  window.location.assign(to)
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<Status>('restoring')
@@ -56,6 +74,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const loadMe = useCallback(async (user?: Me) => {
     const base = user ?? (await api.request<{ data: Me }>('GET', '/me', { company: false })).data.data
+    const support = base.platform_admin ? supportCompany() : null
+    if (support) { // still inside a support view? The API says so with Me.support_access; otherwise it ended.
+      api.setCompany(support)
+      const viewed = await api.request<{ data: Me }>('GET', '/me').then((r) => r.data.data).catch(() => null)
+      if (viewed?.support_access?.company_id === support) {
+        setMe(viewed)
+        setStatus('signed-in')
+        return
+      }
+      forgetSupportView()
+    }
     const active = base.companies.filter((c) => c.status === 'active')
     const preferred = rememberedCompany()
     const company = active.find((c) => c.company_id === preferred) ?? active[0]
@@ -149,7 +178,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(() => ({
     status, me, companyId: api.getCompany(), twoFactorBlocked, signedOutByUser,
     // 'platform.console' is not a company permission: it is the server's platform-admin list (K17, PEP-484).
-    can: (p) => (p === PLATFORM_CONSOLE ? !!me?.platform_admin : (me?.permissions ?? []).includes(p)),
+    // In a read-only support view (PEP-485) only view and report permissions count, so no page offers a change the API refuses.
+    can: (p) => (p === PLATFORM_CONSOLE ? !!me?.platform_admin && !me?.support_access
+      : (me?.permissions ?? []).includes(p) && (!me?.support_access || /\.view(_costs)?$|^reports\./.test(p))),
     signIn, completeTwoFactor, signInWith: finishSignIn, reload, signOut, switchCompany,
   }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, signOut, switchCompany])
 

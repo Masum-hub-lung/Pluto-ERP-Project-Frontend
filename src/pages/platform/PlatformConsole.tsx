@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { PlatformCompany } from '../../api/contract.gen'
-import { useCompanyStatus, useCreatePlatformCompany, usePlatformCompanies } from '../../api/platformConsole'
+import { useCompanyStatus, useCreatePlatformCompany, usePlatformCompanies, useSupportAccess } from '../../api/platformConsole'
 import { useToast } from '../../app/toast'
-import { PLATFORM_CONSOLE, useSession } from '../../auth/session'
+import { PLATFORM_CONSOLE, startSupportView, useSession } from '../../auth/session'
 import { ds, type DataColumn } from '../../ds'
 import { ListCard } from '../../components/ListCard'
 import { ProblemBanner } from '../../components/ProblemBanner'
@@ -27,7 +27,7 @@ const BUSINESS = [
 const when = (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—')
 
 export function PlatformConsole() {
-  const { PageHeader, Button, Input, Tabs, DataTable, EmptyState, Badge, Banner } = ds()
+  const { PageHeader, Button, IconButton, Input, Tabs, DataTable, EmptyState, Badge, Banner } = ds()
   const { can } = useSession()
   const { get, set, search, setSearch, page } = useListParams()
   const status = get('status', 'all')
@@ -41,6 +41,7 @@ export function PlatformConsole() {
   }
   const [creating, setCreating] = useState(false)
   const [changing, setChanging] = useState<{ c: PlatformCompany; action: 'suspend' | 'reactivate' } | null>(null)
+  const [viewing, setViewing] = useState<PlatformCompany | null>(null)
 
   if (!allowed) return <Forbidden what="the platform console" />
   const twoStep = list.error instanceof ApiError && list.error.code === 'platform_two_factor_required'
@@ -94,11 +95,13 @@ export function PlatformConsole() {
         </div>}>
         <DataTable caption="Companies" columns={columns} rows={rows} loading={list.isPending && !twoStep} emptyState={empty}
           rowActions={(r: PlatformCompany) => r.status === 'active'
-            ? <Button size="sm" variant="ghost" onClick={() => setChanging({ c: r, action: 'suspend' })} data-testid={`suspend-${r.id}`}>Suspend</Button>
+            ? <><span data-testid={`support-${r.id}`}><IconButton icon="eye" size="sm" label={`Open ${r.legal_name} read-only`} onClick={() => setViewing(r)} /></span>
+                <Button size="sm" variant="ghost" onClick={() => setChanging({ c: r, action: 'suspend' })} data-testid={`suspend-${r.id}`}>Suspend</Button></>
             : r.status === 'suspended' ? <Button size="sm" variant="secondary" onClick={() => setChanging({ c: r, action: 'reactivate' })} data-testid={`reactivate-${r.id}`}>Reactivate</Button> : null} />
       </ListCard>
       </>}
       {creating && <CreateCompanyDialog onClose={() => setCreating(false)} />}
+      {viewing && <SupportDialog company={viewing} onClose={() => setViewing(null)} />}
       {changing && <StatusDialog company={changing.c} action={changing.action} onClose={() => setChanging(null)} />}
     </>
   )
@@ -164,6 +167,36 @@ function StatusDialog({ company, action, onClose }: { company: PlatformCompany; 
       <div style={{ display: 'grid', gap: 12 }}>
         <ProblemBanner error={error} />
         <Field label="Reason" required hint="Kept in the company's audit log" htmlFor="pc-reason"><Input id="pc-reason" value={reason} onChange={(e) => setReason(e.target.value)} autoFocus /></Field>
+      </div>
+    </ResponsiveDialog>
+  )
+}
+
+const DURATIONS = [{ value: '30', label: '30 minutes' }, { value: '60', label: '1 hour' }, { value: '120', label: '2 hours' }, { value: '240', label: '4 hours' }]
+
+/** PEP-485: open the company read-only for support; its owners are told why and until when. */
+function SupportDialog({ company, onClose }: { company: PlatformCompany; onClose: () => void }) {
+  const { Field, Input, Select, Button } = ds()
+  const open = useSupportAccess()
+  const [reason, setReason] = useState('')
+  const [minutes, setMinutes] = useState('60')
+  const [error, setError] = useState<unknown>(null)
+  async function submit() {
+    setError(null)
+    try {
+      await open.mutateAsync({ id: company.id, reason: reason.trim(), minutes: Number(minutes) })
+      startSupportView(company.id)
+    } catch (e) { setError(e) }
+  }
+  return (
+    <ResponsiveDialog title={`Open ${company.legal_name} read-only?`} tone="info" onClose={onClose} testId="support-dialog"
+      description="You can look at everything but change nothing. Its owner gets a notification with your reason, and the visit is in its audit log."
+      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" icon="eye" loading={open.isPending} disabled={!reason.trim()} onClick={() => void submit()} data-testid="support-submit">Open read-only</Button></>}>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <ProblemBanner error={error} />
+        <Field label="Reason" required hint="The owner sees this" htmlFor="sp-reason"><Input id="sp-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Customer asked why the trial balance does not tally" autoFocus /></Field>
+        <Field label="For" htmlFor="sp-time"><Select id="sp-time" value={minutes} onChange={(e) => setMinutes(e.target.value)} options={DURATIONS} /></Field>
       </div>
     </ResponsiveDialog>
   )

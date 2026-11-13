@@ -13,6 +13,7 @@ import { shortcutButton, shortcutFor } from '../lib/shortcuts'
 import { activePath, allLinks, QUICK_CREATE, visibleNav, type NavSection as NavSectionDef } from './nav'
 import type { RouteHandle } from './router'
 import { useToast } from './toast'
+import { SupportBanner } from './SupportBanner'
 import './shell.css'
 
 /** VITE_APP_ENV: local | preview | production (backlog P0.5-FE-02); anything but production shows a badge. */
@@ -52,7 +53,9 @@ export function Shell() {
   const { compact, toggle: toggleSidebar } = useSidebarMode()
   const look = useAppearance()
   const [flyout, setFlyout] = useState<null | { path: string; top: number }>(null)
-  const company = me?.companies.find((c) => c.company_id === companyId)
+  // PEP-485: in a read-only support view the company is not one of the admin's own memberships.
+  const company = me?.support_access ? { company_id: me.support_access.company_id, company_name: me.support_access.company_name, role: 'Support (read-only)', status: 'active' as const }
+    : me?.companies.find((c) => c.company_id === companyId)
   const companies = (me?.companies ?? []).filter((c) => c.status === 'active')
   const sections = visibleNav(can)
   const active = activePath(pathname, allLinks(sections))
@@ -282,6 +285,7 @@ export function Shell() {
         <main ref={scroller} className="lf-shell-scroll" tabIndex={-1} aria-label="Page content">
           <div ref={sentinel} className="lf-shell-sentinel" aria-hidden />
           <div className="lf-page">
+            <SupportBanner />
             <Outlet />
           </div>
         </main>

@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { PageMeta, PlatformCompany, PlatformCompanyCreate } from './contract.gen'
+import type { PageMeta, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
 
 /**
  * Platform console (K17; 05 /platform/companies; PEP-483/484): every customer company of this installation, for
@@ -41,4 +41,16 @@ export function useCompanyStatus() {
       (await api.request<{ data: PlatformCompany }>('POST', `/platform/companies/${id}/${action}`, { company: false, body: { reason } })).data.data,
     onSuccess: () => qc.invalidateQueries({ queryKey: key() }),
   })
+}
+
+/** PEP-485: open a company read-only for 15–240 minutes with a reason (its owners are told), or end the visit now. */
+export function useSupportAccess() {
+  return useMutation({
+    mutationFn: async ({ id, reason, minutes }: { id: number; reason: string; minutes: number }) =>
+      (await api.request<{ data: SupportAccess }>('POST', `/platform/companies/${id}/support-access`, { company: false, body: { reason, minutes } })).data.data,
+  })
+}
+
+export async function endSupportAccess(id: number) {
+  await api.request('DELETE', `/platform/companies/${id}/support-access`, { company: false })
 }

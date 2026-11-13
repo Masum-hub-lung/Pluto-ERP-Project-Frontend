@@ -18,7 +18,8 @@ export function useUnreadCount() {
 /** The page a notification opens (approval requests open the L4 drawer instead). */
 export function notificationPath(n: Pick<Notification, 'link_type' | 'link_id'>): string | null {
   if (!n.link_id) return null
-  return ({ journal_entries: `/accounting/vouchers/${n.link_id}`, sales_invoices: `/sales/invoices/${n.link_id}`, purchase_bills: `/purchases/bills/${n.link_id}` } as Record<string, string>)[n.link_type ?? ''] ?? null
+  return ({ journal_entries: `/accounting/vouchers/${n.link_id}`, sales_invoices: `/sales/invoices/${n.link_id}`, purchase_bills: `/purchases/bills/${n.link_id}`,
+    letters_of_credit: `/lc/${n.link_id}`, lc_loans: `/lc/loans/${n.link_id}` } as Record<string, string>)[n.link_type ?? ''] ?? null
 }
 
 export function NotificationPanel({ onClose }: { onClose: () => void }) {
