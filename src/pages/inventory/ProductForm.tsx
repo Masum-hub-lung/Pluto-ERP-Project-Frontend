@@ -379,7 +379,7 @@ function Form({ mode, product }: { mode: 'add' | 'edit'; product: Product | null
 
         <aside className="lf-c4 lf-form-aside" style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
           {mode === 'edit' && product?.track_stock && (
-            <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span className="lf-label">On hand</span>
               <span className="lf-num" style={{ font: '500 22px/28px var(--font-serif)' }} data-testid="on-hand">{product.on_hand ?? '0.000'} {product.unit}</span>
               {product.stock_value != null && <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Value {formatTaka(product.stock_value, { symbol: true })} · avg cost {product.avg_cost}</span>}

@@ -41,7 +41,7 @@ export function DetailHeader({ title, badges, facts, actions, testId }: { title:
   )
 }
 
-export const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)' } as const
+export const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)' } as const
 
 /** The latest movements of a product or a warehouse, each linking to its document; "All movements" opens D9 filtered. */
 export function RecentMovements({ productId, warehouseId, costs }: { productId?: number; warehouseId?: number; costs: boolean }) {

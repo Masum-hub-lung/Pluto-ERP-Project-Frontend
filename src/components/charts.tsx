@@ -22,7 +22,7 @@ export function KpiTile({ kpi, invert = false }: { kpi: Kpi; invert?: boolean })
   return (
     <div className="lf-c3 lf-kpi" data-testid={`kpi-${kpi.key}`} role={open ? 'link' : undefined} tabIndex={open ? 0 : undefined} onClick={open}
       onKeyDown={(e) => { if (open && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
-      style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '14px 18px',
+      style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '14px 18px',
         display: 'flex', flexDirection: 'column', gap: 4, cursor: open ? 'pointer' : undefined, minWidth: 0 }}>
       <span style={{ font: '600 13px/18px var(--font-sans)', color: 'var(--ink-muted)' }}>{kpi.label}</span>
       <span className="lf-num" data-testid={`kpi-${kpi.key}-value`} style={{ font: '500 26px/32px var(--font-serif)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',

@@ -238,7 +238,7 @@ export function Shell() {
             {unread > 0 && <span aria-hidden="true" style={{ position: 'absolute', top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, background: 'var(--negative)', color: 'var(--surface)', fontSize: 10, lineHeight: '16px', textAlign: 'center' }}>{unread}</span>}
           </button>
           <div ref={mobileAvatarZone} className="lf-mobilebar-profile">
-            <button type="button" className="lf-mobilebar-btn" aria-label="Profile menu" aria-haspopup="menu" aria-expanded={profileOpen === 'mobile'}
+            <button type="button" className="lf-mobilebar-btn" aria-label={`Profile menu, ${initials(me?.name ?? '')}`} aria-haspopup="menu" aria-expanded={profileOpen === 'mobile'}
               data-testid="mobile-profile-menu" onClick={() => setProfileOpen((o) => (o === 'mobile' ? false : 'mobile'))}>
               <span className="lf-avatar lf-avatar-accent" style={{ width: 32, height: 32, fontSize: 13 }} aria-hidden="true">{initials(me?.name ?? '')}</span>
             </button>

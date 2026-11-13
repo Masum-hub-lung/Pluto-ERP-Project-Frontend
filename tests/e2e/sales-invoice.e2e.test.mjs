@@ -107,6 +107,10 @@ test('sales staff invoice 2 products + 1 service: warning, preview, post once, s
   assert.equal(await page.getByLabel('Price, line 1').inputValue(), '950.00', 'the selling price fills in')
   await page.getByTestId('total-total').getByText('67,100.00').waitFor()
   await page.getByTestId('invoice-warnings').getByText(/credit limit/).waitFor()
+  // Checks before posting (PEP-480): the panel lists the server's checks; the period is open
+  await page.getByTestId('posting-checks').waitFor()
+  await page.locator('[data-testid="check-period_open"][data-status="pass"]').waitFor()
+  assert.equal(await page.getByTestId('check-period_open').getAttribute('data-status'), 'pass', 'the period check passes')
   inv.main = await saveDraft(page)
   await page.getByText(/Draft INV-\d{4}-0001 saved/).waitFor()
 

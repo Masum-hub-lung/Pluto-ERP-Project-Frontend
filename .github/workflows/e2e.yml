@@ -65,6 +65,14 @@ jobs:
           BACKEND_DIR: ${{ github.workspace }}/backend
           E2E_ONLY: ${{ inputs.only }}
         run: ./scripts/e2e.sh
+      - name: Screens of this run (PEP-481 screenshot checks)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screens
+          path: frontend/test-results/screens
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Backend logs on failure
         if: failure()
         working-directory: backend
