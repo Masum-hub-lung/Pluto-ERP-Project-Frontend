@@ -113,6 +113,7 @@ const NotificationSettings = lazy(() => import('../pages/settings').then((m) => 
 const Appearance = lazy(() => import('../pages/settings').then((m) => ({ default: m.Appearance })))
 const Backups = lazy(() => import('../pages/settings').then((m) => ({ default: m.Backups })))
 const SettingsHome = lazy(() => import('../pages/settings').then((m) => ({ default: m.SettingsHome })))
+const PlatformConsole = lazy(() => import('../pages/platform/PlatformConsole').then((m) => ({ default: m.PlatformConsole })))
 const authPages = () => import('../pages/AuthPages')
 const ForgotPassword = lazy(() => authPages().then((m) => ({ default: m.ForgotPassword })))
 const ResetPassword = lazy(() => authPages().then((m) => ({ default: m.ResetPassword })))
@@ -290,6 +291,7 @@ export const router = createBrowserRouter([
       { path: 'purchases/payments/new', handle: crumbs('Purchases', 'Supplier payment'), element: guarded('purchases.create', lazyPage(<PaymentForm />, 'form')) },
       { path: 'purchases/payments/:id', handle: crumbs('Purchases', 'Payment'), element: guarded('purchases.view', lazyPage(<PaymentDetails />, 'detail')) },
       { path: 'inventory/movements', handle: crumbs('Inventory', 'Movements'), element: guarded('inventory.view', lazyPage(<MovementList />, 'list')) },
+      { path: 'platform', handle: crumbs('Platform console'), element: lazyPage(<PlatformConsole />, 'list') }, // K17: the page checks Me.platform_admin itself
       { path: 'settings', element: lazyPage(<SettingsHome />, 'form') },
       { path: 'settings/company', handle: crumbs('Settings', 'Company profile'), element: lazyPage(<CompanyProfile />, 'form') },
       { path: 'settings/preferences', handle: crumbs('Settings', 'Preferences'), element: lazyPage(<Preferences />, 'form') },

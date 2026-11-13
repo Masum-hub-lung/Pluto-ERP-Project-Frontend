@@ -83,7 +83,9 @@ export const NAV: NavSection[] = [
     ],
   },
   // Settings is open to everyone: Security (2-step) is personal; other sections check their own permission.
-  { label: 'Admin', items: [{ ...page('Settings', '/settings/security', null, true), icon: 'settings' }] },
+  { label: 'Admin', items: [{ ...page('Settings', '/settings/security', null, true), icon: 'settings' },
+    // Platform admins only (Me.platform_admin; PEP-484): every customer company of this installation.
+    { ...page('Platform console', '/platform', 'platform.console', true), icon: 'building-2' }] },
 ]
 
 type Can = (permission: string) => boolean
