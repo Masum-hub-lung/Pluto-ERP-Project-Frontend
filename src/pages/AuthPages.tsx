@@ -21,7 +21,7 @@ function Frame({ title, intro, children, onSubmit }: { title: string; intro: Rea
   return (
     <div data-theme="light" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: 16 }}>
       <form onSubmit={onSubmit ?? ((e) => e.preventDefault())} noValidate aria-labelledby="auth-title"
-        style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="auth-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>{title}</h1>

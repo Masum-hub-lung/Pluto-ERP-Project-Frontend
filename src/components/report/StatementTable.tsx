@@ -28,7 +28,9 @@ export function StatementTable({ report, onOpen, cell, totalsLabel = 'Total', te
   if (rows.length === 0) return <p className="lf-report-empty">No data for this period.</p>
 
   return (
-    <div className="lf-report-scroll">
+    // Focusable so keyboard users can scroll a wide statement on a phone (axe scrollable-region-focusable; PEP-481). A group,
+    // not a region: the paper around it is already the region named after the report.
+    <div className="lf-report-scroll" tabIndex={0} role="group" aria-label="Statement rows">
       <table className="lf-statement" data-testid={testId}>
         <thead>
           <tr>{columns.map((c) => <th key={c.key} className={numeric(c) ? 'num' : undefined} scope="col">{c.label}</th>)}</tr>

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { PageMeta } from '../api/contract.gen'
 import { ds, type DataColumn } from '../ds'
 import { PHONE, useMediaQuery } from '../lib/useMediaQuery'
@@ -66,6 +66,24 @@ export function ListCard({ toolbar, filters, meta, onPage, children, label, card
   )
 }
 
+/**
+ * One phone card. It is a button when the list opens rows; but when a cell already holds a link or button of its own
+ * (an invoice number that opens the invoice) the card stays a plain tappable block, so there is never a control inside
+ * a control (axe nested-interactive, PEP-481): keyboard and screen-reader users take the inner link.
+ */
+function CardRow({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [inner, setInner] = useState(false)
+  useLayoutEffect(() => { setInner(!!ref.current?.querySelector('a[href], button, input, select')) })
+  const button = !!onOpen && !inner
+  return (
+    <div ref={ref} className="lf-cardrow" role={button ? 'button' : undefined} tabIndex={button ? 0 : undefined} onClick={onOpen}
+      onKeyDown={button ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } } : undefined}>
+      {children}
+    </div>
+  )
+}
+
 function CardList({ columns, rows, mobileColumns, badgeKey, onOpen }: ListCards) {
   const keys = mobileColumns ?? columns.slice(0, 3).map((c) => c.key)
   const byKey = new Map(columns.map((c) => [c.key, c]))
@@ -75,8 +93,7 @@ function CardList({ columns, rows, mobileColumns, badgeKey, onOpen }: ListCards)
     <ul className="lf-cardlist">
       {rows.map((r, i) => (
         <li key={String(r.id ?? i)}>
-          <div className="lf-cardrow" role={onOpen ? 'button' : undefined} tabIndex={onOpen ? 0 : undefined} onClick={onOpen ? () => onOpen(r) : undefined}
-            onKeyDown={onOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r) } } : undefined}>
+          <CardRow onOpen={onOpen ? () => onOpen(r) : undefined}>
             <div className="lf-cardrow-top">
               {titleCol && <div className="lf-cardrow-title"><Cell col={titleCol} row={r} /></div>}
               {badgeCol && <div className="lf-cardrow-badge"><Cell col={badgeCol} row={r} /></div>}
@@ -88,7 +105,7 @@ function CardList({ columns, rows, mobileColumns, badgeKey, onOpen }: ListCards)
                 ))}
               </dl>
             )}
-          </div>
+          </CardRow>
         </li>
       ))}
     </ul>

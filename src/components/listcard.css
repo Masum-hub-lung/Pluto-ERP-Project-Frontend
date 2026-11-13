@@ -1,6 +1,6 @@
 /* List card (P1.2-FE-05) and its responsive pattern (P1.5-FE-03). Tokens only. */
 .lf-listcard {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-1);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
   display: flex; flex-direction: column; min-width: 0;
 }
 .lf-listcard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
@@ -21,14 +21,14 @@
   .lf-listcard .lf-table th:first-child, .lf-listcard .lf-table td:first-child {
     position: sticky; left: 0; background-color: var(--surface); box-shadow: inset -1px 0 0 var(--line);
   }
-  .lf-listcard .lf-table th:first-child { z-index: 2; background-color: var(--surface-sunken); }
+  .lf-listcard .lf-table th:first-child { z-index: 2; background-color: var(--surface-head); }
   .lf-listcard .lf-table td:first-child { z-index: 1; }
   .lf-listcard .lf-table tbody tr:hover td:first-child { background-color: var(--surface-hover); }
   /* With a selection column (SelectableTable) the name column stays put next to the 44 px checkbox column. */
   .lf-listcard .lf-selectable .lf-table th:nth-child(2), .lf-listcard .lf-selectable .lf-table td:nth-child(2) {
     position: sticky; left: 44px; background-color: var(--surface); box-shadow: inset -1px 0 0 var(--line); z-index: 1;
   }
-  .lf-listcard .lf-selectable .lf-table th:nth-child(2) { z-index: 2; background-color: var(--surface-sunken); }
+  .lf-listcard .lf-selectable .lf-table th:nth-child(2) { z-index: 2; background-color: var(--surface-head); }
   .lf-listcard .lf-selectable .lf-table th:first-child, .lf-listcard .lf-selectable .lf-table td:first-child { box-shadow: none; }
   .lf-listcard .lf-selectable .lf-table tbody tr:hover td:nth-child(2) { background-color: var(--surface-hover); }
 }
@@ -59,3 +59,5 @@
 .lf-cardrow-lines dd { margin: 0; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
 .lf-pager-compact { justify-content: space-between; border-top: 1px solid var(--line); }
 .lf-pager-compact .lf-iconbtn { width: 44px; height: 44px; }
+/* The selection column's heading ("Select") is for screen readers; 44 px cannot show it, so it is moved out of sight instead of being cut off (PEP-481). */
+.lf-selectable .lf-table th:first-child { overflow: hidden; text-indent: -9999px; white-space: nowrap; }

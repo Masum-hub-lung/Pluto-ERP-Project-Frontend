@@ -74,7 +74,7 @@ export function SupplierDetails() {
     { label: 'Ledger', value: `${p.ledger_code} · Sundry creditors` },
     { label: 'Tax registration', value: p.tax_registration_no || '—' },
   ]
-  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)' } as const
+  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)' } as const
   const payable = p.balance_side === 'cr' || p.balance === '0.00'
   const editItem = can('parties.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/suppliers/${p.id}/edit`) },
     { icon: active ? 'x' : 'check', label: active ? 'Make inactive' : 'Reactivate', onClick: () => { setMore(false); void toggle() } }] : []

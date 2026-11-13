@@ -5,6 +5,7 @@ import { ds } from '../../ds'
 import { formatTaka } from '../../lib/format'
 import { ProblemBanner } from '../ProblemBanner'
 import { ResponsiveDialog } from '../ResponsiveDialog'
+import { blockingChecks } from './ChecksPanel'
 
 /**
  * "Post <document>?" (Sal-DlgPost style, generic; backlog P4.4-FE-04): what posting will do (the calculate effects and
@@ -23,7 +24,9 @@ export function PostDialog({ title, number, calc, total, onPost, onClose, loadin
   // A ref, not state: a double click fires twice before React re-renders the disabled button.
   const inFlight = useRef(false)
   const code = error instanceof ApiError ? error.code : null
-  const shortages = error instanceof ApiError && code === 'insufficient_stock' ? Object.values(error.fieldErrors).flat() : []
+  // PEP-480: what the last calculation says will be refused. Shown as the reason up front; Post stays enabled (the server decides).
+  const blocks = blockingChecks(calc)
+  const shortages =error instanceof ApiError && code === 'insufficient_stock' ? Object.values(error.fieldErrors).flat() : []
 
   async function post() {
     if (inFlight.current) return
@@ -52,6 +55,14 @@ export function PostDialog({ title, number, calc, total, onPost, onClose, loadin
           <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }} data-testid="post-effects">
             {calc.effects.map((e) => <li key={e}>{e}</li>)}
           </ul>
+        )}
+        {!error && blocks.length > 0 && (
+          <div data-testid="post-blocked">
+            <Banner tone="negative" title={blocks.length === 1 ? 'One check will stop this post' : `${blocks.length} checks will stop this post`}>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>{blocks.map((c, i) => <li key={`${c.key}-${i}`}>{c.label}</li>)}</ul>
+              <span style={{ fontSize: 13 }}>Fix this first, or try anyway: the books decide when you post.</span>
+            </Banner>
+          </div>
         )}
         {code === 'insufficient_stock' ? (
           <Banner tone="negative" title="Not enough stock">

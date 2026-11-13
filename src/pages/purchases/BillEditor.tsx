@@ -17,6 +17,7 @@ import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useUnsavedChangesBlocker } from '../../lib/useUnsavedChangesBlocker'
 import { ConflictBanner } from '../../components/ConflictBanner'
 import { DeleteDialog } from '../../components/DeleteDialog'
+import { ChecksPanel, focusLine } from '../../components/document/ChecksPanel'
 import { DocumentFooter } from '../../components/document/DocumentFooter'
 import { DocumentHeader } from '../../components/document/DocumentHeader'
 import { LineGrid } from '../../components/document/LineGrid'
@@ -309,7 +310,11 @@ function Editor({ mode, bill, party }: { mode: 'new' | 'edit'; bill: PurchaseBil
             </div>
           </Card>
         </div>
-        <aside className="lf-c4 lf-form-aside"><TotalsPanel {...calc} /></aside>
+        <aside className="lf-c4 lf-form-aside" style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+          <TotalsPanel {...calc} />
+          <ChecksPanel {...calc} empty="Add a supplier and at least one line to see the checks."
+            onLine={(n) => { const row = indexes[n - 1]; if (row !== undefined) focusLine(row) }} />
+        </aside>
       </div>
       {mode === 'edit' && current && can('purchases.delete') && (
         <div style={{ marginTop: 16 }}>

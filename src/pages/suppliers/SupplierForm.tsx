@@ -342,7 +342,7 @@ function Form({ mode, party }: { mode: 'add' | 'edit'; party: Party | null }) {
         </div>
 
         <aside className="lf-c4 lf-form-aside" style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
-          <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <section style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span className="lf-label">Before you save</span>
             {checklist.map((c) => (
               <div key={c.title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>

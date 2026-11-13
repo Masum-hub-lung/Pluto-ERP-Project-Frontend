@@ -12,7 +12,7 @@ export function TotalsPanel({ result, pending, error, empty = 'Add a supplier an
   result: DocumentCalculation | null; pending: boolean; error: unknown; empty?: string
 }) {
   const { Skeleton } = ds()
-  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '18px 20px',
+  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '18px 20px',
     display: 'flex', flexDirection: 'column', gap: 10 } as const
   if (error) return <section style={panel} aria-label="Totals"><ProblemBanner error={error} /></section>
   if (!result) {

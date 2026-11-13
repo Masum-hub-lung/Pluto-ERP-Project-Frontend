@@ -102,7 +102,7 @@ export function SignIn() {
     <div data-theme="light" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: 16 }}>
       {challenge ? (
       <form onSubmit={submitCode} noValidate aria-labelledby="signin-title"
-        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>2-step verification</h1>
@@ -132,7 +132,7 @@ export function SignIn() {
       </form>
       ) : (
       <form onSubmit={submit} noValidate aria-labelledby="signin-title"
-        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>Sign in</h1>

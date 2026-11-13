@@ -50,7 +50,7 @@ export function CustomerDetails() {
     { label: 'Ledger', value: `${p.ledger_code} · Sundry debtors` },
     { label: 'Tax registration', value: p.tax_registration_no || '—' },
   ]
-  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-1)' } as const
+  const panel = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)' } as const
 
   return (
     <>

@@ -1,3 +1,39 @@
 /* Document line grid (LineGrid): inputs fill their fixed-width cells instead of forcing the table wider. */
 .lf-linegrid td input, .lf-linegrid td select, .lf-linegrid td .lf-input { min-width: 0; width: 100%; box-sizing: border-box; }
 .lf-linegrid td > div, .lf-linegrid td > span { min-width: 0; }
+
+/* Checks before posting (ChecksPanel, PEP-480). Tokens only; the status is also in text, never colour alone. */
+.lf-checks { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-1); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.lf-checks-title { margin: 0; }
+.lf-checks-hint { margin: 0; color: var(--ink-muted); font-size: 13px; line-height: 18px; }
+.lf-checks-skeleton { display: flex; flex-direction: column; gap: 10px; }
+.lf-checks-icon { display: inline-flex; flex: none; }
+.lf-checks-pass .lf-checks-icon { color: var(--positive); }
+.lf-checks-warn .lf-checks-icon { color: var(--warning); }
+.lf-checks-block .lf-checks-icon { color: var(--negative); }
+
+.lf-checks-summary { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); border-left: 3px solid currentColor; }
+.lf-checks-summary.lf-checks-pass { background: var(--positive-soft); color: var(--positive); }
+.lf-checks-summary.lf-checks-warn { background: var(--warning-soft); color: var(--warning); }
+.lf-checks-summary.lf-checks-block { background: var(--negative-soft); color: var(--negative); }
+.lf-checks-summary-text { display: flex; flex-direction: column; min-width: 0; color: var(--ink); }
+.lf-checks-summary-text strong { font-size: 17px; line-height: 22px; font-weight: 600; }
+.lf-checks-summary-text > span { font-size: 12.5px; line-height: 17px; color: var(--ink); opacity: .82; }
+
+.lf-checks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; transition: opacity .15s; }
+.lf-checks-list[data-pending] { opacity: .55; }
+.lf-checks-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13.5px; line-height: 19px; color: var(--ink); }
+.lf-checks-row:first-child { border-top: 0; padding-top: 0; }
+.lf-checks-row:last-child { padding-bottom: 0; }
+.lf-checks-row .lf-checks-icon { margin-top: 1.5px; }
+.lf-checks-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; overflow-wrap: anywhere; }
+.lf-checks-row.lf-checks-pass .lf-checks-label { color: var(--ink-muted); }
+.lf-checks-tag { font: 650 10.5px/15px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.lf-checks-warn .lf-checks-tag { color: var(--warning); }
+.lf-checks-block .lf-checks-tag { color: var(--negative); }
+.lf-checks-line { flex: none; font: 500 12px/18px var(--font-mono); color: var(--ink-muted); white-space: nowrap; }
+button.lf-checks-line { appearance: none; background: var(--debit-wash); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 1px 8px; color: var(--ink); cursor: pointer; }
+button.lf-checks-line:hover { border-color: var(--brand); }
+button.lf-checks-line:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 639px) { button.lf-checks-line { min-height: 44px; padding: 0 12px; } }
+@media (prefers-reduced-motion: reduce) { .lf-checks-list { transition: none; } }
