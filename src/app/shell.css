@@ -160,3 +160,11 @@
 .lf-shell[data-reduce-motion="true"] *, .lf-shell[data-reduce-motion="true"] *::before, .lf-shell[data-reduce-motion="true"] *::after {
   transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important;
 }
+
+/* Read-only support view (PEP-485): a platform admin is looking at a customer's company. */
+.lf-support-banner { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-md); background: var(--info-soft);
+  border: 1px solid var(--info); color: var(--ink); }
+.lf-support-banner > svg { color: var(--info); flex: none; }
+.lf-support-text { display: flex; flex-direction: column; min-width: 0; flex: 1; font-size: 13px; }
+.lf-support-text strong { font-size: 14px; }
+.lf-support-text span { color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
