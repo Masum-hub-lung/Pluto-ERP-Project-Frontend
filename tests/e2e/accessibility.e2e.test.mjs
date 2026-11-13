@@ -39,6 +39,7 @@ export const PAGES = [
   '/reports/receivables-aging', '/reports/payables-aging', '/reports/sales', '/reports/sales-returns', '/reports/purchases', '/reports/purchase-returns',
   '/settings/company', '/settings/preferences', '/settings/region', '/settings/invoice', '/settings/tax', '/settings/users', '/settings/roles',
   '/settings/notifications', '/settings/appearance', '/settings/backup', '/settings/security', '/settings/financial-years', '/settings/accounting',
+  '/platform', // K17: the E2E owner is not a platform admin, so this audits the Forbidden state
 ]
 
 async function settle(page) {

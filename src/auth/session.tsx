@@ -13,6 +13,9 @@ type Status = 'restoring' | 'signed-out' | 'signed-in'
 /** Outcome of step 1: signed in, or a 2-step challenge to answer with completeTwoFactor (07 §5). */
 export type SignInResult = { status: 'authenticated' } | { status: 'two_factor_required'; challengeToken: string }
 
+/** Pseudo-permission of the platform console: true only for the installation's platform admins (Me.platform_admin). */
+export const PLATFORM_CONSOLE = 'platform.console'
+
 interface SessionValue {
   status: Status
   me: Me | null
@@ -145,7 +148,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<SessionValue>(() => ({
     status, me, companyId: api.getCompany(), twoFactorBlocked, signedOutByUser,
-    can: (p) => (me?.permissions ?? []).includes(p),
+    // 'platform.console' is not a company permission: it is the server's platform-admin list (K17, PEP-484).
+    can: (p) => (p === PLATFORM_CONSOLE ? !!me?.platform_admin : (me?.permissions ?? []).includes(p)),
     signIn, completeTwoFactor, signInWith: finishSignIn, reload, signOut, switchCompany,
   }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, signOut, switchCompany])
 

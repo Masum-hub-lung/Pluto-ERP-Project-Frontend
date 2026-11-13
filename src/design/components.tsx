@@ -418,6 +418,15 @@ export function Pagination({ page = 1, pageCount = 1, total, pageSize = 25, onCh
 }
 
 export function Dialog({ open = true, title, description, tone, children, footer, onClose, inline, width = 480 }: P) {
+  // Escape closes a modal dialog, like the bottom sheet, drawer and command palette (PEP-484).
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (!open || inline) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && close.current) { e.preventDefault(); close.current() } }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, inline])
   if (!open) return null
   const box = (
     <div className={cx('lf-dialog', tone && 'lf-dialog-' + tone)} role="dialog" aria-modal={!inline} aria-label={typeof title == 'string' ? title : undefined} style={{ width }}>
