@@ -7,6 +7,7 @@
  * - the payment at 122.10 = ৳ 46,88,640 applies the margin; the FX loss is ৳ 23,040;
  * - with 40 % sold, landed cost puts ৳ 1,44,000 into stock and ৳ 96,000 into COGS (+৳ 12.00 a kilo);
  * - documents are received and the LC closes; reports open; Viewer reads only, Sales staff get 403;
+ * - an LC raised with two items (PEP-487) keeps them on a purchase order; "New bill" from it shows both lines prefilled;
  * - phone widths fit; `pluto:integrity` passes.
  */
 import { after, before, test } from 'node:test'
@@ -115,9 +116,10 @@ test('TC-E2E-006: raise, submit and open an LC; charges, lot, import bill, payme
   await page.getByTestId('bill-import').waitFor()
   await page.waitForFunction((id) => document.querySelector('#f-lc')?.value === String(id), ids.lc)
   assert.equal(await page.locator('#f-currency').inputValue(), 'USD')
-  // No purchase order behind this LC: the lines stay manual, with the LC's goods as a reference; nothing paid yet, so
-  // the rate is the planning rate (BR-056 work, FromLc.ts).
-  await page.getByTestId('bill-lc-note').getByText(/is not linked to a purchase order/).waitFor()
+  // No items on this LC (it was raised with the items left blank): the lines stay manual, with the LC's goods as a
+  // reference and a link to add its items once; nothing paid yet, so the rate is the planning rate (FromLc.ts).
+  await page.getByTestId('bill-lc-note').getByText(/has no items yet/).waitFor()
+  await page.getByTestId('bill-lc-add-items').getByText(/Add the items to LC-\d{4}-\d{3}/).waitFor()
   await page.getByTestId('bill-lc-note').getByText(/20,000 kg crude palm oil/).waitFor()
   assert.match(await page.locator('#f-rate').inputValue(), /^121\.50/)
   const bill = await api('POST', '/purchase-bills', { party_id: ids.supplier, supplier_bill_no: 'SEO-CI-88', bill_date: today, warehouse_id: ids.warehouse, letter_of_credit_id: ids.lc,
@@ -272,6 +274,84 @@ test('F3: choosing an LC raised against a PO fills the bill; the server refuses 
   await page.getByTestId('bill-import-open').click()
   await page.locator('#f-lc').selectOption(String(lc.body.data.id))
   await page.getByTestId('bill-lc-note').getByText('Everything on this LC has already been billed').waitFor()
+  assert.deepEqual(errors, [])
+  await context.close()
+})
+
+test('PEP-487: an LC raised with two items fills "New bill" from the LC with both lines', async () => {
+  const { context, page, errors } = await newPage()
+  const api = apiFor(page)
+  await signIn(page, OWNER)
+  const unit = (await api('GET', '/units?per_page=100')).body.data[0]
+  const income = (await api('GET', '/ledgers?purpose=income_for_product&per_page=100')).body.data[0]
+  const ghee = await api('POST', '/products', { item_type: 'product', name: 'Vegetable ghee', unit_id: unit.id, selling_price: '450.00', income_ledger_id: income.id })
+  assert.equal(ghee.status, 201, JSON.stringify(ghee.body))
+
+  // M3: "Enter the items" is the default; two items, the goods wording is filled from their names.
+  await page.goto('/lc/new')
+  await page.getByTestId('lc-form').waitFor()
+  await page.getByRole('combobox', { name: 'Supplier' }).fill('Straits')
+  await page.getByRole('listbox').getByRole('option', { name: /Straits Edible Oils/ }).click()
+  await page.getByTestId('lc-items-section').waitFor()
+  const item = async (i, name, qty, cost) => {
+    await page.getByRole('combobox', { name: `Item ${i + 1}`, exact: true }).fill(name)
+    await page.getByRole('listbox').getByRole('option', { name: new RegExp(name) }).click()
+    await page.locator(`#lc-item-qty-${i}`).fill(qty)
+    await page.locator(`#lc-item-cost-${i}`).fill(cost)
+  }
+  await item(0, 'Crude palm oil', '5000', '1.92')
+  await page.getByTestId('lc-item-add').click()
+  await item(1, 'Vegetable ghee', '400', '2.50')
+  assert.equal(await page.locator('#lc-goods').inputValue(), 'Crude palm oil, Vegetable ghee')
+  await page.getByTestId('lc-items-total').getByText('The items total is worked out when you save.').waitFor()
+  await page.locator('#lc-incoterm').selectOption('CFR Chattogram')
+  await page.locator('#lc-amount').fill('10600.00')
+  await page.locator('#lc-tol').fill('5')
+  await page.locator('#lc-rate').fill('121.50')
+  await page.locator('#lc-bank').selectOption(String(ids.bank))
+  await page.locator('#lc-expiry').fill(expiry)
+  await page.getByTestId('lc-submit').click()
+  await page.getByText(/LC-\d{4}-\d{3} submitted to the bank/).waitFor()
+  await page.waitForURL(/\/lc\/\d+$/)
+  const lcId = Number(new URL(page.url()).pathname.split('/').pop())
+
+  // M4: the items card shows both lines and the server's total (US$ 9,600 + 1,000), which matches the LC amount.
+  await page.getByTestId('lc-items-card').getByText('Crude palm oil').waitFor()
+  await page.getByTestId('lc-items-card').getByText('Vegetable ghee').waitFor()
+  assert.equal((await page.getByTestId('lc-items-total').innerText()).trim(), '10600.00')
+  assert.equal(await page.getByTestId('lc-items-differ').count(), 0)
+  assert.equal(await page.getByTestId('lc-add-items').count(), 0)
+  const stored = (await api('GET', `/letters-of-credit/${lcId}`)).body.data
+  assert.deepEqual([stored.items_source, stored.lines.length, stored.lines_total], ['entered', 2, '10600.00'])
+  const po = (await api('GET', `/purchase-orders/${stored.purchase_order_id}`)).body.data
+  assert.deepEqual([po.status, po.currency_code, po.total_foreign], ['sent', 'USD', '10600.00'])
+
+  // Opened by the bank, then "Receive goods": F3 import mode with both lines prefilled with what is still to come.
+  await page.getByTestId('lc-action-mark_opened').click()
+  await page.locator('#tr-ref').fill('SBL/LC/2026/0421')
+  await page.getByTestId('confirm-transition').click()
+  await page.getByText('Status is now opened.').waitFor()
+  await page.getByTestId('lc-receive').click()
+  await page.waitForURL(/\/purchases\/bills\/new\?lc=/)
+  await page.waitForFunction(() => document.querySelector('[aria-label="Quantity, line 1"]')?.value === '5000.000'
+    && document.querySelector('[aria-label="Quantity, line 2"]')?.value === '400.000')
+  assert.equal(await page.locator('[aria-label="Cost, line 1"]').inputValue(), '1.9200')
+  assert.equal(await page.locator('[aria-label="Cost, line 2"]').inputValue(), '2.5000')
+  assert.equal(await page.locator('#f-currency').inputValue(), 'USD')
+  assert.equal(await page.getByTestId('from-po').inputValue(), String(stored.purchase_order_id))
+  assert.equal(await page.getByTestId('bill-lc-note').count(), 0)
+
+  // The server holds a bill from this LC to its items: an extra item is refused, an amendment adds it.
+  const extra = await api('POST', '/purchase-bills', { party_id: ids.supplier, supplier_bill_no: 'SEO-X-1', bill_date: today, warehouse_id: po.warehouse_id, letter_of_credit_id: lcId,
+    purchase_order_id: po.id, lines: [{ product_id: ids.oil, quantity: '10', unit_cost: '1.92' }] })
+  assert.deepEqual([extra.status, extra.body.code], [422, 'validation_failed'])
+  const am = await api('POST', `/letters-of-credit/${lcId}/amendments`, { requested_on: today, status: 'accepted', changes: [],
+    lines: [{ action: 'change', purchase_order_line_id: stored.lines[1].id, quantity: '500' }] })
+  assert.equal(am.status, 201, JSON.stringify(am.body))
+  await page.goto(`/lc/${lcId}`)
+  await page.getByTestId(`lc-item-${stored.lines[1].id}`).getByText('500.000').first().waitFor()
+  await page.getByTestId('lc-items-differ').getByText(/The items add up to USD 10850\.00; the LC amount is USD 10600\.00/).waitFor()
+  await assertNoPageScroll(page)
   assert.deepEqual(errors, [])
   await context.close()
 })

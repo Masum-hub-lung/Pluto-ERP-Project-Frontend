@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from './client'
 import type {
   LandedCostAllocation, LandedCostRequest, LcAmendment, LcAmendmentInput, LcAmendmentStatus, LcCharge, LcChargeInput, LcCloseRequest, LcDocument, LcDocumentInput,
-  LcDocumentTemplate, LcDocumentTemplateInput, LcPayment, LcPaymentInput, LcShipment, LcShipmentInput, LcTransition, LetterOfCredit, LetterOfCreditInput, PageMeta,
+  LcDocumentTemplate, LcDocumentTemplateInput, LcItemsInput, LcPayment, LcPaymentInput, LcShipment, LcShipmentInput, LcTransition, LetterOfCredit, LetterOfCreditInput, PageMeta,
   ReportData,
 } from './contract.gen'
 
@@ -123,6 +123,17 @@ export function useUpdateLc(id: number) {
     mutationFn: async ({ input, version }: { input: LetterOfCreditInput; version: number }) =>
       one(await api.request<{ data: LetterOfCredit }>('PUT', `/letters-of-credit/${id}`, { body: input, ifMatch: `W/"${version}"` })),
     onSuccess: refresh,
+  })
+}
+
+/** PEP-487: the items of an LC that has none (the server creates and links the purchase order that keeps them). */
+export function useAddLcItems(id: number) {
+  const refresh = useRefresh()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, idempotencyKey }: { input: LcItemsInput; idempotencyKey: string }) =>
+      one(await api.request<{ data: LetterOfCredit }>('POST', `/letters-of-credit/${id}/items`, { body: input, idempotencyKey })),
+    onSuccess: () => { refresh(); void qc.invalidateQueries({ queryKey: ['company', cid(), 'purchase-orders'] }) },
   })
 }
 

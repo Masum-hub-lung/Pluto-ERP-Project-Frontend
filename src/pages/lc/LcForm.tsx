@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import type { LetterOfCredit, Party } from '../../api/contract.gen'
+import { useWarehouses } from '../../api/inventory'
 import { useCreateLc, useDeleteLc, useLc, useLcTemplates, useUpdateLc } from '../../api/lc'
 import { useMoneyAccounts } from '../../api/money'
 import { useParty } from '../../api/parties'
@@ -12,6 +13,7 @@ import { useToast } from '../../app/toast'
 import { useSession } from '../../auth/session'
 import { ds } from '../../ds'
 import { applyProblemToForm } from '../../lib/forms'
+import { itemErrors, itemNames, sentIndexes, type LcItemRow } from '../../lib/lcItems'
 import { editBody, LC_SECTIONS, lcFieldMap, lcSchema, lcToForm, missingForSubmit, toLcInput, type LcFormValues } from '../../lib/lcSchema'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useUnsavedChangesBlocker } from '../../lib/useUnsavedChangesBlocker'
@@ -22,10 +24,13 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { PartyPicker } from '../../components/pickers/PartyPicker'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { Forbidden, NotFound } from '../../components/states'
+import { LcItemsEditor } from './LcItemsEditor'
 
 /**
  * M3 Create LC (LC-Create*.dc.html; backlog P16.2-FE): six sections in any order, save a draft or submit to the bank.
  * Only a draft or an LC awaiting the bank is edited here; an opened LC changes through amendments (BR-041).
+ * Items (PEP-487): entered here (the default) or taken from an existing purchase order. Entered items are kept by the
+ * server on a purchase order it creates, so a bill from the LC fills itself; their total comes back as `lines_total`.
  */
 export function LcForm({ mode }: { mode: 'new' | 'edit' }) {
   const { can } = useSession()
@@ -57,6 +62,8 @@ function Editor({ lc, party }: { lc: LetterOfCredit | null; party: Party | null 
   const idem = useIdempotencyKey()
   const banks = useMoneyAccounts({ purpose: 'payments' })
   const templates = useLcTemplates()
+  const warehouses = useWarehouses()
+  const autoGoods = useRef('')
   const [version, setVersion] = useState(lc?.version ?? 0)
   const [conflict, setConflict] = useState(false)
   const [formError, setFormError] = useState<unknown>(null)
@@ -92,8 +99,11 @@ function Editor({ lc, party }: { lc: LetterOfCredit | null; party: Party | null 
     } catch (e) {
       if (e instanceof ApiError && e.code === 'version_conflict') setConflict(true)
       else if (e instanceof ApiError && e.status === 422) {
+        // lines.N.* (N counts the items sent) go under their rows; the rest to their fields or the summary.
+        const rows = itemErrors(e.fieldErrors, sentIndexes(values.lines))
+        for (const [path, message] of Object.entries(rows)) setError(`lines.${path}` as never, { type: 'server', message })
         const placed = applyProblemToForm(e, setError as never, lcFieldMap as never)
-        if (placed) setUnmatched(placed.unmatched); else setFormError(e)
+        if (placed) setUnmatched(placed.unmatched.filter((m) => !Object.values(rows).includes(m))); else setFormError(e)
       } else setFormError(e)
       return null
     }
@@ -146,6 +156,19 @@ function Editor({ lc, party }: { lc: LetterOfCredit | null; party: Party | null 
   const go = (key: string) => document.getElementById(`lc-sec-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 } as const
   const reviewMissing = missingForSubmit(v)
+  const lineErrors = Object.fromEntries(((Array.isArray(errors.lines) ? errors.lines : []) as Array<Record<string, { message?: string }> | undefined>)
+    .flatMap((row, i) => Object.entries(row ?? {}).flatMap(([f, x]) => (x?.message ? [[`${i}.${f}`, x.message] as const] : []))))
+  const setLines = (rows: LcItemRow[]) => {
+    setValue('lines', rows, { shouldDirty: true, shouldValidate: submitCount > 0 })
+    // The bank wording of the goods starts as the item names, until the user writes their own.
+    const names = itemNames(rows)
+    const current = v.goods_description.trim()
+    if (names && (current === '' || current === autoGoods.current)) {
+      setValue('goods_description', names, { shouldDirty: true, shouldValidate: submitCount > 0 })
+      autoGoods.current = names
+    }
+  }
+  const activeWarehouses = (warehouses.data ?? []).filter((w) => w.status === 'active' || String(w.id) === v.warehouse_id)
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); void saveDraft() }} noValidate data-testid="lc-form">
@@ -171,15 +194,19 @@ function Editor({ lc, party }: { lc: LetterOfCredit | null; party: Party | null 
             <Field label="International supplier" required error={err('party')}>
               <PartyPicker type="supplier" value={v.party} onChange={(p) => setValue('party', p, { shouldDirty: true, shouldValidate: submitCount > 0 })} aria-label="Supplier" />
             </Field>
-            <Field label="Link to">
-              <Segmented value={v.link} onChange={(x) => setValue('link', x as 'po' | 'intended', { shouldDirty: true })} options={[{ value: 'po', label: 'Purchase order' }, { value: 'intended', label: 'Intended import' }]} />
+            <Field label="Items">
+              <Segmented value={v.link} onChange={(x) => setValue('link', x as 'items' | 'po', { shouldDirty: true })} options={[{ value: 'items', label: 'Enter the items' }, { value: 'po', label: 'Existing purchase order' }]} />
             </Field>
             {v.link === 'po'
               ? <Field label="Purchase order" htmlFor="lc-po" error={err('purchase_order_id')}>
                   <Select id="lc-po" {...register('purchase_order_id')} options={[{ value: '', label: v.party ? 'Choose a purchase order' : 'Choose the supplier first' },
                     ...(pos.data?.data ?? []).map((p) => ({ value: String(p.id), label: p.number }))]} />
                 </Field>
-              : <Field label="Intended import" htmlFor="lc-intended"><Input id="lc-intended" {...register('intended_import')} placeholder="e.g. Q3 palm oil" /></Field>}
+              : <Field label="Arrival warehouse" htmlFor="lc-warehouse" error={err('warehouse_id')} hint="Where the goods will be received">
+                  <Select id="lc-warehouse" {...register('warehouse_id')} invalid={!!errors.warehouse_id}
+                    options={[{ value: '', label: 'Head office warehouse' }, ...activeWarehouses.map((w) => ({ value: String(w.id), label: w.name }))]} />
+                </Field>}
+            {v.link === 'items' && <Field label="Intended import" htmlFor="lc-intended"><Input id="lc-intended" {...register('intended_import')} placeholder="e.g. Q3 palm oil" /></Field>}
             <Field label="Goods description" htmlFor="lc-goods" required error={err('goods_description')}>
               <Input id="lc-goods" {...register('goods_description')} invalid={!!errors.goods_description} />
             </Field>
@@ -187,6 +214,21 @@ function Editor({ lc, party }: { lc: LetterOfCredit | null; party: Party | null 
             <Field label="Unit" htmlFor="lc-unit"><Input id="lc-unit" {...register('quantity_unit')} placeholder="kg, MT, pcs" /></Field>
             <Field label="Import authorization reference" htmlFor="lc-iar"><Input id="lc-iar" {...register('import_authorization_ref')} placeholder="IRC / LCA number" /></Field>
           </div>
+          {v.link === 'items' && (
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }} data-testid="lc-items-section">
+              <h3 style={{ margin: '0 0 4px', font: '600 17px/24px var(--font-serif)' }}>Items on this LC</h3>
+              <p style={{ margin: '0 0 12px', color: 'var(--ink-muted)', fontSize: 13 }}>
+                What the LC covers, at the unit cost in {v.currency_code}. A purchase bill made from this LC fills itself with these items.
+              </p>
+              <LcItemsEditor rows={v.lines} onChange={setLines} errors={lineErrors} currency={v.currency_code} />
+              {err('lines') && <div role="alert" style={{ color: 'var(--negative)', fontSize: 13, marginTop: 8 }}>{err('lines')}</div>}
+              <p style={{ margin: '12px 0 0', color: 'var(--ink-muted)', fontSize: 13 }} data-testid="lc-items-total">
+                {!creating && lc.lines_total && !dirtyFields.lines
+                  ? <>Items total: <span className="lf-mono">{lc.currency_code} {lc.lines_total}</span></>
+                  : 'The items total is worked out when you save.'}
+              </p>
+            </div>
+          )}
         </Card></section>
 
         <section id="lc-sec-terms"><Card title="2. Terms and amount">

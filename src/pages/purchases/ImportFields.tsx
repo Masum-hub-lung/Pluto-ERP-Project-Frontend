@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { UseFormRegister, UseFormSetValue } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { useLc, useLcs } from '../../api/lc'
 import { ds } from '../../ds'
 import type { BillFormValues } from '../../lib/billSchema'
@@ -51,7 +52,8 @@ export function ImportFields({ values, register, setValue, errors, onPickLc, loa
           </Field>
         )}
       </div>
-      {note && <div style={{ marginTop: 16 }} data-testid="bill-lc-note"><Banner tone={note.tone} title={note.title}>{note.text}</Banner></div>}
+      {note && <div style={{ marginTop: 16 }} data-testid="bill-lc-note"><Banner tone={note.tone} title={note.title}>{note.text}
+        {note.action && <> <Link to={note.action.to} className="lf-link" data-testid="bill-lc-add-items">{note.action.label}</Link></>}</Banner></div>}
     </Card></div>
   )
 }
