@@ -31,6 +31,8 @@ interface SessionValue {
   signInWith: (r: LoginResponse) => Promise<void>
   /** After turning 2-step on or off: new access token (carries the second factor) and fresh /me. */
   reload: () => Promise<void>
+  /** Fetch /me again for the current company without dropping any page data (after the company's brand colour changed, PEP-497). */
+  refreshMe: () => Promise<void>
   signOut: () => Promise<void>
   /** Make another company active (02 S0): remembers it and reloads the app at the landing page. */
   switchCompany: (companyId: number) => Promise<void>
@@ -158,6 +160,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await loadMe()
   }, [loadMe, endSession, queryClient])
 
+  const refreshMe = useCallback(async () => {
+    if (api.getCompany() == null) return
+    setMe((await api.request<{ data: Me }>('GET', '/me')).data.data)
+  }, [])
+
   const signOut = useCallback(async () => {
     try {
       await api.request('POST', '/auth/logout', { company: false, noRefresh: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -181,8 +188,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // In a read-only support view (PEP-485) only view and report permissions count, so no page offers a change the API refuses.
     can: (p) => (p === PLATFORM_CONSOLE ? !!me?.platform_admin && !me?.support_access
       : (me?.permissions ?? []).includes(p) && (!me?.support_access || /\.view(_costs)?$|^reports\./.test(p))),
-    signIn, completeTwoFactor, signInWith: finishSignIn, reload, signOut, switchCompany,
-  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, signOut, switchCompany])
+    signIn, completeTwoFactor, signInWith: finishSignIn, reload, refreshMe, signOut, switchCompany,
+  }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, refreshMe, signOut, switchCompany])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

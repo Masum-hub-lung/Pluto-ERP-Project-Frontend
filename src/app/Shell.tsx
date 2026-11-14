@@ -7,6 +7,7 @@ import { ds } from '../ds'
 import { CommandPalette } from '../components/CommandPalette'
 import { NavDrawer } from '../components/NavDrawer'
 import { NotificationPanel, useUnreadCount } from './NotificationBell'
+import { useBrandColours } from '../lib/brand'
 import { initials } from '../lib/format'
 import { readPref, writePref } from '../lib/prefs'
 import { shortcutButton, shortcutFor } from '../lib/shortcuts'
@@ -52,6 +53,8 @@ export function Shell() {
   const [scrolled, setScrolled] = useState(false)
   const { compact, toggle: toggleSidebar } = useSidebarMode()
   const look = useAppearance()
+  // PEP-497: the current company's brand colour for this theme; the platform console is not a company's page, so it stays Pluto's.
+  const brandStyle = useBrandColours(location.pathname.startsWith('/platform') ? null : me?.brand, look.theme)
   const [flyout, setFlyout] = useState<null | { path: string; top: number }>(null)
   // PEP-485: in a read-only support view the company is not one of the admin's own memberships.
   const company = me?.support_access ? { company_id: me.support_access.company_id, company_name: me.support_access.company_name, role: 'Support (read-only)', status: 'active' as const }
@@ -192,7 +195,7 @@ export function Shell() {
   }
 
   return (
-    <div data-theme={look.theme} data-density={look.density} data-text-size={look.textSize} data-reduce-motion={look.reduceMotion ? 'true' : undefined} className="lf-shell" style={{ background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px' }}>
+    <div data-theme={look.theme} data-density={look.density} data-text-size={look.textSize} data-reduce-motion={look.reduceMotion ? 'true' : undefined} className="lf-shell" style={{ ...brandStyle, background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: '20px' }}>
       <div className="lf-shell-side" id="lf-sidebar" ref={companyZone} style={{ flex: 'none', alignSelf: 'stretch', position: 'relative' }}
         onClickCapture={(e) => { if (companies.length > 1 && (e.target as Element).closest('.lf-company')) setCompanyOpen((o) => !o) }}>
         <Sidebar compact={compact} company={{ name: company?.company_name ?? '—', meta: companies.length > 1 ? `BDT · ${companies.length} companies` : 'BDT' }} user={{ name: me?.name ?? '', role: company?.role ?? '' }}>
