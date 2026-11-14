@@ -4,6 +4,7 @@ import { chargeLabel, lcActions, lcEditable, lcLive } from '../../src/api/lc'
 import type { Party } from '../../src/api/contract.gen'
 import { editBody, lcSchema, lcToForm, missingForSubmit, toLcInput, trimPct } from '../../src/lib/lcSchema'
 import { billToForm, toBillInput } from '../../src/lib/billSchema'
+import { itemErrors, itemNames, itemProblems, sentIndexes } from '../../src/lib/lcItems'
 
 const straits = { id: 7, name: 'Straits Edible Oils' } as Party
 
@@ -101,4 +102,61 @@ test('loan and financing labels', async () => {
   assert.equal(FINANCED_BY.ltr, 'Bank finance (LTR)')
   assert.equal(LOAN_KIND.pad, 'PAD')
   assert.equal(LOAN_STATUS.repaid!.tone, 'positive')
+})
+
+// ---- Items on the LC (PEP-487)
+const oil = { id: 11, code: 'P-011', name: 'Crude palm oil', unit: 'kg', unit_id: 2, track_stock: true } as never
+const ghee = { id: 12, code: 'P-012', name: 'Vegetable ghee', unit: 'kg', unit_id: 2, track_stock: true } as never
+
+test('a new LC enters its items by default and sends only the rows that were filled', () => {
+  const v = lcToForm(null, straits)
+  assert.equal(v.link, 'items')
+  assert.equal(v.lines.length, 1)
+  assert.deepEqual(toLcInput(filled(), true).lines, [])
+  const rows = [{ product: oil, unit_id: '2', quantity: ' 20000 ', unit_cost: '1.92', description: '' }, { product: null, unit_id: '', quantity: '', unit_cost: '', description: '' },
+    { product: ghee, unit_id: '', quantity: '2000', unit_cost: '2.5', description: ' In 16 kg tins ' }]
+  const body = toLcInput({ ...filled(), lines: rows, warehouse_id: '4' }, true)
+  assert.deepEqual(body.lines, [{ product_id: 11, quantity: '20000', unit_cost: '1.92', unit_id: 2 }, { product_id: 12, quantity: '2000', unit_cost: '2.5', description: 'In 16 kg tins' }])
+  assert.equal(body.warehouse_id, 4)
+  assert.equal(body.purchase_order_id, null)
+  assert.deepEqual(sentIndexes(rows), [0, 2])
+  assert.equal(itemNames(rows), 'Crude palm oil, Vegetable ghee')
+  // An existing purchase order instead: no items are sent.
+  const po = toLcInput({ ...filled(), link: 'po', purchase_order_id: '9', lines: rows }, true)
+  assert.equal(po.purchase_order_id, 9)
+  assert.equal('lines' in po, false)
+})
+
+test('a started item needs an item, a quantity above 0 and a cost; blank rows are ignored', () => {
+  assert.equal(lcSchema.safeParse(filled()).success, true)
+  const bad = lcSchema.safeParse({ ...filled(), lines: [{ product: null, unit_id: '', quantity: '0', unit_cost: 'x', description: '' }] })
+  assert.equal(bad.success, false)
+  assert.deepEqual(bad.error?.issues.map((i) => i.path.join('.')).sort(), ['lines.0.product', 'lines.0.quantity', 'lines.0.unit_cost'])
+  assert.deepEqual(itemProblems({ product: oil, unit_id: '', quantity: '1.5', unit_cost: '0', description: '' }), {})
+  // The same rows are not checked when an existing order is chosen.
+  assert.equal(lcSchema.safeParse({ ...filled(), link: 'po', lines: [{ product: null, unit_id: '', quantity: '0', unit_cost: 'x', description: '' }] }).success, true)
+})
+
+test('an edit shows the stored items and sends them only when touched', () => {
+  const lc = { items_source: 'entered', purchase_order_id: 31, warehouse_id: 4, goods_description: 'Oil', tolerance_pct: '5.0000', margin_pct: '0.0000',
+    lines: [{ id: 91, line_no: 1, product_id: 11, product_code: 'P-011', product_name: 'Crude palm oil', unit: 'kg', unit_id: 2, quantity: '20000.000', unit_cost: '1.9200',
+      line_total: '38400.00', received_quantity: '0.000', remaining_quantity: '20000.000' }] } as never
+  const v = lcToForm(lc, straits)
+  assert.deepEqual([v.link, v.purchase_order_id, v.warehouse_id], ['items', '', '4'])
+  assert.deepEqual(v.lines.map((r) => [r.product?.id, r.unit_id, r.quantity, r.unit_cost]), [[11, '2', '20000.000', '1.9200']])
+  const input = toLcInput({ ...v, amount: '38400.00', planning_rate: '121.50' }, false)
+  const untouched = editBody(input, {})
+  assert.equal('lines' in untouched, false)
+  assert.equal('warehouse_id' in untouched, false)
+  const touched = editBody(input, { lines: true })
+  assert.equal(touched.lines?.length, 1)
+  assert.equal('purchase_order_id' in touched, false)
+  // An LC raised against an existing order keeps that link.
+  assert.equal(lcToForm({ ...(lc as object), items_source: 'purchase_order' } as never, straits).link, 'po')
+})
+
+test('422 line errors go back to the rows that were sent', () => {
+  const rows = [{ product: null, unit_id: '', quantity: '', unit_cost: '', description: '' }, { product: oil, unit_id: '', quantity: '1', unit_cost: '1', description: '' }]
+  assert.deepEqual(itemErrors({ 'lines.0.product_id': ['Crude palm oil is inactive'], 'lines.0.unit_id': ['kg only'], amount: ['x'] }, sentIndexes(rows)),
+    { '1.product': 'Crude palm oil is inactive', '1.unit_id': 'kg only' })
 })

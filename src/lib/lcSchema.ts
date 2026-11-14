@@ -1,15 +1,20 @@
 import { z } from 'zod'
 import type { LetterOfCredit, LetterOfCreditInput, Party } from '../api/contract.gen'
+import { isBlankItem, itemProblems, linesToRows, toLcLines, emptyItem, type LcItemRow } from './lcItems'
 
 /**
  * M3 create / edit LC (backlog P16.2-FE): shape checks only. What a submit needs (supplier, amount, issuing bank, expiry;
  * BR-039) is checked by the server and comes back as 422 lc_submit_incomplete; a draft can be saved with less.
+ * Items (PEP-487): `link` says where the LC's items come from — entered here (`items`, the default; the server keeps
+ * them on a purchase order it creates) or an existing purchase order (`po`).
  */
 export interface LcDocRow { name: string; provided_by: string; copies: string }
 
 export interface LcFormValues {
   party: Party | null
-  link: 'po' | 'intended'
+  link: 'items' | 'po'
+  lines: LcItemRow[]
+  warehouse_id: string
   purchase_order_id: string
   intended_import: string
   goods_description: string
@@ -65,6 +70,12 @@ export const lcSchema = z.object({
   if (f.tenor === 'usance' && !/^[1-9]\d{0,2}$/.test(f.usance_days.trim())) ctx.addIssue({ code: 'custom', path: ['usance_days'], message: 'Enter the usance days (1–999)' })
   if (f.expiry_date && f.application_date && f.expiry_date <= f.application_date) ctx.addIssue({ code: 'custom', path: ['expiry_date'], message: 'The expiry must be after the application date' })
   if (f.latest_shipment_date && f.expiry_date && f.latest_shipment_date > f.expiry_date) ctx.addIssue({ code: 'custom', path: ['latest_shipment_date'], message: 'The latest shipment cannot be after the expiry' })
+  if (f.link === 'items') {
+    f.lines.forEach((row, i) => {
+      if (isBlankItem(row)) return
+      for (const [field, message] of Object.entries(itemProblems(row))) ctx.addIssue({ code: 'custom', path: ['lines', i, field], message })
+    })
+  }
 })
 
 const opt = (s: string) => (s.trim() === '' ? null : s.trim())
@@ -75,7 +86,8 @@ export function toLcInput(v: LcFormValues, creating: boolean): LetterOfCreditInp
   return {
     party_id: v.party?.id ?? 0,
     purchase_order_id: v.link === 'po' ? id(v.purchase_order_id) : null,
-    intended_import: v.link === 'intended' ? opt(v.intended_import) : null,
+    intended_import: v.link === 'items' ? opt(v.intended_import) : null,
+    ...(v.link === 'items' ? { lines: toLcLines(v.lines), ...(v.warehouse_id ? { warehouse_id: Number(v.warehouse_id) } : {}) } : {}),
     goods_description: v.goods_description.trim(),
     quantity: opt(v.quantity), quantity_unit: opt(v.quantity_unit), import_authorization_ref: opt(v.import_authorization_ref),
     lc_type: v.lc_type, tenor: v.tenor, usance_days: v.tenor === 'usance' && v.usance_days.trim() ? Number(v.usance_days) : null,
@@ -100,7 +112,11 @@ export function toLcInput(v: LcFormValues, creating: boolean): LetterOfCreditInp
 export const NOT_IN_RESOURCE: Array<keyof LcFormValues> = ['link', 'purchase_order_id', 'intended_import', 'quantity', 'quantity_unit', 'import_authorization_ref', 'lc_type',
   'partial_shipments', 'transhipment', 'confirmation_required', 'advising_bank', 'margin_account_id', 'application_date', 'presentation_days']
 
-/** Edit body: drops the fields the resource does not return unless the user touched them (the link counts for PO and intended import). */
+/**
+ * Edit body: drops the fields the resource does not return unless the user touched them (the link counts for PO and
+ * intended import). The items and their warehouse are sent only when touched too: sending them replaces the lines of
+ * the LC's order, which the server refuses once a bill uses them.
+ */
 export function editBody(input: LetterOfCreditInput, dirty: Partial<Record<keyof LcFormValues, unknown>>): LetterOfCreditInput {
   const out = { ...input } as Record<string, unknown>
   for (const f of NOT_IN_RESOURCE) {
@@ -108,6 +124,9 @@ export function editBody(input: LetterOfCreditInput, dirty: Partial<Record<keyof
     const touched = !!dirty[f] || ((f === 'purchase_order_id' || f === 'intended_import') && !!dirty.link)
     if (!touched) delete out[f]
   }
+  if (!dirty.lines && !dirty.link && !dirty.warehouse_id) { delete out.lines; delete out.warehouse_id }
+  // The order made from the LC's own items stays linked: never send it back as a chosen order.
+  if ('lines' in out && !dirty.link) delete out.purchase_order_id
   return out as unknown as LetterOfCreditInput
 }
 
@@ -116,7 +135,10 @@ export function lcToForm(lc: LetterOfCredit | null, party: Party | null): LcForm
   const x = (lc ?? {}) as Partial<LetterOfCredit> & Record<string, unknown>
   const s = (k: string) => (typeof x[k] === 'string' ? (x[k] as string) : '')
   return {
-    party, link: x.purchase_order_id ? 'po' : 'intended', purchase_order_id: x.purchase_order_id ? String(x.purchase_order_id) : '', intended_import: s('intended_import'),
+    party, link: lc?.items_source === 'purchase_order' ? 'po' : 'items',
+    purchase_order_id: lc?.items_source === 'purchase_order' && x.purchase_order_id ? String(x.purchase_order_id) : '', intended_import: s('intended_import'),
+    lines: lc?.items_source === 'entered' && lc.lines?.length ? linesToRows(lc.lines) : [emptyItem()],
+    warehouse_id: lc?.items_source === 'entered' && lc.warehouse_id ? String(lc.warehouse_id) : '',
     goods_description: lc?.goods_description ?? '', quantity: s('quantity'), quantity_unit: s('quantity_unit'), import_authorization_ref: s('import_authorization_ref'),
     lc_type: (s('lc_type') || 'irrevocable') as LcFormValues['lc_type'], tenor: (lc?.tenor ?? 'sight') as LcFormValues['tenor'],
     usance_days: lc?.usance_days ? String(lc.usance_days) : '', incoterm: lc?.incoterm ?? 'CFR', currency_code: lc?.currency_code ?? 'USD',
@@ -142,11 +164,12 @@ export const lcFieldMap: Record<string, keyof LcFormValues> = {
   tenor: 'tenor', usance_days: 'usance_days', incoterm: 'incoterm', currency_code: 'currency_code', amount: 'amount', tolerance_pct: 'tolerance_pct',
   planning_rate: 'planning_rate', issuing_bank_account_id: 'issuing_bank_account_id', margin_pct: 'margin_pct', margin_account_id: 'margin_account_id',
   application_date: 'application_date', latest_shipment_date: 'latest_shipment_date', expiry_date: 'expiry_date', presentation_days: 'presentation_days',
+  warehouse_id: 'warehouse_id', lines: 'lines',
 }
 
 /** M3 section of each form field, for the section marks. */
 export const LC_SECTIONS = [
-  { key: 'supplier', label: 'Supplier and purchase', fields: ['party', 'purchase_order_id', 'intended_import', 'goods_description', 'quantity'] },
+  { key: 'supplier', label: 'Supplier and purchase', fields: ['party', 'purchase_order_id', 'intended_import', 'goods_description', 'quantity', 'lines', 'warehouse_id'] },
   { key: 'terms', label: 'Terms and amount', fields: ['tenor', 'usance_days', 'incoterm', 'currency_code', 'amount', 'tolerance_pct', 'planning_rate'] },
   { key: 'banks', label: 'Banks and dates', fields: ['issuing_bank_account_id', 'margin_pct', 'margin_account_id', 'application_date', 'latest_shipment_date', 'expiry_date', 'presentation_days'] },
   { key: 'documents', label: 'Documents', fields: ['documents'] },

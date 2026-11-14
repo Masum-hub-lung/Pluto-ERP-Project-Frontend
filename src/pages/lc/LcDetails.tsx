@@ -25,6 +25,7 @@ import { SummaryTile } from '../../components/SummaryTile'
 import { ReasonDialog } from '../../components/trade/TradeParts'
 import { DetailHeader, panel, type HeaderAction } from '../inventory/parts'
 import { shortDate } from '../purchases/BillList'
+import { AddItemsDialog, LcItemsCard } from './LcItems'
 import { AmendmentDialog, ChargeDialog, CloseDialog, DocumentDialog, LandedCostDialog, PayDialog, ShipmentDialog, TransitionDialog } from './LcDialogs'
 
 /**
@@ -33,7 +34,7 @@ import { AmendmentDialog, ChargeDialog, CloseDialog, DocumentDialog, LandedCostD
  */
 const TABS = ['overview', 'terms', 'documents', 'shipments', 'money', 'amendments', 'cost', 'activity'] as const
 type Tab = typeof TABS[number]
-type Dialog = null | 'charge' | 'pay' | 'close' | 'landed' | 'amend' | 'lot' | 'doc' | { transition: LcTransition['action']; label: string } | { lot: LcShipment }
+type Dialog = null | 'items' | 'charge' | 'pay' | 'close' | 'landed' | 'amend' | 'lot' | 'doc' | { transition: LcTransition['action']; label: string } | { lot: LcShipment }
   | { reverse: Reversible; id: number; what: string } | { payCharge: LcCharge }
 
 export function LcStatusBadge({ status }: { status: string }) {
@@ -50,7 +51,7 @@ export function LcDetails() {
   const [params, setParams] = useSearchParams()
   const tab = (TABS as readonly string[]).includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'overview'
   const q = useLc(id)
-  const [dialog, setDialog] = useState<Dialog>(() => (params.get('amend') === '1' ? 'amend' : null))
+  const [dialog, setDialog] = useState<Dialog>(() => (params.get('amend') === '1' ? 'amend' : params.get('add-items') === '1' ? 'items' : null))
   const [pdfError, setPdfError] = useState<unknown>(null)
   if (q.error instanceof ApiError && q.error.status === 404) return <NotFound what="this LC" back="/lc/list" backLabel="Letters of credit" />
   if (q.error) return <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
@@ -110,6 +111,7 @@ export function LcDetails() {
         { value: 'amendments', label: 'Amendments', count: lc.amendments?.length }, { value: 'cost', label: 'Cost' }, { value: 'activity', label: 'Activity' },
       ]} />
       <div style={{ marginTop: 16 }} data-testid={`lc-tab-${tab}`}>
+        {tab === 'overview' && <div style={{ marginBottom: 16 }}><LcItemsCard lc={lc} onAdd={() => setDialog('items')} onAmend={() => setDialog('amend')} /></div>}
         {tab === 'overview' && <Overview lc={lc} pos={pos} />}
         {tab === 'terms' && <Terms lc={lc} />}
         {tab === 'documents' && <Documents lc={lc} onAdd={() => setDialog('doc')} />}
@@ -124,6 +126,7 @@ export function LcDetails() {
       )}
       {lc.status === 'closed' && <p style={{ color: 'var(--ink-muted)' }}>Closed LCs are read-only.</p>}
 
+      {dialog === 'items' && lc.items_source === 'none' && <AddItemsDialog lc={lc} onClose={() => { setDialog(null); if (params.has('add-items')) setParams((p) => { p.delete('add-items'); return p }, { replace: true }) }} />}
       {dialog === 'charge' && <ChargeDialog lc={lc} onClose={() => setDialog(null)} />}
       {dialog === 'pay' && <PayDialog lc={lc} onClose={() => setDialog(null)} />}
       {dialog === 'close' && <CloseDialog lc={lc} onClose={() => setDialog(null)} />}
@@ -305,7 +308,10 @@ function Amendments({ lc, onAdd }: { lc: LetterOfCredit; onAdd: () => void }) {
     }
   }
   const rows = (lc.amendments ?? []).map((a) => ({ ...a, requested: shortDate(a.requested_on), fee: a.bank_fee,
-    what: (a.changes as Array<{ field_key: string; old_value?: string | null; new_value: string }>).map((c) => `${c.field_key.replace(/_/g, ' ')}: ${c.old_value ?? '—'} → ${c.new_value}`).join('; ') }))
+    what: [...(a.changes as Array<{ field_key: string; old_value?: string | null; new_value: string }>).map((c) => `${c.field_key.replace(/_/g, ' ')}: ${c.old_value ?? '—'} → ${c.new_value}`),
+      ...(a.lines ?? []).map((l) => l.action === 'add' ? `add ${l.product_name}: ${l.quantity} ${l.unit} at ${l.unit_cost}`
+        : l.action === 'remove' ? `remove ${l.product_name} (${l.old_quantity} ${l.unit})`
+          : `${l.product_name}: ${[l.quantity ? `${l.old_quantity} → ${l.quantity} ${l.unit}` : '', l.unit_cost ? `cost ${l.old_unit_cost} → ${l.unit_cost}` : ''].filter(Boolean).join(', ')}`)].join('; ') }))
   return (
     <Card title="Amendments" padding="none" actions={lcLive(lc.status) && can('lc.edit') ? <Button size="sm" variant="secondary" icon="plus" onClick={onAdd} data-testid="lc-add-amendment">Record amendment</Button> : undefined}>
       <ProblemBanner error={error} />
@@ -317,7 +323,7 @@ function Amendments({ lc, onAdd }: { lc: LetterOfCredit; onAdd: () => void }) {
             <Button size="sm" variant="secondary" onClick={() => void advance(r, 'accepted')} data-testid={`accept-amendment-${r.id}`}>Accepted</Button>
             <Button size="sm" variant="ghost" onClick={() => void advance(r, 'refused')}>Refused</Button>
           </span> : null}
-          emptyState={<EmptyState icon="file-pen" title="No amendments" description="Changes to the expiry, shipment date or amount are recorded here." />} />
+          emptyState={<EmptyState icon="file-pen" title="No amendments" description="Changes to the expiry, shipment date, amount or items are recorded here." />} />
       </div>
     </Card>
   )

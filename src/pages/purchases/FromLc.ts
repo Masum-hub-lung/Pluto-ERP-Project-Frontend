@@ -5,8 +5,9 @@ import { poToLines } from './FromPoField'
 
 /**
  * F3 "choose an LC first" (BR-056): what a bill needs from a letter of credit. Loads the LC, its supplier and, when the
- * LC is raised against a purchase order, that order, whose still-to-come lines fill the bill (poToLines). An LC with
- * no order fills only the header; its goods description and quantity are shown as a reference.
+ * LC keeps its items on a purchase order (entered on the LC, PEP-487, or an order it was raised against), that order,
+ * whose still-to-come lines fill the bill (poToLines). An LC without items fills only the header and offers to add its
+ * items once on the LC; its goods description and quantity are shown as a reference.
  */
 export interface LcFill {
   lc: LetterOfCredit
@@ -14,7 +15,7 @@ export interface LcFill {
   po: PurchaseOrder | null
   lines: LineValues[]
   /** What to tell the user about the lines; null when the order's remaining lines were loaded. */
-  note: { tone: 'info' | 'warning'; title: string; text: string } | null
+  note: { tone: 'info' | 'warning'; title: string; text: string; action?: { label: string; to: string } } | null
 }
 
 export async function loadLcForBill(id: number, signal?: AbortSignal): Promise<LcFill> {
@@ -25,10 +26,12 @@ export async function loadLcForBill(id: number, signal?: AbortSignal): Promise<L
   ])
   const goods = [lc.goods_description, lc.quantity ? `${lc.quantity} ${lc.quantity_unit ?? ''}`.trim() : null].filter(Boolean).join(' · ')
   if (!po) {
-    return { lc, party, po, lines: [], note: { tone: 'info', title: `${lc.lc_number} is not linked to a purchase order`, text: `Add the items you received below. LC goods: ${goods}.` } }
+    return { lc, party, po, lines: [], note: { tone: 'info', title: `${lc.lc_number} has no items yet`,
+      text: `Add its items once on the LC and its bills fill themselves, or enter what you received below. LC goods: ${goods}.`,
+      action: { label: `Add the items to ${lc.lc_number}`, to: `/lc/${lc.id}?add-items=1` } } }
   }
   if (po.status === 'closed' || po.status === 'cancelled') {
-    return { lc, party, po: null, lines: [], note: { tone: 'warning', title: `${po.number} is ${po.status}`, text: `Its lines cannot be received any more; add the items below if this is a new delivery. LC goods: ${goods}.` } }
+    return { lc, party, po: null, lines: [], note: { tone: 'warning', title: `${po.number} is ${po.status}`, text: `Its lines cannot be received any more, and a bill from ${lc.lc_number} may hold only its items. LC goods: ${goods}.` } }
   }
   const lines = poToLines(po)
   if (!lines.length) {

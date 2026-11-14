@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
-import type { LandedCostAllocation, LcChargeInput, LcShipment, LcTransition, LetterOfCredit } from '../../api/contract.gen'
+import type { LandedCostAllocation, LcAmendmentLineInput, LcChargeInput, LcShipment, LcTransition, LetterOfCredit } from '../../api/contract.gen'
 import {
   CHARGE_TYPES, chargeLabel, SHIPMENT_STATUS, useAddCharge, useAddLcDocument, useAddShipment, useCloseLc, useLandedCost, useLcs, useLcTransition, useRecordAmendment,
   useRecordLcPayment, useUpdateShipment,
@@ -13,10 +13,12 @@ import { useBills } from '../../api/purchases'
 import { useToast } from '../../app/toast'
 import { ds } from '../../ds'
 import { formatTaka } from '../../lib/format'
+import { emptyItem, itemErrors, sentIndexes, toLcLines, type LcItemRow } from '../../lib/lcItems'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { PartyPicker } from '../../components/pickers/PartyPicker'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { ResponsiveDialog } from '../../components/ResponsiveDialog'
+import { LcItemsEditor } from './LcItemsEditor'
 
 /**
  * LC dialogs (backlog P16.2-FE): LC-DrawerCharge, LC-DlgPay, LC-DlgClose, landed-cost allocation (preview → allocate),
@@ -329,7 +331,7 @@ export function LandedCostDialog({ lc, billId, onClose }: { lc: LetterOfCredit; 
 
 /** M4/M5 record an amendment: only the fields that change; applied to the LC when accepted (BR-041). */
 export function AmendmentDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => void }) {
-  const { Field, Input, Segmented, Button } = ds()
+  const { Field, Input, Segmented, Button, Switch } = ds()
   const toast = useToast()
   const rec = useRecordAmendment(lc.id)
   const idem = useIdempotencyKey()
@@ -347,12 +349,37 @@ export function AmendmentDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: 
     ...(shipment ? [{ field_key: 'latest_shipment_date' as const, new_value: shipment }] : []),
     ...(amount.trim() ? [{ field_key: 'amount' as const, new_value: amount.trim() }] : []),
   ]
-  const changed = changes.length > 0 || other.trim() !== ''
+  // Item changes (PEP-487): per LC item a new quantity and/or unit cost, or removal; plus items to add. Applied on acceptance.
+  const items = lc.lines ?? []
+  const [edits, setEdits] = useState<Record<number, { quantity: string; unit_cost: string; remove: boolean }>>({})
+  const [added, setAdded] = useState<LcItemRow[]>([])
+  const edit = (id: number, patch: Partial<{ quantity: string; unit_cost: string; remove: boolean }>) =>
+    setEdits((e) => ({ ...e, [id]: { ...(e[id] ?? { quantity: '', unit_cost: '', remove: false }), ...patch } }))
+  const existing: LcAmendmentLineInput[] = items.flatMap((l): LcAmendmentLineInput[] => {
+    const c = edits[l.id]
+    if (!c) return []
+    if (c.remove) return [{ action: 'remove', purchase_order_line_id: l.id }]
+    const q = c.quantity.trim(), u = c.unit_cost.trim()
+    return q || u ? [{ action: 'change', purchase_order_line_id: l.id, ...(q ? { quantity: q } : {}), ...(u ? { unit_cost: u } : {}) }] : []
+  })
+  const itemChanges: LcAmendmentLineInput[] = [...existing, ...toLcLines(added).map((l) => ({ action: 'add' as const, ...l }))]
+  // 422 paths lines.N.*: N counts the item changes sent — first the changed items in order, then the added ones.
+  const addedErrors = error instanceof ApiError && error.status === 422
+    ? itemErrors(Object.fromEntries(Object.entries(error.fieldErrors).flatMap(([k, m]) => {
+      const x = /^lines\.(\d+)(.*)$/.exec(k)
+      return x && Number(x[1]) >= existing.length ? [[`lines.${Number(x[1]) - existing.length}${x[2]}`, m] as const] : []
+    })), sentIndexes(added)) : {}
+  const existingErrors = Object.entries(errs).flatMap(([k, m]) => {
+    const x = /^lines\.(\d+)\./.exec(k)
+    const line = x ? existing[Number(x[1])] : undefined
+    return m && (k === 'lines' || line) ? [`${line ? `${items.find((l) => l.id === line.purchase_order_line_id)?.product_name ?? 'Item'}: ` : ''}${m}`] : []
+  })
+  const changed = changes.length > 0 || other.trim() !== '' || itemChanges.length > 0
   const save = async () => {
     setError(null)
     try {
       const a = await rec.mutateAsync({ idempotencyKey: idem.key, input: { requested_on: dhakaToday(), status, changes: changes as never, other_change: other.trim() || null,
-        reason: reason.trim() || null, bank_fee: fee.trim() || undefined } })
+        reason: reason.trim() || null, bank_fee: fee.trim() || undefined, ...(itemChanges.length ? { lines: itemChanges } : {}) } })
       idem.reset()
       toast({ tone: 'positive', title: `Amendment ${a.amendment_no} recorded`, description: a.status === 'accepted' ? 'The LC is updated.' : 'The LC changes when the amendment is accepted.' })
       onClose()
@@ -361,7 +388,7 @@ export function AmendmentDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: 
     }
   }
   return (
-    <ResponsiveDialog title={`Record amendment — ${lc.lc_number}`} onClose={onClose} testId="lc-amend-dialog"
+    <ResponsiveDialog title={`Record amendment — ${lc.lc_number}`} onClose={onClose} testId="lc-amend-dialog" width={items.length ? 860 : undefined}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!changed} loading={rec.isPending} onClick={() => void save()} data-testid="save-amendment">Record amendment</Button></>}>
       <div style={{ display: 'grid', gap: 12 }}>
         <ProblemBanner error={Object.keys(errs).length ? null : error} />
@@ -371,6 +398,33 @@ export function AmendmentDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: 
           <Field label={`New amount (${lc.currency_code})`} htmlFor="am-amount" hint={`Now ${lc.amount}`}><Input id="am-amount" inputMode="decimal" align="right" mono value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
           <Field label="Bank fee (৳)" htmlFor="am-fee" error={errs.bank_fee}><Input id="am-fee" inputMode="decimal" align="right" mono value={fee} onChange={(e) => setFee(e.target.value)} placeholder="0.00" /></Field>
         </div>
+        {items.length > 0 && (
+          <fieldset style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-md)', padding: 12, margin: 0, display: 'grid', gap: 10, minWidth: 0 }} data-testid="am-items">
+            <legend style={{ font: '600 13px/18px var(--font-sans)', padding: '0 6px' }}>Item changes</legend>
+            <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 13 }}>Leave an item blank to keep it. A quantity cannot go below what is already received or on a bill.</p>
+            {existingErrors.length > 0 && <div role="alert" style={{ color: 'var(--negative)', fontSize: 13 }} data-testid="am-item-errors">{existingErrors.join(' · ')}</div>}
+            {items.map((l) => {
+              const c = edits[l.id] ?? { quantity: '', unit_cost: '', remove: false }
+              return (
+                <div key={l.id} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, alignItems: 'end' }} data-testid={`am-item-${l.id}`}>
+                  <div style={{ minWidth: 0 }}><strong>{l.product_name}</strong><br />
+                    <span className="lf-mono" style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{l.quantity} {l.unit} at {l.unit_cost} · received {l.received_quantity}</span></div>
+                  <Field label={`New quantity (${l.unit})`} htmlFor={`am-qty-${l.id}`}><Input id={`am-qty-${l.id}`} inputMode="decimal" align="right" mono value={c.quantity} disabled={c.remove}
+                    onChange={(e) => edit(l.id, { quantity: e.target.value })} placeholder={l.quantity} /></Field>
+                  <Field label={`New unit cost (${lc.currency_code})`} htmlFor={`am-cost-${l.id}`}><Input id={`am-cost-${l.id}`} inputMode="decimal" align="right" mono value={c.unit_cost} disabled={c.remove}
+                    onChange={(e) => edit(l.id, { unit_cost: e.target.value })} placeholder={l.unit_cost} /></Field>
+                  <Switch label="Remove this item" checked={c.remove} onChange={(v: boolean) => edit(l.id, { remove: v })} />
+                </div>
+              )
+            })}
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+              <div style={{ font: '600 13px/18px var(--font-sans)', marginBottom: 8 }}>Items to add</div>
+              {added.length === 0
+                ? <Button size="sm" variant="secondary" icon="plus" onClick={() => setAdded([emptyItem()])} data-testid="am-add-item">Add an item</Button>
+                : <LcItemsEditor rows={added} onChange={setAdded} errors={addedErrors} currency={lc.currency_code} idPrefix="am-new-item" />}
+            </div>
+          </fieldset>
+        )}
         <Field label="Other change" htmlFor="am-other"><Input id="am-other" value={other} onChange={(e) => setOther(e.target.value)} placeholder="Optional" /></Field>
         <Field label="Reason" htmlFor="am-reason"><Input id="am-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional" /></Field>
         <Field label="Status"><Segmented value={status} onChange={(v) => setStatus(v as typeof status)} options={[{ value: 'requested', label: 'Requested' }, { value: 'issued', label: 'Issued' }, { value: 'accepted', label: 'Accepted' }]} /></Field>
