@@ -345,10 +345,16 @@ test('PEP-487: an LC raised with two items fills "New bill" from the LC with bot
   const extra = await api('POST', '/purchase-bills', { party_id: ids.supplier, supplier_bill_no: 'SEO-X-1', bill_date: today, warehouse_id: po.warehouse_id, letter_of_credit_id: lcId,
     purchase_order_id: po.id, lines: [{ product_id: ids.oil, quantity: '10', unit_cost: '1.92' }] })
   assert.deepEqual([extra.status, extra.body.code], [422, 'validation_failed'])
-  const am = await api('POST', `/letters-of-credit/${lcId}/amendments`, { requested_on: today, status: 'accepted', changes: [],
-    lines: [{ action: 'change', purchase_order_line_id: stored.lines[1].id, quantity: '500' }] })
-  assert.equal(am.status, 201, JSON.stringify(am.body))
+  // The amendment dialog's "Item changes": ghee 400 → 500, recorded as accepted, changes the LC's items.
   await page.goto(`/lc/${lcId}`)
+  await page.getByTestId('lc-amend-items').click()
+  await page.getByTestId('am-items').waitFor()
+  await page.locator(`#am-qty-${stored.lines[1].id}`).fill('500')
+  await page.getByRole('radio', { name: 'Accepted' }).click()
+  await page.getByTestId('save-amendment').click()
+  await page.getByText(/Amendment \d+ recorded/).waitFor()
+  const amended = (await api('GET', `/letters-of-credit/${lcId}`)).body.data
+  assert.deepEqual(amended.lines.map((l) => l.quantity), ['5000.000', '500.000'])
   await page.getByTestId(`lc-item-${stored.lines[1].id}`).getByText('500.000').first().waitFor()
   await page.getByTestId('lc-items-differ').getByText(/The items add up to USD 10850\.00; the LC amount is USD 10600\.00/).waitFor()
   await assertNoPageScroll(page)
