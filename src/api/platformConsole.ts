@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { PageMeta, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
+import type { OwnerAccess, OwnerAccessInput, PageMeta, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
 
 /**
  * Platform console (K17; 05 /platform/companies; PEP-483/484): every customer company of this installation, for
@@ -53,4 +53,26 @@ export function useSupportAccess() {
 
 export async function endSupportAccess(id: number) {
   await api.request('DELETE', `/platform/companies/${id}/support-access`, { company: false })
+}
+
+/**
+ * PEP-496: join a company as an Owner (a real membership, so everything can be changed; its Owners are told and each
+ * change is in its audit log under the admin's name). Then switch to it with `useSession().switchCompany(id)`.
+ */
+export function useOwnerAccess() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input, idempotencyKey }: { id: number; input: OwnerAccessInput; idempotencyKey: string }) =>
+      (await api.request<{ data: OwnerAccess }>('POST', `/platform/companies/${id}/owner-access`, { company: false, body: input, idempotencyKey })).data.data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: key() }),
+  })
+}
+
+/** PEP-496: leave a company joined as Owner (409 last_owner while the admin is its only active Owner). */
+export function useLeaveOwnerAccess() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => { await api.request('DELETE', `/platform/companies/${id}/owner-access`, { company: false }) },
+    onSuccess: () => qc.invalidateQueries({ queryKey: key() }),
+  })
 }

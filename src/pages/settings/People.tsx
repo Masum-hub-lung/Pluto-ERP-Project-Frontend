@@ -47,13 +47,16 @@ export function Users() {
     { key: 'name', label: 'Name', render: (_v, r) => (
       <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <span className="lf-avatar" aria-hidden style={{ width: 30, height: 30, fontSize: 12 }}>{initials(r.name)}</span>
-        <span style={{ display: 'flex', flexDirection: 'column' }}><strong>{r.name}</strong><span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.email}</span></span>
+        <span style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}><strong>{r.name}</strong>
+            {r.platform && <span data-testid={`pluto-support-${r.id}`} title="Joined from Pluto's platform console to help this company; uses none of your seats"><Badge tone="info">Pluto support</Badge></span>}</span>
+          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.email}</span></span>
       </span>) },
     { key: 'role', label: 'Role' }, { key: 'last', label: 'Last active' },
     { key: 'tfa', label: '2-step', render: (v: boolean) => (v ? <Badge tone="positive">On</Badge> : <Badge tone="neutral">Off</Badge>) },
     { key: 'status', label: 'Status', render: (v: string) => <Badge tone={STATUS[v]?.[0] ?? 'neutral'} dot>{STATUS[v]?.[1] ?? v}</Badge> },
   ]
-  const rows = (list.data?.data ?? []).map((m) => ({ id: m.id, name: m.name, email: m.email, role: m.role_name, last: when(m.last_active_at), tfa: m.two_factor_enabled, status: m.status }))
+  const rows = (list.data?.data ?? []).map((m) => ({ id: m.id, name: m.name, email: m.email, role: m.role_name, last: when(m.last_active_at), tfa: m.two_factor_enabled, status: m.status, platform: !!m.platform_admin }))
 
   async function act(id: number, a: 'resend' | 'revoke', email: string) {
     try {
