@@ -9,3 +9,15 @@
 .se-link[aria-current="page"]{background:var(--brand-soft);color:var(--brand-ink);font-weight:600}
 .se-row{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
 .se-row:first-child{border-top:0;padding-top:0}
+/* PEP-497 brand colour picker (K1): swatches are 44 px touch targets; the chosen one carries an ink ring. */
+.se-brand-swatches{display:flex;flex-wrap:wrap;gap:8px}
+.se-brand-swatch{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 12px 6px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface);color:var(--ink);font:500 14px/20px var(--font-sans)}
+.se-brand-swatch:hover{background:var(--surface-hover);border-color:var(--line-strong)}
+.se-brand-swatch:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.se-brand-swatch[aria-checked="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);font-weight:600}
+.se-brand-swatch:disabled{cursor:default}
+.se-brand-swatch:disabled:not([aria-checked="true"]){opacity:.55}
+.se-brand-dot{flex:none;display:inline-block;border-radius:50%;border:1px solid var(--line-strong)}
+.se-brand-native{flex:none;width:44px;height:44px;padding:2px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer}
+.se-brand-preview{display:flex;flex-wrap:wrap;gap:12px;align-items:center;min-height:44px;padding:12px 14px;border:1px dashed var(--line);border-radius:var(--radius-md);background:var(--surface-sunken)}
+.se-brand-sample{cursor:default;pointer-events:none}
