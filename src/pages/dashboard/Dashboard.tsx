@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { SetupChecklistCard } from './SetupChecklist'
 import { useNavigate } from 'react-router-dom'
 import { alertsOf, bannersOf, cashOf, monthsOf, owedOf, periodOf, recentOf, todayOf, upcomingOf, useDashboard, type Owed, type TodayFeed } from '../../api/dashboard'
 import { useSession } from '../../auth/session'
@@ -44,6 +45,8 @@ export function Dashboard() {
           {can('sales.create') && <Button variant="primary" icon="plus" kbd="Alt S" onClick={() => navigate('/sales/invoices/new')} data-testid="new-invoice">New invoice</Button>}
         </div>} />
       <LensNav active="overview" />
+      {/* PEP-511: first steps for a new company, until done or hidden. */}
+      <SetupChecklistCard />
       <ProblemBanner error={q.error} onRetry={() => void q.refetch()} />
       {bannersOf(d).filter((b) => !hidden.includes(b.kind)).map((b) => (
         <div key={b.kind} style={{ marginBottom: 12 }} data-testid={`banner-${b.kind}`}>

@@ -55,6 +55,8 @@
 .lf-serif { font-family: var(--font-serif); }
 .lf-mono { font-family: var(--font-mono); }
 .lf-link { color: var(--brand-ink); text-decoration: none; }
+/* Text for screen readers only (visually hidden, still read aloud). */
+.lf-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .lf-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 .lf-rowlink { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); }
 .lf-rowlink:first-child { border-top: 0; }
