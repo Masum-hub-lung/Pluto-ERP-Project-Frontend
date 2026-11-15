@@ -3,6 +3,8 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useSession } from '../auth/session'
 import { ds } from '../ds'
 import { Forbidden } from '../pages/states/Forbidden'
+import { NotInPlan } from '../pages/states/NotInPlan'
+import { modulePermission, type ModuleKey } from '../lib/modules'
 
 /** Signed-in routes; while the session restores from the refresh cookie a skeleton is shown. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -20,6 +22,12 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequirePermission({ permission, children }: { permission: string; children: ReactNode }) {
   const { can } = useSession()
   return can(permission) ? <>{children}</> : <Forbidden permission={permission} />
+}
+
+/** PEP-498: a page in a plan module; the plan leaving it out shows "not in your plan" (before any permission check). */
+export function RequireModule({ module, children }: { module: ModuleKey; children: ReactNode }) {
+  const { can } = useSession()
+  return can(modulePermission(module)) ? <>{children}</> : <NotInPlan module={module} />
 }
 
 function Restoring() {

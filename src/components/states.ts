@@ -2,3 +2,4 @@
 export { Forbidden } from '../pages/states/Forbidden'
 export { NotFound } from '../pages/states/NotFound'
 export { NotInRelease } from '../pages/states/NotInRelease'
+export { NotInPlan } from '../pages/states/NotInPlan'

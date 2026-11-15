@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { modulePermission } from '../../lib/modules'
+import { useSession } from '../../auth/session'
 import { ApiError } from '../../api/client'
 import type { LandedCostAllocation, LcAmendmentLineInput, LcChargeInput, LcShipment, LcTransition, LetterOfCredit } from '../../api/contract.gen'
 import {
@@ -148,6 +150,7 @@ export function PayDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => 
   const [margin, setMargin] = useState('')
   const [reference, setReference] = useState('')
   const [financing, setFinancing] = useState<'own' | 'bank'>('own')
+  const financeInPlan = useSession().can(modulePermission('lc_finance'))
   const [loanKind, setLoanKind] = useState<'pad' | 'ltr'>('ltr')
   const [loanRate, setLoanRate] = useState('')
   const [tenor, setTenor] = useState('')
@@ -194,7 +197,8 @@ export function PayDialog({ lc, onClose }: { lc: LetterOfCredit; onClose: () => 
           </Field>
           <Field label="Paid on" htmlFor="pay-date" required error={errs.payment_date}><Input id="pay-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         </div>
-        {kind !== 'usance_acceptance' && <Field label="Paid with">
+        {/* PEP-498: bank finance (PAD/LTR) is LC finance; without it in the plan only own funds are offered. */}
+        {kind !== 'usance_acceptance' && financeInPlan && <Field label="Paid with">
           <Segmented value={financing} onChange={(v) => setFinancing(v as typeof financing)}
             options={[{ value: 'own', label: 'Own funds' }, { value: 'bank', label: 'Bank finance (PAD/LTR)' }]} />
         </Field>}
