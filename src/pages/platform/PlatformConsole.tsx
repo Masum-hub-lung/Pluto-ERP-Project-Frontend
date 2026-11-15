@@ -14,6 +14,7 @@ import { SummaryTile } from '../../components/SummaryTile'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useListParams } from '../../lib/useListParams'
 import { CompanyPlanDialog, PlanCell, PlansPanel } from './PlansPanel'
+import { BillingCell, BillingDialog } from './BillingPanel'
 
 /**
  * K17 Platform console (PEP-484; API PEP-483): the owner of this Pluto installation sees every customer company — owner,
@@ -50,6 +51,7 @@ export function PlatformConsole() {
   const [joining, setJoining] = useState<PlatformCompany | null>(null)
   const [leaving, setLeaving] = useState<PlatformCompany | null>(null)
   const [planFor, setPlanFor] = useState<PlatformCompany | null>(null)
+  const [billingFor, setBillingFor] = useState<PlatformCompany | null>(null)
 
   if (!allowed) return <Forbidden what="the platform console" />
   const twoStep = list.error instanceof ApiError && list.error.code === 'platform_two_factor_required'
@@ -68,7 +70,8 @@ export function PlatformConsole() {
       </span>) },
     { key: 'members', label: 'Members', align: 'right', render: (v: number) => <span className="lf-num">{v}</span> },
     { key: 'plan', label: 'Plan', render: (_v, r) => <PlanCell company={r.company as PlatformCompany} onChange={() => setPlanFor(r.company as PlatformCompany)} /> },
-    { key: 'created_at', label: 'Created', render: (v: string) => when(v) },
+    // PEP-503: subscription status, paid until, Billing (record payment, terms, history).
+    { key: 'billing', label: 'Billing', render: (_v, r) => <BillingCell company={r.company as PlatformCompany} onOpen={() => setBillingFor(r.company as PlatformCompany)} /> },
     { key: 'last_activity_at', label: 'Last activity', render: (v: string | null) => when(v) },
     { key: 'status', label: 'Status', render: (v: string, r) => (
       <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
@@ -105,12 +108,15 @@ export function PlatformConsole() {
         <SummaryTile label="Active" value={totals.active ?? '—'} sub="Can be opened by their people" testId="tile-active" />
         <SummaryTile label="Suspended" value={totals.suspended ?? '—'} tone={totals.suspended ? 'negative' : undefined} sub="Nobody can open them" testId="tile-suspended" />
         <SummaryTile label="Owners not joined" value={rows.filter((r) => r.owner_pending).length} sub="On this page" testId="tile-pending" />
+        <SummaryTile label="Payment due soon" value={rows.filter((r) => r.billing?.status === 'due_soon').length} sub="Within 7 days, on this page" testId="tile-due-soon" />
+        <SummaryTile label="Overdue or paused" value={rows.filter((r) => r.billing?.status === 'overdue' || r.billing?.status === 'suspended').length}
+          tone={rows.some((r) => r.billing?.status === 'overdue' || r.billing?.status === 'suspended') ? 'negative' : undefined} sub="Unpaid, on this page" testId="tile-overdue" />
       </div>
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
         <Tabs key={status} items={STATUS} value={status} onChange={(v) => set({ status: v === 'all' ? null : v })} />
       </div>
       <ListCard label="Companies" meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
-        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'owner', 'plan', 'status', 'access'], badgeKey: 'status', empty }}
+        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'plan', 'billing', 'status', 'access'], badgeKey: 'status', empty }}
         toolbar={<div style={{ flex: '1 1 280px', maxWidth: 380 }}>
           <Input icon="search" placeholder="Search company or owner e-mail" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search companies" />
         </div>}>
@@ -126,6 +132,7 @@ export function PlatformConsole() {
       {joining && <OwnerDialog company={joining} onClose={() => setJoining(null)} />}
       {leaving && <LeaveDialog company={leaving} onClose={() => setLeaving(null)} />}
       {planFor && <CompanyPlanDialog company={planFor} onClose={() => setPlanFor(null)} />}
+      {billingFor && <BillingDialog company={billingFor} onClose={() => setBillingFor(null)} />}
       {changing && <StatusDialog company={changing.c} action={changing.action} onClose={() => setChanging(null)} />}
     </>
   )
