@@ -56,6 +56,9 @@ const PartyLedger = lazy(() => partyAccounts().then((m) => ({ default: m.PartyLe
 const PartyHistory = lazy(() => partyAccounts().then((m) => ({ default: m.PartyHistory })))
 const PartyOutstanding = lazy(() => partyAccounts().then((m) => ({ default: m.PartyOutstanding })))
 const PartyStatement = lazy(() => partyAccounts().then((m) => ({ default: m.PartyStatement })))
+const legalPages = () => import('../pages/legal/Legal')
+const Terms = lazy(() => legalPages().then((m) => ({ default: m.Terms })))
+const Privacy = lazy(() => legalPages().then((m) => ({ default: m.Privacy })))
 const lcPages = () => import('../pages/lc')
 const LcDashboard = lazy(() => lcPages().then((m) => ({ default: m.LcDashboard })))
 const LcList = lazy(() => lcPages().then((m) => ({ default: m.LcList })))
@@ -178,6 +181,9 @@ export const router = createBrowserRouter([
   { path: '/forgot-password', element: <Suspense fallback={null}><ForgotPassword /></Suspense> },
   { path: '/reset-password', element: <Suspense fallback={null}><ResetPassword /></Suspense> },
   { path: '/invite/:token', element: <Suspense fallback={null}><AcceptInvitation /></Suspense> },
+  // PEP-502: public legal pages (no sign-in).
+  { path: '/terms', element: <Suspense fallback={null}><Terms /></Suspense> },
+  { path: '/privacy', element: <Suspense fallback={null}><Privacy /></Suspense> },
   {
     element: <RequireAuth><Shell /></RequireAuth>,
     children: [

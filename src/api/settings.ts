@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
-  Backup, Branch, BranchInput, Company, CompanyCreate, CompanySettings, CompanySettingsUpdate, CompanyUpdate, Invitation, InvitationCreate, InvitationPublic,
+  AcceptInvitationRequest, Backup, Branch, BranchInput, Company, CompanyCreate, CompanySettings, CompanySettingsUpdate, CompanyUpdate, Invitation, InvitationCreate, InvitationPublic,
   LoginResponse, Member, MemberUpdate, NotificationPreferences, NumberSequence, PageMeta, PermissionList, Role, RoleInput, Session, SignedUrl, TaxRule,
   TaxRuleInput, UserPreferences,
 } from './contract.gen'
@@ -262,7 +262,7 @@ export function useInvitationPreview(token: string) {
   })
 }
 
-export async function acceptInvitation(token: string, input: { name?: string; password: string; password_confirmation?: string }) {
+export async function acceptInvitation(token: string, input: AcceptInvitationRequest & { password: string }) {
   return (await api.request<{ data: LoginResponse }>('POST', `/invitations/${token}/accept`, { company: false, noRefresh: true, body: input })).data.data
 }
 

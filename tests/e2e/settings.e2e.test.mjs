@@ -82,6 +82,7 @@ test('TC-E2E-005: create a company, add a tax rule, design the invoice, invite a
   await guest.page.getByLabel('Your name').fill('Rahim Uddin')
   await guest.page.getByLabel('Choose a password').fill('Green-Paddy-Field-9')
   await guest.page.getByLabel('Confirm password').fill('Green-Paddy-Field-9')
+  await guest.page.getByTestId('accept-terms').locator('input').check() // PEP-502
   await guest.page.getByTestId('join-company').click()
   await guest.page.waitForURL((u) => !u.pathname.startsWith('/invite'))
   await guest.page.waitForLoadState('networkidle')

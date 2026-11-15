@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { useSession } from '../auth/session'
 import { Logo } from '../components/Logo'
@@ -102,7 +102,7 @@ export function SignIn() {
     <div data-theme="light" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: 16 }}>
       {challenge ? (
       <form onSubmit={submitCode} noValidate aria-labelledby="signin-title"
-        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', boxSizing: 'border-box', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>2-step verification</h1>
@@ -132,7 +132,7 @@ export function SignIn() {
       </form>
       ) : (
       <form onSubmit={submit} noValidate aria-labelledby="signin-title"
-        style={{ width: '100%', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', boxSizing: 'border-box', maxWidth: 400, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="signin-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>Sign in</h1>
@@ -149,6 +149,8 @@ export function SignIn() {
         </Field>
         <Button variant="primary" type="submit" block loading={busy} disabled={busy}>Sign in</Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/forgot-password')} data-testid="forgot-password">Forgot your password?</Button>
+        {/* PEP-502 */}
+        <span style={{ display: 'flex', gap: 12, justifyContent: 'center', fontSize: 12 }}><Link to="/terms">Terms of service</Link><Link to="/privacy">Privacy policy</Link></span>
       </form>
       )}
     </div>
