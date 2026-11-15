@@ -18,7 +18,7 @@ import { SettingsLayout } from './SettingsLayout'
  * K15 Backup and export (Settings.dc.html; FR-087; BR-062; R-11; backlog P15.2-FE-10): the month-end export pack (an
  * export job: period, format, reports), daily backups on/off and how long they are kept, "Back up now", the history,
  * and — Owner only — download and restore. Restore needs RESTORE typed, takes a safety backup first, and the company
- * is unavailable to everyone while it runs.
+ * is unavailable to everyone while it runs. PEP-501: the Owner exports all of the company's data (a ZIP of CSV files + attachments).
  */
 const PACK = [['getReportsTrialBalance', 'Trial balance'], ['getReportsProfitAndLoss', 'Profit and loss'], ['getReportsBalanceSheet', 'Balance sheet'],
   ['getReportsCashFlow', 'Cash flow'], ['getReportsReceivablesAging', 'Receivables aging'], ['getReportsPayablesAging', 'Payables aging'],
@@ -89,6 +89,16 @@ export function Backups() {
             <div className="lf-c12">{reports.length === 0 ? <span style={{ color: 'var(--negative)' }}>Choose at least one report</span>
               : <ExportButton kind="export_pack" formats={[format]} label="Prepare export pack" input={{ period: month, reports }} testId="prepare-pack" />}</div>
           </div>
+        </Card>
+      )}
+      {/* PEP-501: everything the company owns, so a customer can always leave with its books. Owner only (the API checks it too). */}
+      {owner && (
+        <Card title="Export all my data" subtitle="Every record of this company as spreadsheet (CSV) files, with its attachments, in one ZIP">
+          <p style={{ margin: '0 0 12px', color: 'var(--ink-muted)', fontSize: 14 }}>
+            Customers, suppliers, items, invoices, bills, vouchers, LCs, the chart of accounts and everything else, only this company's rows.
+            It is prepared in the background; the download link works for 24 hours. The export is recorded in the company's activity log.
+          </p>
+          <ExportButton kind="company_data" formats={['csv']} label="Export all my data" testId="export-all-data" />
         </Card>
       )}
       {can('settings.backup') && s && (
