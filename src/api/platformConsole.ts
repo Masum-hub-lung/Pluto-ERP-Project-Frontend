@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { CompanyPlanInput, OwnerAccess, OwnerAccessInput, PageMeta, Plan, PlanInput, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
+import type { CompanyBillingInput, CompanyPlanInput, OwnerAccess, OwnerAccessInput, PageMeta, Plan, PlanInput, PlatformCompany, PlatformCompanyCreate, SubscriptionPayment, SubscriptionPaymentInput, SupportAccess } from './contract.gen'
 
 /**
  * Platform console (K17; 05 /platform/companies; PEP-483/484): every customer company of this installation, for
@@ -113,6 +113,35 @@ export function useDeletePlan() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: number) => { await api.request('DELETE', `/platform/plans/${id}`, { company: false }) },
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
+  })
+}
+
+/** PEP-503: a company's subscription payments, newest first. */
+export function useSubscriptionPayments(companyId: number | null) {
+  return useQuery({
+    queryKey: ['platform', 'payments', companyId] as const,
+    queryFn: async ({ signal }) => (await api.request<{ data: SubscriptionPayment[] }>('GET', `/platform/companies/${companyId}/payments`, { company: false, signal })).data.data,
+    enabled: companyId !== null, staleTime: 0,
+  })
+}
+
+/** PEP-503: set price, paid until (null = not billed) and grace days. */
+export function useSetBilling() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: number; input: CompanyBillingInput }) =>
+      (await api.request<{ data: PlatformCompany }>('POST', `/platform/companies/${id}/billing`, { company: false, body: input })).data.data,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
+  })
+}
+
+/** PEP-503: record a payment (extends paid until; reopens a company suspended for payment). */
+export function useRecordSubscriptionPayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input, idempotencyKey }: { id: number; input: SubscriptionPaymentInput; idempotencyKey: string }) =>
+      (await api.request<{ data: SubscriptionPayment }>('POST', `/platform/companies/${id}/payments`, { company: false, body: input, idempotencyKey })).data.data,
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
   })
 }
