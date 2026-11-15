@@ -107,3 +107,12 @@ export function useCompanyPlan() {
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
   })
 }
+
+/** PEP-499: delete a plan no company is on (409 plan_in_use while companies are on it). */
+export function useDeletePlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => { await api.request('DELETE', `/platform/plans/${id}`, { company: false }) },
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
+  })
+}

@@ -60,6 +60,7 @@ export type ErrorCode =
   | 'order_qty_exceeded'
   | 'period_locked'
   | 'permission_denied'
+  | 'plan_in_use'
   | 'platform_admin_only'
   | 'platform_two_factor_required'
   | 'purpose_required'
@@ -629,7 +630,7 @@ export interface Error {
 /** Async export. */
 export interface ExportJob {
   id: number
-  kind: 'export_pack' | 'report' | 'list'
+  kind: 'export_pack' | 'report' | 'list' | 'company_data'
   status: 'queued' | 'running' | 'complete' | 'failed'
   download_url?: string | null
   expires_at?: string | null
@@ -641,9 +642,9 @@ export interface ExportJob {
   created_at?: string | null
 }
 
-/** Start an export. export_pack: month-end pack (`period` = YYYY-MM, `reports` = report operationIds, e.g. getReportsTrialBalance; default the financial statements). report: one report, `source` = its operationId (e.g. getReportsProfitAndLoss) and `filters` = its query parameters. list: any list screen, `source` = the list operationId (e.g. getParties) and `filters` = its query parameters (every page). The caller needs the source's view permission as well. */
+/** Start an export. export_pack: month-end pack (`period` = YYYY-MM, `reports` = report operationIds, e.g. getReportsTrialBalance; default the financial statements). report: one report, `source` = its operationId (e.g. getReportsProfitAndLoss) and `filters` = its query parameters. list: any list screen, `source` = the list operationId (e.g. getParties) and `filters` = its query parameters (every page). The caller needs the source's view permission as well. company_data (PEP-501): every record the company owns as a ZIP of CSV files (one per table, its own rows only) with its attachments; format csv; Owner only. */
 export interface ExportJobCreate {
-  kind: 'export_pack' | 'report' | 'list'
+  kind: 'export_pack' | 'report' | 'list' | 'company_data'
   format: 'xlsx' | 'pdf' | 'both' | 'csv'
   period?: string | null
   reports?: Array<string>
@@ -1872,7 +1873,7 @@ export interface PlatformCompany {
   branches_used?: number
 }
 
-/** A new customer company and the person who will own it. */
+/** A new customer company, the person who will own it and the Pluto plan it bought (PEP-499: required, so nobody gets Import Pro by accident). */
 export interface PlatformCompanyCreate {
   legal_name: string
   trading_name?: string | null
@@ -1881,6 +1882,7 @@ export interface PlatformCompanyCreate {
   base_currency_code?: string
   owner_email: string
   owner_name?: string | null
+  plan_id: number
 }
 
 /** Post a document. confirm_backdated is required when the date is older than the warning window (BR-053). `receipt` (sales invoices only) records the cash received in the same transaction (R-28). */

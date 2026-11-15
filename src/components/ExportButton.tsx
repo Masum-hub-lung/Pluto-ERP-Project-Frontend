@@ -12,7 +12,7 @@ import { useIdempotencyKey } from '../lib/useIdempotencyKey'
  * Needs reports.export.
  */
 export function ExportButton({ kind, source, filters = {}, formats, label = 'Export', input, testId = 'export-list' }: {
-  kind: 'list' | 'report' | 'export_pack'; source?: string; filters?: Record<string, unknown>; formats: Array<ExportJobCreate['format']>; label?: string
+  kind: 'list' | 'report' | 'export_pack' | 'company_data'; source?: string; filters?: Record<string, unknown>; formats: Array<ExportJobCreate['format']>; label?: string
   /** Extra fields of the job (period, reports for the month-end pack). */
   input?: Partial<ExportJobCreate>; testId?: string
 }) {

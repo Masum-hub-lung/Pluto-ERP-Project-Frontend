@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { Plan, PlatformCompany } from '../../api/contract.gen'
-import { useCompanyPlan, usePlans, useSavePlan } from '../../api/platformConsole'
+import { useCompanyPlan, useDeletePlan, usePlans, useSavePlan } from '../../api/platformConsole'
 import { useToast } from '../../app/toast'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { ConflictBanner } from '../../components/ConflictBanner'
 import { ProblemBanner } from '../../components/ProblemBanner'
 import { ResponsiveDialog } from '../../components/ResponsiveDialog'
@@ -25,6 +26,7 @@ export function PlansPanel() {
   const { Button, DataTable, Badge, EmptyState, Card } = ds()
   const plans = usePlans()
   const [editing, setEditing] = useState<Plan | 'new' | null>(null)
+  const [deleting, setDeleting] = useState<Plan | null>(null)
   const rows = (plans.data ?? []).map((p) => ({ ...p, plan: p }))
   const columns: DataColumn[] = [
     { key: 'name', label: 'Plan', render: (_v, r) => (
@@ -36,7 +38,12 @@ export function PlansPanel() {
     { key: 'modules', label: 'Modules', render: (v: string[]) => <span style={{ whiteSpace: 'normal' }}>{modulesText(v)}</span> },
     { key: 'companies', label: 'Companies', align: 'right', render: (v: number) => <span className="lf-num">{v ?? 0}</span> },
     { key: 'is_active', label: 'Status', render: (v: boolean) => <Badge tone={v ? 'positive' : 'neutral'} dot>{v ? 'Offered' : 'Not offered'}</Badge> },
-    { key: 'edit', label: '', render: (_v, r) => <Button size="sm" variant="secondary" icon="pencil" onClick={() => setEditing(r.plan as Plan)} data-testid={`edit-plan-${r.slug}`} aria-label={`Edit ${r.name}`}>Edit</Button> },
+    { key: 'edit', label: '', render: (_v, r) => (
+      <span style={{ display: 'inline-flex', gap: 4, whiteSpace: 'nowrap' }}>
+        <Button size="sm" variant="secondary" icon="pencil" onClick={() => setEditing(r.plan as Plan)} data-testid={`edit-plan-${r.slug}`} aria-label={`Edit ${r.name}`}>Edit</Button>
+        {/* PEP-499: only a plan no company is on can be deleted; the API refuses otherwise (plan_in_use). */}
+        {!r.companies && <Button size="sm" variant="ghost" icon="trash-2" onClick={() => setDeleting(r.plan as Plan)} data-testid={`delete-plan-${r.slug}`} aria-label={`Delete ${r.name}`}>Delete</Button>}
+      </span>) },
   ]
   return (
     <Card padding="none">
@@ -53,7 +60,29 @@ export function PlansPanel() {
           emptyState={<EmptyState icon="layers" title="No plans yet" description="Create the plans you sell." action={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>New plan</Button>} />} />
       </div>
       {editing && <PlanDialog plan={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+      {deleting && <DeletePlanDialog plan={deleting} onClose={() => setDeleting(null)} />}
     </Card>
+  )
+}
+
+function DeletePlanDialog({ plan, onClose }: { plan: Plan; onClose: () => void }) {
+  const toast = useToast()
+  const del = useDeletePlan()
+  return (
+    <ConfirmDialog title={`Delete ${plan.name}?`} confirmLabel="Delete plan" tone="negative" loading={del.isPending}
+      onConfirm={async () => {
+        try {
+          await del.mutateAsync(plan.id)
+          toast({ tone: 'positive', title: `${plan.name} deleted` })
+          onClose()
+        } catch (e) {
+          toast({ tone: 'negative', title: `${plan.name} was not deleted`, description: e instanceof ApiError ? (e.problem.detail ?? e.message) : 'Try again.' })
+          onClose()
+        }
+      }}
+      onClose={onClose}>
+      No company is on this plan. It is removed for good; you can create it again later.
+    </ConfirmDialog>
   )
 }
 
