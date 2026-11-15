@@ -1,3 +1,5 @@
+import { modulePermission, moduleForPath } from '../lib/modules'
+
 /**
  * Navigation registry (02 S0 sidebar, 08 §3 routes): every module and page from the design, its view permission and
  * whether it is built. The sidebar, the landing route, unbuilt-page routes and quick-create all read this file —
@@ -89,7 +91,8 @@ export const NAV: NavSection[] = [
 ]
 
 type Can = (permission: string) => boolean
-const allowed = (can: Can, l: NavLink) => l.permission === null || can(l.permission)
+// PEP-498: a page in a plan module (LC finance inside the LC portal) also needs that module in the company's plan.
+const allowed = (can: Can, l: NavLink) => (l.permission === null || can(l.permission)) && (moduleForPath(l.path) === null || can(modulePermission(moduleForPath(l.path)!)))
 
 /** The sidebar for one role: items and sub-items it may view; sections with nothing left are dropped. */
 export function visibleNav(can: Can, nav: NavSection[] = NAV): NavSection[] {

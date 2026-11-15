@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { hasModule, moduleForPermission, type ModuleKey } from '../lib/modules'
 import { useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../api/client'
 import type { LoginResponse, Me } from '../api/contract.gen'
@@ -186,8 +187,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     status, me, companyId: api.getCompany(), twoFactorBlocked, signedOutByUser,
     // 'platform.console' is not a company permission: it is the server's platform-admin list (K17, PEP-484).
     // In a read-only support view (PEP-485) only view and report permissions count, so no page offers a change the API refuses.
+    // PEP-498: `module:<key>` asks whether the company's plan includes a module, and an lc.* permission also needs
+    // LC management in the plan, so every page and menu built on can() hides what the plan leaves out.
     can: (p) => (p === PLATFORM_CONSOLE ? !!me?.platform_admin && !me?.support_access
-      : (me?.permissions ?? []).includes(p) && (!me?.support_access || /\.view(_costs)?$|^reports\./.test(p))),
+      : p.startsWith('module:') ? hasModule(me?.modules, p.slice(7) as ModuleKey)
+        : (me?.permissions ?? []).includes(p) && (!me?.support_access || /\.view(_costs)?$|^reports\./.test(p))
+          && (moduleForPermission(p) === null || hasModule(me?.modules, moduleForPermission(p)!))),
     signIn, completeTwoFactor, signInWith: finishSignIn, reload, refreshMe, signOut, switchCompany,
   }), [status, me, twoFactorBlocked, signedOutByUser, signIn, completeTwoFactor, finishSignIn, reload, refreshMe, signOut, switchCompany])
 

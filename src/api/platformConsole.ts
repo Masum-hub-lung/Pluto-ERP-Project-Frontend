@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { OwnerAccess, OwnerAccessInput, PageMeta, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
+import type { CompanyPlanInput, OwnerAccess, OwnerAccessInput, PageMeta, Plan, PlanInput, PlatformCompany, PlatformCompanyCreate, SupportAccess } from './contract.gen'
 
 /**
  * Platform console (K17; 05 /platform/companies; PEP-483/484): every customer company of this installation, for
@@ -74,5 +74,36 @@ export function useLeaveOwnerAccess() {
   return useMutation({
     mutationFn: async (id: number) => { await api.request('DELETE', `/platform/companies/${id}/owner-access`, { company: false }) },
     onSuccess: () => qc.invalidateQueries({ queryKey: key() }),
+  })
+}
+
+/** PEP-498: Pluto plans (users, branches, modules) with how many companies are on each. */
+export function usePlans(enabled = true) {
+  return useQuery({
+    queryKey: ['platform', 'plans'] as const,
+    queryFn: async ({ signal }) => (await api.request<{ data: Plan[] }>('GET', '/platform/plans', { company: false, signal })).data.data,
+    staleTime: 0, enabled,
+  })
+}
+
+/** PEP-498: create a plan (no id) or change one (If-Match its version); every company on it follows at once. */
+export function useSavePlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input, version, idempotencyKey }: { id?: number; input: PlanInput; version?: number; idempotencyKey: string }) =>
+      (await (id
+        ? api.request<{ data: Plan }>('PUT', `/platform/plans/${id}`, { company: false, body: input, ifMatch: `W/"${version}"` })
+        : api.request<{ data: Plan }>('POST', '/platform/plans', { company: false, body: input, idempotencyKey }))).data.data,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
+  })
+}
+
+/** PEP-498: put a company on a plan with optional exceptions (its Owners are told). */
+export function useCompanyPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: number; input: CompanyPlanInput }) =>
+      (await api.request<{ data: PlatformCompany }>('POST', `/platform/companies/${id}/plan`, { company: false, body: input })).data.data,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['platform'] }) },
   })
 }

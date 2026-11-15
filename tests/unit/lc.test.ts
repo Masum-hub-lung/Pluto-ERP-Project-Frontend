@@ -89,7 +89,7 @@ test('an import bill sends the LC, lot and currency; a blank rate is left to the
 
 test('LC finance lives inside the LC portal: banks, loans and FX revaluation (the last needs accounting.view)', async () => {
   const { visibleNav } = await import('../../src/app/nav')
-  const lcChildren = (perms: string[]) => visibleNav((p: string) => perms.includes(p)).flatMap((s) => s.items).find((i) => i.label === 'LC Management')!.children!.map((c) => c.path)
+  const lcChildren = (perms: string[]) => visibleNav((p: string) => p.startsWith('module:') || perms.includes(p)).flatMap((s) => s.items).find((i) => i.label === 'LC Management')!.children!.map((c) => c.path)
   const full = lcChildren(['lc.view', 'lc.create', 'accounting.view'])
   for (const p of ['/lc/banks', '/lc/loans', '/lc/fx-revaluation']) assert.ok(full.includes(p), p)
   assert.ok(!lcChildren(['lc.view']).includes('/lc/fx-revaluation'))

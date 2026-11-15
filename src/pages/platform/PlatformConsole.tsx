@@ -13,6 +13,7 @@ import { Forbidden } from '../../components/states'
 import { SummaryTile } from '../../components/SummaryTile'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useListParams } from '../../lib/useListParams'
+import { CompanyPlanDialog, PlanCell, PlansPanel } from './PlansPanel'
 
 /**
  * K17 Platform console (PEP-484; API PEP-483): the owner of this Pluto installation sees every customer company — owner,
@@ -30,10 +31,11 @@ const BUSINESS = [
 const when = (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—')
 
 export function PlatformConsole() {
-  const { PageHeader, Button, IconButton, Input, Tabs, DataTable, EmptyState, Badge, Banner } = ds()
+  const { PageHeader, Button, IconButton, Input, Tabs, DataTable, EmptyState, Badge, Banner, Segmented } = ds()
   const { can, switchCompany } = useSession()
   const { get, set, search, setSearch, page } = useListParams()
   const status = get('status', 'all')
+  const view = get('view', 'companies') // PEP-498: companies or plans
   const q = get('q')
   const allowed = can(PLATFORM_CONSOLE)
   const list = usePlatformCompanies({ q, status: status === 'all' ? undefined : status, page }, allowed)
@@ -47,6 +49,7 @@ export function PlatformConsole() {
   const [viewing, setViewing] = useState<PlatformCompany | null>(null)
   const [joining, setJoining] = useState<PlatformCompany | null>(null)
   const [leaving, setLeaving] = useState<PlatformCompany | null>(null)
+  const [planFor, setPlanFor] = useState<PlatformCompany | null>(null)
 
   if (!allowed) return <Forbidden what="the platform console" />
   const twoStep = list.error instanceof ApiError && list.error.code === 'platform_two_factor_required'
@@ -64,6 +67,7 @@ export function PlatformConsole() {
         {r.owner_email && <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.owner_pending ? `Invitation sent to ${r.owner_email}` : r.owner_email}</span>}
       </span>) },
     { key: 'members', label: 'Members', align: 'right', render: (v: number) => <span className="lf-num">{v}</span> },
+    { key: 'plan', label: 'Plan', render: (_v, r) => <PlanCell company={r.company as PlatformCompany} onChange={() => setPlanFor(r.company as PlatformCompany)} /> },
     { key: 'created_at', label: 'Created', render: (v: string) => when(v) },
     { key: 'last_activity_at', label: 'Last activity', render: (v: string | null) => when(v) },
     { key: 'status', label: 'Status', render: (v: string, r) => (
@@ -90,7 +94,11 @@ export function PlatformConsole() {
         actions={<Button variant="primary" icon="plus" onClick={() => setCreating(true)} data-testid="create-company" disabled={twoStep}>Create company</Button>} />
       {twoStep && <div data-testid="platform-two-step"><Banner tone="warning" title="Sign in with 2-step verification to use the platform console">
         {(list.error as ApiError).problem.detail} Turn it on in Settings › Security if you have not yet.</Banner></div>}
-      {!twoStep && <>
+      {!twoStep && <div style={{ marginBottom: 16 }} data-testid="platform-view">
+        <Segmented value={view} onChange={(v: string) => set({ view: v === 'companies' ? null : v })} options={[{ value: 'companies', label: 'Companies' }, { value: 'plans', label: 'Plans' }]} />
+      </div>}
+      {!twoStep && view === 'plans' && <PlansPanel />}
+      {!twoStep && view !== 'plans' && <>
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <div className="lf-grid" style={{ marginBottom: 24 }} data-testid="platform-tiles">
         <SummaryTile label="Companies" value={totals.all ?? '—'} sub="On this installation" testId="tile-companies" />
@@ -102,7 +110,7 @@ export function PlatformConsole() {
         <Tabs key={status} items={STATUS} value={status} onChange={(v) => set({ status: v === 'all' ? null : v })} />
       </div>
       <ListCard label="Companies" meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
-        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'owner', 'last_activity_at', 'status', 'access'], badgeKey: 'status', empty }}
+        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'owner', 'plan', 'status', 'access'], badgeKey: 'status', empty }}
         toolbar={<div style={{ flex: '1 1 280px', maxWidth: 380 }}>
           <Input icon="search" placeholder="Search company or owner e-mail" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search companies" />
         </div>}>
@@ -117,6 +125,7 @@ export function PlatformConsole() {
       {viewing && <SupportDialog company={viewing} onClose={() => setViewing(null)} />}
       {joining && <OwnerDialog company={joining} onClose={() => setJoining(null)} />}
       {leaving && <LeaveDialog company={leaving} onClose={() => setLeaving(null)} />}
+      {planFor && <CompanyPlanDialog company={planFor} onClose={() => setPlanFor(null)} />}
       {changing && <StatusDialog company={changing.c} action={changing.action} onClose={() => setChanging(null)} />}
     </>
   )

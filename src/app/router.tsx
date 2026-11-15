@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-do
 import { PageSkeleton } from '../components/PageSkeleton'
 import { NotFound, NotInRelease } from '../components/states'
 import { useSession } from '../auth/session'
-import { RequireAuth, RequirePermission } from './guards'
+import { RequireAuth, RequireModule, RequirePermission } from './guards'
 import { allLinks, landingPath, NAV } from './nav'
 import { Shell } from './Shell'
 import { SignIn } from '../pages/SignIn'
@@ -221,20 +221,20 @@ export const router = createBrowserRouter([
       { path: 'banking/accounts', handle: crumbs('Cash and bank', 'Accounts'), element: guarded('banking.view', lazyPage(<MoneyAccountList />, 'list')) },
       { path: 'banking/accounts/new', handle: crumbs('Cash and bank', 'Add account'), element: guarded('banking.create', lazyPage(<MoneyAccountForm />, 'form')) },
       // Cash and bank (P12)
-      { path: 'lc', handle: crumbs('LC Management', 'Overview'), element: guarded('lc.view', lazyPage(<LcDashboard />, 'detail')) },
-      { path: 'lc/list', handle: crumbs('LC Management', 'All LCs'), element: guarded('lc.view', lazyPage(<LcList />, 'list')) },
-      { path: 'lc/new', handle: crumbs('LC Management', 'New LC'), element: guarded('lc.create', lazyPage(<LcForm mode="new" />, 'form')) },
-      { path: 'lc/amendments', handle: crumbs('LC Management', 'Amendments'), element: guarded('lc.view', lazyPage(<LcAmendments />, 'list')) },
-      { path: 'lc/documents', handle: crumbs('LC Management', 'Documents'), element: guarded('lc.view', lazyPage(<LcDocuments />, 'report')) },
-      { path: 'lc/charges', handle: crumbs('LC Management', 'Charges and cost'), element: guarded('lc.view', lazyPage(<LcCharges />, 'list')) },
-      { path: 'lc/reports', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
-      { path: 'lc/reports/:report', handle: crumbs('LC Management', 'Reports'), element: guarded('lc.view', lazyPage(<LcReports />, 'report')) },
-      { path: 'lc/banks', handle: crumbs('LC Management', 'Banks and limits'), element: guarded('lc.view', lazyPage(<LcBanks />, 'list')) },
-      { path: 'lc/loans', handle: crumbs('LC Management', 'Loans'), element: guarded('lc.view', lazyPage(<LcLoans />, 'list')) },
-      { path: 'lc/loans/:id', handle: crumbs('LC Management', 'Loan'), element: guarded('lc.view', lazyPage(<LcLoanDetails />, 'detail')) },
-      { path: 'lc/fx-revaluation', handle: crumbs('LC Management', 'FX revaluation'), element: guarded('accounting.view', lazyPage(<LcFxRevaluation />, 'report')) },
-      { path: 'lc/:id', handle: crumbs('LC Management', 'LC'), element: guarded('lc.view', lazyPage(<LcDetails />, 'detail')) },
-      { path: 'lc/:id/edit', handle: crumbs('LC Management', 'Edit LC'), element: guarded('lc.edit', lazyPage(<LcForm mode="edit" />, 'form')) },
+      { path: 'lc', handle: crumbs('LC Management', 'Overview'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcDashboard />, 'detail'))}</RequireModule> },
+      { path: 'lc/list', handle: crumbs('LC Management', 'All LCs'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcList />, 'list'))}</RequireModule> },
+      { path: 'lc/new', handle: crumbs('LC Management', 'New LC'), element: <RequireModule module="lc_management">{guarded('lc.create', lazyPage(<LcForm mode="new" />, 'form'))}</RequireModule> },
+      { path: 'lc/amendments', handle: crumbs('LC Management', 'Amendments'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcAmendments />, 'list'))}</RequireModule> },
+      { path: 'lc/documents', handle: crumbs('LC Management', 'Documents'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcDocuments />, 'report'))}</RequireModule> },
+      { path: 'lc/charges', handle: crumbs('LC Management', 'Charges and cost'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcCharges />, 'list'))}</RequireModule> },
+      { path: 'lc/reports', handle: crumbs('LC Management', 'Reports'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcReports />, 'report'))}</RequireModule> },
+      { path: 'lc/reports/:report', handle: crumbs('LC Management', 'Reports'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcReports />, 'report'))}</RequireModule> },
+      { path: 'lc/banks', handle: crumbs('LC Management', 'Banks and limits'), element: <RequireModule module="lc_finance">{guarded('lc.view', lazyPage(<LcBanks />, 'list'))}</RequireModule> },
+      { path: 'lc/loans', handle: crumbs('LC Management', 'Loans'), element: <RequireModule module="lc_finance">{guarded('lc.view', lazyPage(<LcLoans />, 'list'))}</RequireModule> },
+      { path: 'lc/loans/:id', handle: crumbs('LC Management', 'Loan'), element: <RequireModule module="lc_finance">{guarded('lc.view', lazyPage(<LcLoanDetails />, 'detail'))}</RequireModule> },
+      { path: 'lc/fx-revaluation', handle: crumbs('LC Management', 'FX revaluation'), element: <RequireModule module="lc_finance">{guarded('accounting.view', lazyPage(<LcFxRevaluation />, 'report'))}</RequireModule> },
+      { path: 'lc/:id', handle: crumbs('LC Management', 'LC'), element: <RequireModule module="lc_management">{guarded('lc.view', lazyPage(<LcDetails />, 'detail'))}</RequireModule> },
+      { path: 'lc/:id/edit', handle: crumbs('LC Management', 'Edit LC'), element: <RequireModule module="lc_management">{guarded('lc.edit', lazyPage(<LcForm mode="edit" />, 'form'))}</RequireModule> },
       { path: 'banking', handle: crumbs('Cash and bank', 'Overview'), element: guarded('banking.view', lazyPage(<BankingOverview />, 'detail')) },
       { path: 'banking/accounts/:id', handle: crumbs('Cash and bank', 'Account'), element: guarded('banking.view', lazyPage(<AccountDetails />, 'detail')) },
       { path: 'banking/received', handle: crumbs('Cash and bank', 'Money received'), element: guarded('banking.create', lazyPage(<MoneyForm key="received" kind="received" />, 'form')) },
