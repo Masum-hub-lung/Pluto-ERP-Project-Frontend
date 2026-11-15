@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { PlatformCompany } from '../../api/contract.gen'
-import { useCompanyStatus, useCreatePlatformCompany, useLeaveOwnerAccess, useOwnerAccess, usePlatformCompanies, useSupportAccess } from '../../api/platformConsole'
+import { useCompanyStatus, useCreatePlatformCompany, usePlans, useLeaveOwnerAccess, useOwnerAccess, usePlatformCompanies, useSupportAccess } from '../../api/platformConsole'
 import { useToast } from '../../app/toast'
 import { PLATFORM_CONSOLE, startSupportView, useSession } from '../../auth/session'
 import { ds, type DataColumn } from '../../ds'
@@ -136,7 +136,9 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
   const toast = useToast()
   const create = useCreatePlatformCompany()
   const idem = useIdempotencyKey()
-  const [v, setV] = useState({ legal_name: '', trading_name: '', business_type: 'private_limited', owner_email: '', owner_name: '' })
+  const plans = usePlans()
+  // PEP-499: the plan the customer bought; no default, so nobody gets Import Pro by accident.
+  const [v, setV] = useState({ legal_name: '', trading_name: '', business_type: 'private_limited', owner_email: '', owner_name: '', plan_id: '' })
   const [error, setError] = useState<unknown>(null)
   const fe = (k: string) => (error instanceof ApiError ? error.fieldErrors[k]?.[0] : undefined)
   const put = (k: keyof typeof v) => (e: { target: { value: string } }) => setV({ ...v, [k]: e.target.value })
@@ -144,7 +146,7 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
     setError(null)
     try {
       const c = await create.mutateAsync({ idempotencyKey: idem.key, input: { legal_name: v.legal_name.trim(), trading_name: v.trading_name.trim() || null,
-        business_type: v.business_type as 'private_limited', owner_email: v.owner_email.trim(), owner_name: v.owner_name.trim() || null } })
+        business_type: v.business_type as 'private_limited', owner_email: v.owner_email.trim(), owner_name: v.owner_name.trim() || null, plan_id: Number(v.plan_id) } })
       idem.reset()
       toast({ tone: 'positive', title: `${c.legal_name} is ready`, description: `An invitation went to ${c.owner_email}. They become its Owner when they accept.` })
       onClose()
@@ -153,7 +155,7 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
   return (
     <ResponsiveDialog title="Create company" description="Pluto sets up the chart of accounts, financial year and number series. You are not added to the company." onClose={onClose} testId="create-company-dialog"
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" loading={create.isPending} disabled={!v.legal_name.trim() || !v.owner_email.trim()} onClick={() => void submit()} data-testid="create-company-submit">Create and invite owner</Button></>}>
+        <Button variant="primary" loading={create.isPending} disabled={!v.legal_name.trim() || !v.owner_email.trim() || !v.plan_id} onClick={() => void submit()} data-testid="create-company-submit">Create and invite owner</Button></>}>
       <div style={{ display: 'grid', gap: 12 }}>
         <ProblemBanner error={error instanceof ApiError && Object.keys(error.fieldErrors).length ? null : error} />
         <Field label="Company name" required error={fe('legal_name')} htmlFor="pc-name"><Input id="pc-name" value={v.legal_name} onChange={put('legal_name')} invalid={!!fe('legal_name')} autoFocus /></Field>
@@ -162,6 +164,10 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
         <Field label="Owner's e-mail" required hint="They get a link to set a password and join as Owner" error={fe('owner_email')} htmlFor="pc-email">
           <Input id="pc-email" type="email" value={v.owner_email} onChange={put('owner_email')} invalid={!!fe('owner_email')} /></Field>
         <Field label="Owner's name" htmlFor="pc-owner"><Input id="pc-owner" value={v.owner_name} onChange={put('owner_name')} /></Field>
+        <Field label="Plan" required hint="The plan this customer bought" error={fe('plan_id')} htmlFor="pc-plan">
+          <Select id="pc-plan" value={v.plan_id} onChange={put('plan_id')} invalid={!!fe('plan_id')} data-testid="pc-plan"
+            options={[{ value: '', label: 'Choose a plan' }, ...(plans.data ?? []).filter((p) => p.is_active)
+              .map((p) => ({ value: String(p.id), label: `${p.name} · ${p.max_users} users · ${p.max_branches == null ? 'unlimited' : p.max_branches} branches` }))]} /></Field>
       </div>
     </ResponsiveDialog>
   )
