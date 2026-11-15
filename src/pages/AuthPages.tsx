@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import type { CompanyCreate } from '../api/contract.gen'
 import { acceptInvitation, forgotPassword, resetPassword, useCreateCompany, useInvitationPreview } from '../api/settings'
@@ -21,7 +21,7 @@ function Frame({ title, intro, children, onSubmit }: { title: string; intro: Rea
   return (
     <div data-theme="light" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: 16 }}>
       <form onSubmit={onSubmit ?? ((e) => e.preventDefault())} noValidate aria-labelledby="auth-title"
-        style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        style={{ width: '100%', boxSizing: 'border-box', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-1)', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ alignSelf: 'flex-start' }}><Logo reversed={false} /></div>
         <div>
           <h1 id="auth-title" style={{ margin: 0, font: '500 26px/32px var(--font-serif)' }}>{title}</h1>
@@ -112,6 +112,7 @@ export function AcceptInvitation() {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [agree, setAgree] = useState(false) // PEP-502
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const fe = (k: string) => (error instanceof ApiError ? error.fieldErrors[k]?.[0] : undefined)
@@ -121,7 +122,7 @@ export function AcceptInvitation() {
     setBusy(true)
     setError(null)
     try {
-      const r = await acceptInvitation(token, inv?.existing_user ? { password } : { name: name.trim(), password, password_confirmation: confirm })
+      const r = await acceptInvitation(token, inv?.existing_user ? { password } : { name: name.trim(), password, password_confirmation: confirm, accept_terms: agree })
       await signInWith(r)
       const joined = r.user?.companies.find((c) => c.company_name === inv?.company_name)
       if (joined) await switchCompany(joined.company_id)
@@ -150,9 +151,15 @@ export function AcceptInvitation() {
           <Field label="Confirm password" required error={fe('password_confirmation')} htmlFor="ai-confirm">
             <Input id="ai-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </Field>
+          {/* PEP-502: a new account agrees to the Terms of service and Privacy policy. */}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 14, lineHeight: '20px' }} data-testid="accept-terms">
+            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18 }} aria-describedby={fe('accept_terms') ? 'ai-terms-error' : undefined} />
+            <span>I agree to the <Link to="/terms" target="_blank" rel="noopener">Terms of service</Link> and the <Link to="/privacy" target="_blank" rel="noopener">Privacy policy</Link>.</span>
+          </label>
+          {fe('accept_terms') && <span id="ai-terms-error" role="alert" style={{ color: 'var(--negative)', fontSize: 13 }}>{fe('accept_terms')}</span>}
         </>
       )}
-      <Button variant="primary" type="submit" block loading={busy} disabled={!password || (!inv.existing_user && (!name.trim() || password !== confirm))} data-testid="join-company">Join company</Button>
+      <Button variant="primary" type="submit" block loading={busy} disabled={!password || (!inv.existing_user && (!name.trim() || password !== confirm || !agree))} data-testid="join-company">Join company</Button>
       <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>The invitation is valid until {new Date(inv.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</span>
     </Frame>
   )

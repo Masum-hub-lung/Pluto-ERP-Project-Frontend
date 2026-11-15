@@ -62,7 +62,7 @@ async function audit(page, where) {
 test('TC-FE-006: signed-out pages have no serious accessibility issues', async () => {
   const { context, page } = await newPage()
   const problems = []
-  for (const path of ['/sign-in', '/forgot-password']) {
+  for (const path of ['/sign-in', '/forgot-password', '/terms', '/privacy']) {
     await page.goto(path)
     await settle(page)
     problems.push(...await audit(page, path))
