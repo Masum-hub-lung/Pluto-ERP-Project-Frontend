@@ -39,7 +39,7 @@ export function TradeReport({ side }: { side: 'sales' | 'purchases' }) {
         <DateFilter id="tr-to" label="To" value={query.date_to} onChange={(v) => set({ date_to: v || null })} />
         <BranchFilter value={query.branch_id ?? ''} onChange={(v) => set({ branch_id: v || null })} />
         <ChoiceFilter label="Group by" value={query.group_by} onChange={(v) => set({ group_by: v === party ? null : v })}
-          options={[{ value: party, label: sales ? 'Customer' : 'Supplier' }, { value: 'category', label: 'Category' }, { value: 'month', label: 'Month' }]} />
+          options={[{ value: party, label: sales ? 'Customer' : 'Supplier' }, { value: 'category', label: 'Category' }, { value: 'product', label: 'Item' }, { value: 'month', label: 'Month' }]} />
       </>}>
       {r.data && (
         <>
