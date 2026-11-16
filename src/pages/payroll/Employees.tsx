@@ -173,6 +173,12 @@ function Form({ employee }: { employee: Employee | null }) {
               : <p style={{ margin: 0, color: 'var(--ink-muted)' }}>Basic + house rent + medical + conveyance, worked out when you save.</p>}
             {employee && isDirty && <p style={{ margin: '8px 0 0', color: 'var(--ink-muted)', fontSize: 13 }}>Save to see the new gross.</p>}
           </Card>
+          {employee && employee.advance_balance !== '0.00' && (
+            <Card title="Advance still owed">
+              <p style={{ margin: 0, font: '500 22px/30px var(--font-serif)' }} data-testid="employee-advance">{formatTaka(employee.advance_balance, { symbol: true })}</p>
+              <p style={{ margin: '6px 0 0', color: 'var(--ink-muted)', fontSize: 13 }}>Taken back from the salary sheets each month.</p>
+            </Card>
+          )}
         </aside>
       </div>
       <div className="lf-form-footer" style={{ position: 'sticky', bottom: 0, zIndex: 5, margin: '16px -24px -48px', padding: '12px 24px', background: 'var(--surface)', borderTop: '1px solid var(--line)', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>

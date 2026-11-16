@@ -18,3 +18,7 @@ test('PEP-521: the usual month to prepare is last month', () => {
   assert.equal(lastMonth(new Date('2026-11-16T10:00:00Z')), '2026-10')
   assert.equal(lastMonth(new Date('2027-01-05T10:00:00Z')), '2026-12')
 })
+
+test('PEP-523: the advance to take back is sent like the other amounts', () => {
+  assert.deepEqual(lineChanges([line(1)], { 1: { advance_recovery: '1500' } }).changes, [{ id: 1, advance_recovery: '1500' }])
+})

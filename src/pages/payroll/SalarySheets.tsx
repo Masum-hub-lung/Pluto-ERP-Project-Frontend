@@ -22,8 +22,9 @@ import { PAYMENT_STATUS, PayDialog, PaymentsCard } from './SalaryPayments'
  * person; Save sends only those, and every figure shown (days paid, structure, gross, net, totals) is the server's.
  * Approve posts the salary entry; Cancel reverses an approved sheet.
  */
-type Editable = 'overtime' | 'other_earnings' | 'deductions'
-const EDITABLE: Array<{ key: Editable; label: string }> = [{ key: 'overtime', label: 'Overtime' }, { key: 'other_earnings', label: 'Other earnings' }, { key: 'deductions', label: 'Deductions' }]
+type Editable = 'overtime' | 'other_earnings' | 'deductions' | 'advance_recovery'
+const EDITABLE: Array<{ key: Editable; label: string }> = [{ key: 'overtime', label: 'Overtime' }, { key: 'other_earnings', label: 'Other' }, { key: 'deductions', label: 'Deductions' },
+  { key: 'advance_recovery', label: 'Advance' }] // PEP-523: filled from the employee's open advances
 const MONEY = /^\d{1,13}(\.\d{1,2})?$/
 
 export const STATUS = { draft: { label: 'Draft', tone: 'warning' }, approved: { label: 'Approved', tone: 'positive' }, cancelled: { label: 'Cancelled', tone: 'neutral' } } as const
@@ -208,25 +209,23 @@ function Sheet({ run }: { run: PayrollRun }) {
           </div>
         ))}
       </div>
-      <Card title="Employees on this sheet" subtitle={draft ? 'Type overtime, other earnings or deductions, then Save changes. Gross and net are worked out by Pluto.' : undefined}>
+      <Card title="Employees on this sheet" subtitle={draft ? 'Type overtime, other earnings, deductions or the advance to take back, then Save changes. Gross and net are worked out by Pluto.' : undefined}>
         <div style={{ overflowX: 'auto' }} tabIndex={0} role="region" aria-label="Salary lines">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }} data-testid="sheet-lines">
             <thead><tr style={{ color: 'var(--ink-muted)', fontSize: 12, textTransform: 'uppercase' }}>
               <th style={{ ...cell, textAlign: 'left', borderTop: 0 }}>Employee</th><th style={{ ...cell, borderTop: 0 }}>Days</th>
-              <th style={{ ...cell, borderTop: 0 }}>Basic + allowances</th>
               {EDITABLE.map((c) => <th key={c.key} style={{ ...cell, borderTop: 0 }}>{c.label}</th>)}
               <th style={{ ...cell, borderTop: 0 }}>Gross</th><th style={{ ...cell, borderTop: 0 }}>Net</th>
               {!draft && <th style={{ ...cell, borderTop: 0 }}>Paid</th>}
             </tr></thead>
             <tbody>{lines.map((l) => (
               <tr key={l.id}>
-                <td style={{ ...cell, textAlign: 'left' }}><strong>{l.employee_name}</strong><div style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{l.employee_code}{l.designation ? ` · ${l.designation}` : ''}</div></td>
+                <td style={{ ...cell, textAlign: 'left', whiteSpace: 'normal', minWidth: 190 }}><strong>{l.employee_name}</strong><div style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{l.employee_code}{l.designation ? ` · ${l.designation}` : ''}</div>
+                  <div style={{ color: 'var(--ink-muted)', fontSize: 12 }} className="lf-num">Basic {formatTaka(l.basic_salary)} · HR {formatTaka(l.house_rent)} · Med {formatTaka(l.medical)} · Conv {formatTaka(l.conveyance)}</div></td>
                 <td style={cell}>{l.days_paid === l.days_in_month ? 'Full' : `${l.days_paid}/${l.days_in_month}`}</td>
-                <td style={cell}>{money(l.basic_salary)}
-                  <div style={{ color: 'var(--ink-muted)', fontSize: 12 }}>HR {formatTaka(l.house_rent)} · Med {formatTaka(l.medical)} · Conv {formatTaka(l.conveyance)}</div></td>
                 {EDITABLE.map((c) => (
                   <td key={c.key} style={cell}>{canPrepare
-                    ? <Input aria-label={`${c.label} for ${l.employee_name}`} inputMode="decimal" style={{ width: 92, textAlign: 'right' }} value={shown(l, c.key)} placeholder="0" onChange={(e) => edit(l.id, c.key, e.target.value)} />
+                    ? <Input aria-label={`${c.label} for ${l.employee_name}`} inputMode="decimal" style={{ width: 88, textAlign: 'right' }} value={shown(l, c.key)} placeholder="0" onChange={(e) => edit(l.id, c.key, e.target.value)} />
                     : money(l[c.key])}</td>
                 ))}
                 <td style={cell}>{money(l.gross)}</td><td style={{ ...cell, fontWeight: 600 }}>{money(l.net)}</td>
