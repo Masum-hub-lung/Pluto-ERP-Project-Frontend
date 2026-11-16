@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Employee, EmployeeInput, PageMeta, PayrollPayment, PayrollPaymentInput, PayrollRun, PayrollRunCreate, PayrollRunUpdate } from './contract.gen'
+import type { Employee, EmployeeInput, PageMeta, PayrollPayment, PayrollPaymentInput, PayrollRun, PayrollRunCreate, PayrollRunUpdate, StaffAdvance, StaffAdvanceInput } from './contract.gen'
 
 /**
  * Payroll (PEP-519): employees first (PEP-520). A plan module (`payroll`) and private: payroll.* permissions.
@@ -106,6 +106,32 @@ export function usePayrollPaymentAction(runId: number) {
     reverse: useMutation({
       mutationFn: async ({ id, reason, idempotencyKey }: { id: number; reason: string; idempotencyKey: string }) =>
         (await api.request<{ data: PayrollPayment }>('POST', `/payroll-payments/${id}/reverse`, { body: { reason }, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+  }
+}
+
+/** PEP-523 staff advances. Balance, recovered and the status are the API's. */
+export function useStaffAdvances(f: { status?: string; employee_id?: number; page?: number }) {
+  return useQuery({
+    queryKey: [...keys.all(api.getCompany()), 'advances', f],
+    queryFn: async ({ signal }) => (await api.request<{ data: StaffAdvance[]; meta: PageMeta }>('GET', '/staff-advances', { query: { ...f }, signal })).data,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useStaffAdvanceAction() {
+  const qc = useQueryClient()
+  const done = () => { void qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }); void qc.invalidateQueries({ queryKey: ['company', api.getCompany(), 'money-accounts'] }) }
+  return {
+    give: useMutation({
+      mutationFn: async ({ input, idempotencyKey }: { input: StaffAdvanceInput; idempotencyKey: string }) =>
+        (await api.request<{ data: StaffAdvance }>('POST', '/staff-advances', { body: input, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+    reverse: useMutation({
+      mutationFn: async ({ id, reason, idempotencyKey }: { id: number; reason: string; idempotencyKey: string }) =>
+        (await api.request<{ data: StaffAdvance }>('POST', `/staff-advances/${id}/reverse`, { body: { reason }, idempotencyKey })).data.data,
       onSuccess: done,
     }),
   }

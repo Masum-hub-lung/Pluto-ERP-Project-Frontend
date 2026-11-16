@@ -97,6 +97,7 @@ const EmployeeList = lazy(() => payroll().then((m) => ({ default: m.EmployeeList
 const EmployeeForm = lazy(() => payroll().then((m) => ({ default: m.EmployeeForm })))
 const SalarySheetList = lazy(() => payroll().then((m) => ({ default: m.SalarySheetList })))
 const SalarySheet = lazy(() => payroll().then((m) => ({ default: m.SalarySheet })))
+const StaffAdvanceList = lazy(() => payroll().then((m) => ({ default: m.StaffAdvanceList })))
 const InvoiceEditor = lazy(() => sales().then((m) => ({ default: m.InvoiceEditor })))
 const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePreview })))
 const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm })))
@@ -287,6 +288,7 @@ export const router = createBrowserRouter([
       { path: 'payroll/employees/new', handle: crumbs('Payroll', 'Add employee'), element: <RequireModule module="payroll">{guarded('payroll.create', lazyPage(<EmployeeForm key="new" mode="add" />, 'form'))}</RequireModule> },
       { path: 'payroll/employees/:id', handle: crumbs('Payroll', 'Employee'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<EmployeeForm mode="edit" />, 'form'))}</RequireModule> },
       { path: 'payroll/sheets', handle: crumbs('Payroll', 'Salary sheets'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<SalarySheetList />, 'list'))}</RequireModule> }, // PEP-521
+      { path: 'payroll/advances', handle: crumbs('Payroll', 'Staff advances'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<StaffAdvanceList />, 'list'))}</RequireModule> }, // PEP-523
       { path: 'payroll/sheets/:id', handle: crumbs('Payroll', 'Salary sheet'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<SalarySheet />, 'detail'))}</RequireModule> },
       { path: 'sales/recurring', handle: crumbs('Sales', 'Repeating invoices'), element: guarded('sales.view', lazyPage(<RecurringInvoiceList />, 'list')) }, // PEP-517
       { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },

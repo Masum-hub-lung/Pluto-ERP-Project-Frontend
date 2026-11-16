@@ -81,6 +81,7 @@ const TOPICS: Array<[string, HelpTopic]> = [
     'Salary sheets: start a month, type overtime, other earnings or deductions, save, then Approve and post (salary expense against salaries payable).',
     'Pay salaries: on an approved sheet, choose cash, bank or bKash and pay everyone still due, or type amounts per person; each line shows what is paid.',
     'A wrong payment: Reverse it on the sheet; the money comes back and the salary is due again.',
+    'Staff advances: give money before payday with a monthly amount to take back; new salary sheets fill it in under Advance (change it while the sheet is a draft).',
     'A sheet with a mistake: cancel it (the entry is reversed) and start the month again; a sheet with payments must have them reversed first.',
     'Only Owners and Finance managers see salaries unless you give other roles the payroll permissions.'] }],
   ['/settings/users', { title: 'Users and roles', steps: [
