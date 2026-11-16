@@ -15,6 +15,7 @@ import { ds } from '../../ds'
 import { formatTaka } from '../../lib/format'
 import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useListParams } from '../../lib/useListParams'
+import { PAYMENT_STATUS, PayDialog, PaymentsCard } from './SalaryPayments'
 
 /**
  * P3 Salary sheets and P4 Salary sheet (PEP-521). A draft sheet takes overtime, other earnings and deductions per
@@ -136,6 +137,7 @@ function Sheet({ run }: { run: PayrollRun }) {
   const [edits, setEdits] = useState<Record<number, Partial<Record<Editable | 'note', string>>>>({})
   const [error, setError] = useState<unknown>(null)
   const [ask, setAsk] = useState<null | 'approve' | 'delete' | 'cancel'>(null)
+  const [paying, setPaying] = useState(false) // PEP-522
   const [reason, setReason] = useState('')
   const lines = run.lines ?? []
   const draft = run.status === 'draft'
@@ -190,6 +192,8 @@ function Sheet({ run }: { run: PayrollRun }) {
       <PageHeader title={run.label} description={`Pay date ${run.pay_date}${run.voucher_number ? ` · entry ${run.voucher_number}` : ''}${run.approved_by ? ` · approved by ${run.approved_by.name}` : ''}`}
         actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Badge tone={STATUS[run.status].tone} dot>{STATUS[run.status].label}</Badge>
+          {run.status === 'approved' && <Badge tone={PAYMENT_STATUS[run.payment_status].tone}>{PAYMENT_STATUS[run.payment_status].label}</Badge>}
+          {run.status === 'approved' && run.payment_status !== 'paid' && can('payroll.approve') && <Button variant="primary" icon="banknote" onClick={() => setPaying(true)} data-testid="pay-sheet">Pay salaries</Button>}
           {canPrepare && <Button variant="ghost" onClick={() => setAsk('delete')} data-testid="delete-sheet">Delete draft</Button>}
           {canPrepare && <Button variant="secondary" disabled={!dirty || act.update.isPending} loading={act.update.isPending} onClick={() => void save().then((ok) => { if (ok) setEdits({}) })} data-testid="save-sheet">Save changes</Button>}
           {draft && can('payroll.approve') && <Button variant="primary" icon="check" onClick={() => setAsk('approve')} data-testid="approve-sheet">Approve and post</Button>}
@@ -198,20 +202,21 @@ function Sheet({ run }: { run: PayrollRun }) {
       <ProblemBanner error={error} />
       {run.status === 'cancelled' && run.cancel_reason && <p style={{ margin: '0 0 12px', color: 'var(--ink-muted)' }}>Cancelled: {run.cancel_reason}</p>}
       <div className="lf-grid" style={{ marginBottom: 16 }}>
-        {[['Employees', String(run.employees_count)], ['Gross', formatTaka(run.total_gross, { symbol: true })], ['Deductions', formatTaka(run.total_deductions, { symbol: true })], ['Net to pay', formatTaka(run.total_net, { symbol: true })]].map(([k, v]) => (
+        {[draft ? ['Employees', String(run.employees_count)] : ['Paid so far', formatTaka(run.total_paid, { symbol: true })], ['Gross', formatTaka(run.total_gross, { symbol: true })], ['Deductions', formatTaka(run.total_deductions, { symbol: true })], ['Net to pay', formatTaka(run.total_net, { symbol: true })]].map(([k, v]) => (
           <div key={k} className="lf-c3" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', padding: '12px 16px' }}>
             <div className="lf-label">{k}</div><div className="lf-num" style={{ font: '500 22px/30px var(--font-serif)' }} data-testid={`sheet-${k.toLowerCase().replace(/ /g, '-')}`}>{v}</div>
           </div>
         ))}
       </div>
       <Card title="Employees on this sheet" subtitle={draft ? 'Type overtime, other earnings or deductions, then Save changes. Gross and net are worked out by Pluto.' : undefined}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto' }} tabIndex={0} role="region" aria-label="Salary lines">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }} data-testid="sheet-lines">
             <thead><tr style={{ color: 'var(--ink-muted)', fontSize: 12, textTransform: 'uppercase' }}>
               <th style={{ ...cell, textAlign: 'left', borderTop: 0 }}>Employee</th><th style={{ ...cell, borderTop: 0 }}>Days</th>
               <th style={{ ...cell, borderTop: 0 }}>Basic + allowances</th>
               {EDITABLE.map((c) => <th key={c.key} style={{ ...cell, borderTop: 0 }}>{c.label}</th>)}
               <th style={{ ...cell, borderTop: 0 }}>Gross</th><th style={{ ...cell, borderTop: 0 }}>Net</th>
+              {!draft && <th style={{ ...cell, borderTop: 0 }}>Paid</th>}
             </tr></thead>
             <tbody>{lines.map((l) => (
               <tr key={l.id}>
@@ -225,11 +230,14 @@ function Sheet({ run }: { run: PayrollRun }) {
                     : money(l[c.key])}</td>
                 ))}
                 <td style={cell}>{money(l.gross)}</td><td style={{ ...cell, fontWeight: 600 }}>{money(l.net)}</td>
+                {!draft && <td style={cell}>{money(l.paid_amount)}</td>}
               </tr>
             ))}</tbody>
           </table>
         </div>
       </Card>
+      <div style={{ marginTop: 16 }}><PaymentsCard run={run} /></div>
+      {paying && <PayDialog run={run} onClose={() => setPaying(false)} />}
       {ask === 'approve' && (
         <ConfirmDialog title={`Approve ${run.label}?`} tone="info" confirmLabel="Approve and post" loading={act.approve.isPending || act.update.isPending} onConfirm={() => void run_('approve')} onClose={() => setAsk(null)}
           description={`Pluto posts the salaries on ${run.pay_date}: salary expense against salaries payable${dirty ? ', after saving your changes' : ''}. The sheet can no longer be changed; cancel it to undo.`} />

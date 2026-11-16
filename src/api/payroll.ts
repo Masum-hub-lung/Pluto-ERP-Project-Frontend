@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Employee, EmployeeInput, PageMeta, PayrollRun, PayrollRunCreate, PayrollRunUpdate } from './contract.gen'
+import type { Employee, EmployeeInput, PageMeta, PayrollPayment, PayrollPaymentInput, PayrollRun, PayrollRunCreate, PayrollRunUpdate } from './contract.gen'
 
 /**
  * Payroll (PEP-519): employees first (PEP-520). A plan module (`payroll`) and private: payroll.* permissions.
@@ -80,6 +80,32 @@ export function usePayrollRunAction(id: number) {
     cancel: useMutation({
       mutationFn: async ({ reason, idempotencyKey }: { reason: string; idempotencyKey: string }) =>
         (await api.request<{ data: PayrollRun }>('POST', `/payroll-runs/${id}/cancel`, { body: { reason }, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+  }
+}
+
+/** PEP-522 salary payments of a sheet; paying or reversing refreshes the sheet (paid amounts, status) too. */
+export function usePayrollPayments(runId: number) {
+  return useQuery({
+    queryKey: [...keys.all(api.getCompany()), 'payments', runId],
+    queryFn: async ({ signal }) => (await api.request<{ data: PayrollPayment[] }>('GET', `/payroll-runs/${runId}/payments`, { signal })).data.data,
+    enabled: runId > 0,
+  })
+}
+
+export function usePayrollPaymentAction(runId: number) {
+  const qc = useQueryClient()
+  const done = () => { void qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }); void qc.invalidateQueries({ queryKey: ['company', api.getCompany(), 'money-accounts'] }) }
+  return {
+    pay: useMutation({
+      mutationFn: async ({ input, idempotencyKey }: { input: PayrollPaymentInput; idempotencyKey: string }) =>
+        (await api.request<{ data: PayrollPayment }>('POST', `/payroll-runs/${runId}/payments`, { body: input, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+    reverse: useMutation({
+      mutationFn: async ({ id, reason, idempotencyKey }: { id: number; reason: string; idempotencyKey: string }) =>
+        (await api.request<{ data: PayrollPayment }>('POST', `/payroll-payments/${id}/reverse`, { body: { reason }, idempotencyKey })).data.data,
       onSuccess: done,
     }),
   }
