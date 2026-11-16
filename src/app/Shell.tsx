@@ -15,6 +15,7 @@ import { activePath, allLinks, QUICK_CREATE, visibleNav, type NavSection as NavS
 import type { RouteHandle } from './router'
 import { useToast } from './toast'
 import { SupportBanner } from './SupportBanner'
+import { AnnouncementBanner } from './AnnouncementBanner'
 import './shell.css'
 
 /** VITE_APP_ENV: local | preview | production (backlog P0.5-FE-02); anything but production shows a badge. */
@@ -289,6 +290,8 @@ export function Shell() {
           <div ref={sentinel} className="lf-shell-sentinel" aria-hidden />
           <div className="lf-page">
             <SupportBanner />
+            {/* PEP-513: messages from the software owner to every company. */}
+            <AnnouncementBanner />
             <Outlet />
           </div>
         </main>

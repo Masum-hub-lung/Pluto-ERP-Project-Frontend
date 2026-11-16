@@ -15,6 +15,7 @@ import { useIdempotencyKey } from '../../lib/useIdempotencyKey'
 import { useListParams } from '../../lib/useListParams'
 import { CompanyPlanDialog, PlanCell, PlansPanel } from './PlansPanel'
 import { BillingCell, BillingDialog } from './BillingPanel'
+import { AnnouncementsPanel } from './AnnouncementsPanel'
 
 /**
  * K17 Platform console (PEP-484; API PEP-483): the owner of this Pluto installation sees every customer company — owner,
@@ -98,10 +99,11 @@ export function PlatformConsole() {
       {twoStep && <div data-testid="platform-two-step"><Banner tone="warning" title="Sign in with 2-step verification to use the platform console">
         {(list.error as ApiError).problem.detail} Turn it on in Settings › Security if you have not yet.</Banner></div>}
       {!twoStep && <div style={{ marginBottom: 16 }} data-testid="platform-view">
-        <Segmented value={view} onChange={(v: string) => set({ view: v === 'companies' ? null : v })} options={[{ value: 'companies', label: 'Companies' }, { value: 'plans', label: 'Plans' }]} />
+        <Segmented value={view} onChange={(v: string) => set({ view: v === 'companies' ? null : v })} options={[{ value: 'companies', label: 'Companies' }, { value: 'plans', label: 'Plans' }, { value: 'announcements', label: 'Announcements' }]} />
       </div>}
       {!twoStep && view === 'plans' && <PlansPanel />}
-      {!twoStep && view !== 'plans' && <>
+      {!twoStep && view === 'announcements' && <AnnouncementsPanel />}
+      {!twoStep && view !== 'plans' && view !== 'announcements' && <>
       <ProblemBanner error={list.error} onRetry={() => void list.refetch()} />
       <div className="lf-grid" style={{ marginBottom: 24 }} data-testid="platform-tiles">
         <SummaryTile label="Companies" value={totals.all ?? '—'} sub="On this installation" testId="tile-companies" />
