@@ -17,7 +17,7 @@ export const NAV: NavSection[] = [
     label: 'Operations',
     items: [
       { ...page('Sales', '/sales', 'sales.view', true), icon: 'receipt-text', children: [
-        page('Overview', '/sales', 'sales.view', true), page('Invoices', '/sales/invoices', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view', true),
+        page('Overview', '/sales', 'sales.view', true), page('Invoices', '/sales/invoices', 'sales.view', true), page('Repeating invoices', '/sales/recurring', 'sales.view', true), page('Quotations', '/sales/quotations', 'sales.view', true),
         page('Payments received', '/sales/payments', 'sales.view', true), page('Returns and credit notes', '/sales/returns', 'sales.view', true),
         page('Reports', '/reports/sales', 'reports.view', true),
       ] },

@@ -26,7 +26,8 @@ const TOPICS: Array<[string, HelpTopic]> = [
     'Invoices: open one to see its payments, PDF and history; filter by status or customer.',
     'Quotations become invoices with one click once the customer accepts.',
     'Payments received: record what a customer pays and choose which invoices it settles.',
-    'Returns and credit notes take goods back and reduce what the customer owes.'] }],
+    'Returns and credit notes take goods back and reduce what the customer owes.',
+    'Repeat an invoice you send regularly (rent, contracts): Pluto writes a draft on each date in Repeating invoices; you post it.'] }],
   ['/purchases/bills/new', { title: 'Enter a purchase bill', steps: [
     'Choose the supplier, the warehouse the goods go to and the supplier’s bill number.',
     'Add the items, quantities and costs; from a purchase order the lines fill themselves.',
