@@ -25,3 +25,10 @@ test('moduleForPermission: lc.* permissions are LC management', () => {
   assert.equal(moduleForPermission('lc.view'), 'lc_management')
   assert.equal(moduleForPermission('purchases.view'), null)
 })
+
+test('PEP-520: payroll is a plan module', () => {
+  assert.equal(moduleForPath('/payroll/employees'), 'payroll')
+  assert.equal(moduleForPermission('payroll.view'), 'payroll')
+  assert.equal(hasModule(['payroll'], 'payroll'), true)
+  assert.equal(hasModule(['lc_management'], 'payroll'), false)
+})

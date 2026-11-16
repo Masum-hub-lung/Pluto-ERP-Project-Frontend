@@ -67,6 +67,10 @@ export const NAV: NavSection[] = [
         page('Categories and budgets', '/expenses/categories', 'banking.view', true), page('Recurring entries', '/expenses/recurring', 'banking.view', true),
         page('Report', '/expenses/report', 'reports.financial', true),
       ] },
+      // PEP-520: payroll (plan module; payroll.* permissions, Owner and Finance by default).
+      { ...page('Payroll', '/payroll/employees', 'payroll.view', true), icon: 'wallet', children: [
+        page('Employees', '/payroll/employees', 'payroll.view', true), page('Add employee', '/payroll/employees/new', 'payroll.create', true),
+      ] },
     ],
   },
   {
