@@ -91,6 +91,7 @@ const RecurringList = lazy(() => incomeExpense().then((m) => ({ default: m.Recur
 const sales = () => import('../pages/sales')
 const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
 const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
+const RecurringInvoiceList = lazy(() => sales().then((m) => ({ default: m.RecurringInvoiceList })))
 const InvoiceEditor = lazy(() => sales().then((m) => ({ default: m.InvoiceEditor })))
 const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePreview })))
 const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm })))
@@ -276,6 +277,7 @@ export const router = createBrowserRouter([
       { path: 'sales/credit-notes/new', handle: crumbs('Sales', 'New credit note'), element: guarded('sales.create', lazyPage(<CreditNoteForm key="new" side="sales" mode="new" />, 'form')) },
       { path: 'sales/credit-notes/:id', handle: crumbs('Sales', 'Credit note'), element: guarded('sales.view', lazyPage(<CreditNoteForm side="sales" mode="edit" />, 'form')) },
       { path: 'sales/invoices', handle: crumbs('Sales', 'Invoices'), element: guarded('sales.view', lazyPage(<InvoiceList />, 'list')) },
+      { path: 'sales/recurring', handle: crumbs('Sales', 'Repeating invoices'), element: guarded('sales.view', lazyPage(<RecurringInvoiceList />, 'list')) }, // PEP-517
       { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },
       { path: 'sales/invoices/:id', handle: crumbs('Sales', 'Invoice'), element: guarded('sales.view', lazyPage(<InvoiceDetails />, 'detail')) },
       { path: 'sales/invoices/:id/edit', handle: crumbs('Sales', 'Edit invoice'), element: guarded('sales.edit', lazyPage(<InvoiceEditor mode="edit" />, 'form')) },

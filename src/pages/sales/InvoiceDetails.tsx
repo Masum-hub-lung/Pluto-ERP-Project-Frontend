@@ -1,3 +1,4 @@
+import { RepeatDialog } from './RecurringInvoices'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -62,6 +63,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
   const [posting, setPosting] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [sending, setSending] = useState(false)
+  const [repeating, setRepeating] = useState(false) // PEP-517
   const [more, setMore] = useState(false)
 
   const warehouse = warehouses.data?.find((w) => w.id === inv.warehouse_id)?.name ?? '—'
@@ -71,6 +73,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
     ...(inv.status === 'posted' && can('sales.edit') ? [{ icon: 'arrow-up-right', label: 'E-mail', onClick: () => setSending(true), testId: 'send-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/sales/invoices/${inv.id}/edit`), testId: 'edit-invoice', primary: false }] : []),
     ...(inv.status === 'draft' && can('sales.create') ? [{ icon: 'check', label: 'Post', onClick: () => setPosting(true), testId: 'post-invoice', primary: true }] : []),
+    ...(inv.status !== 'cancelled' && can('sales.create') ? [{ icon: 'repeat', label: 'Repeat', onClick: () => setRepeating(true), testId: 'repeat-invoice', primary: false }] : []),
     ...(inv.status === 'posted' && can('sales.create') ? [{ icon: 'undo-2', label: 'Return goods', onClick: () => navigate(`/sales/returns/new?invoice=${inv.id}`), testId: 'return-goods', primary: false }] : []),
     ...(inv.status === 'posted' && can('sales.edit') ? [{ icon: 'x', label: 'Cancel invoice', onClick: () => setCancelling(true), testId: 'cancel-invoice', primary: false }] : []),
   ]
@@ -182,6 +185,7 @@ function Details({ inv }: { inv: SalesInvoice }) {
       {posting && <PostDialog title={`Post ${inv.number}?`} number={inv.number} total={inv.total} loading={post.isPending} onPost={doPost} onClose={() => setPosting(false)} />}
       {cancelling && <CancelDialog inv={inv} onClose={() => setCancelling(false)} />}
       {sending && <SendDialog inv={inv} onClose={() => setSending(false)} />}
+      {repeating && <RepeatDialog inv={inv} onClose={() => setRepeating(false)} />}
     </>
   )
 }
