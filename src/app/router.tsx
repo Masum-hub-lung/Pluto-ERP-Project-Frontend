@@ -92,6 +92,9 @@ const sales = () => import('../pages/sales')
 const InvoiceList = lazy(() => sales().then((m) => ({ default: m.InvoiceList })))
 const InvoiceDetails = lazy(() => sales().then((m) => ({ default: m.InvoiceDetails })))
 const RecurringInvoiceList = lazy(() => sales().then((m) => ({ default: m.RecurringInvoiceList })))
+const payroll = () => import('../pages/payroll')
+const EmployeeList = lazy(() => payroll().then((m) => ({ default: m.EmployeeList })))
+const EmployeeForm = lazy(() => payroll().then((m) => ({ default: m.EmployeeForm })))
 const InvoiceEditor = lazy(() => sales().then((m) => ({ default: m.InvoiceEditor })))
 const InvoicePreview = lazy(() => sales().then((m) => ({ default: m.InvoicePreview })))
 const ReceiptForm = lazy(() => sales().then((m) => ({ default: m.ReceiptForm })))
@@ -277,6 +280,10 @@ export const router = createBrowserRouter([
       { path: 'sales/credit-notes/new', handle: crumbs('Sales', 'New credit note'), element: guarded('sales.create', lazyPage(<CreditNoteForm key="new" side="sales" mode="new" />, 'form')) },
       { path: 'sales/credit-notes/:id', handle: crumbs('Sales', 'Credit note'), element: guarded('sales.view', lazyPage(<CreditNoteForm side="sales" mode="edit" />, 'form')) },
       { path: 'sales/invoices', handle: crumbs('Sales', 'Invoices'), element: guarded('sales.view', lazyPage(<InvoiceList />, 'list')) },
+      // PEP-520: payroll (a plan module; private).
+      { path: 'payroll/employees', handle: crumbs('Payroll', 'Employees'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<EmployeeList />, 'list'))}</RequireModule> },
+      { path: 'payroll/employees/new', handle: crumbs('Payroll', 'Add employee'), element: <RequireModule module="payroll">{guarded('payroll.create', lazyPage(<EmployeeForm key="new" mode="add" />, 'form'))}</RequireModule> },
+      { path: 'payroll/employees/:id', handle: crumbs('Payroll', 'Employee'), element: <RequireModule module="payroll">{guarded('payroll.view', lazyPage(<EmployeeForm mode="edit" />, 'form'))}</RequireModule> },
       { path: 'sales/recurring', handle: crumbs('Sales', 'Repeating invoices'), element: guarded('sales.view', lazyPage(<RecurringInvoiceList />, 'list')) }, // PEP-517
       { path: 'sales/invoices/new', handle: crumbs('Sales', 'New invoice'), element: guarded('sales.create', lazyPage(<InvoiceEditor mode="new" />, 'form')) },
       { path: 'sales/invoices/:id', handle: crumbs('Sales', 'Invoice'), element: guarded('sales.view', lazyPage(<InvoiceDetails />, 'detail')) },

@@ -74,6 +74,11 @@ const TOPICS: Array<[string, HelpTopic]> = [
     'Add charges (margin, commission, insurance…), shipments and documents on the LC’s page.',
     'Receive goods: a bill from the LC brings in only its items; landed cost spreads the charges onto the stock.',
     'Banks and limits, loans (PAD/LTR) and FX revaluation are in the LC menu if your plan includes LC finance.'] }],
+  ['/payroll', { title: 'Payroll', steps: [
+    'Employees: add each person with their basic, house rent, medical and conveyance; Pluto shows the monthly gross.',
+    'Choose how you pay them: cash, bank transfer or a mobile wallet, with the account number.',
+    'Mark someone as left with their last day: they stay in past records and drop out of new salary sheets.',
+    'Only Owners and Finance managers see salaries unless you give other roles the payroll permissions.'] }],
   ['/settings/users', { title: 'Users and roles', steps: [
     'Invite people by e-mail and give each a role (Owner, Accountant, Store keeper, Sales staff, Viewer).',
     'Roles decide what each person can see and do; copy a role to make your own.',
