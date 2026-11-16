@@ -70,6 +70,7 @@ export const NAV: NavSection[] = [
       // PEP-520: payroll (plan module; payroll.* permissions, Owner and Finance by default).
       { ...page('Payroll', '/payroll/employees', 'payroll.view', true), icon: 'wallet', children: [
         page('Employees', '/payroll/employees', 'payroll.view', true), page('Add employee', '/payroll/employees/new', 'payroll.create', true),
+        page('Salary sheets', '/payroll/sheets', 'payroll.view', true),
       ] },
     ],
   },

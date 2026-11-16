@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Employee, EmployeeInput, PageMeta } from './contract.gen'
+import type { Employee, EmployeeInput, PageMeta, PayrollRun, PayrollRunCreate, PayrollRunUpdate } from './contract.gen'
 
 /**
  * Payroll (PEP-519): employees first (PEP-520). A plan module (`payroll`) and private: payroll.* permissions.
@@ -39,4 +39,48 @@ export function useSaveEmployee(id: number | null) {
         : (await api.request<{ data: Employee }>('POST', '/employees', { body: input, idempotencyKey })).data.data,
     onSuccess: () => { void qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }) },
   })
+}
+
+/** PEP-521 salary sheets. Every figure (prorated structure, gross, net, totals) is the API's; the page sends only what was typed. */
+export function usePayrollRuns(f: { status?: string; page?: number }) {
+  return useQuery({
+    queryKey: [...keys.all(api.getCompany()), 'runs', f],
+    queryFn: async ({ signal }) => (await api.request<{ data: PayrollRun[]; meta: PageMeta }>('GET', '/payroll-runs', { query: { ...f }, signal })).data,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function usePayrollRun(id: number) {
+  return useQuery({
+    queryKey: [...keys.all(api.getCompany()), 'run', id],
+    queryFn: async ({ signal }) => (await api.request<{ data: PayrollRun }>('GET', `/payroll-runs/${id}`, { signal })).data.data,
+    enabled: id > 0,
+  })
+}
+
+export function usePayrollRunAction(id: number) {
+  const qc = useQueryClient()
+  const done = () => { void qc.invalidateQueries({ queryKey: keys.all(api.getCompany()) }) }
+  return {
+    create: useMutation({
+      mutationFn: async ({ input, idempotencyKey }: { input: PayrollRunCreate; idempotencyKey: string }) =>
+        (await api.request<{ data: PayrollRun }>('POST', '/payroll-runs', { body: input, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+    update: useMutation({
+      mutationFn: async ({ input, version }: { input: PayrollRunUpdate; version: number }) =>
+        (await api.request<{ data: PayrollRun }>('PUT', `/payroll-runs/${id}`, { body: input, ifMatch: `W/"${version}"` })).data.data,
+      onSuccess: done,
+    }),
+    remove: useMutation({ mutationFn: async () => { await api.request<void>('DELETE', `/payroll-runs/${id}`) }, onSuccess: done }),
+    approve: useMutation({
+      mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => (await api.request<{ data: PayrollRun }>('POST', `/payroll-runs/${id}/approve`, { idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+    cancel: useMutation({
+      mutationFn: async ({ reason, idempotencyKey }: { reason: string; idempotencyKey: string }) =>
+        (await api.request<{ data: PayrollRun }>('POST', `/payroll-runs/${id}/cancel`, { body: { reason }, idempotencyKey })).data.data,
+      onSuccess: done,
+    }),
+  }
 }
