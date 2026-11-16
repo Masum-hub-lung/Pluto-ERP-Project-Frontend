@@ -12,6 +12,7 @@ import { ProblemBanner } from '../../components/ProblemBanner'
 import { SummaryTile } from '../../components/SummaryTile'
 import { NotFound } from '../../components/states'
 import { PartyAccountLinks, PartyDocumentsTab, PartyOpenItems, PartyPaymentsTab } from '../partyAccounts/PartyTabs'
+import { RemindersCard, useReminderAction } from './PaymentReminders'
 
 /**
  * B4 Customer details (Parties.dc.html party header + details): Overview (contact, terms, open items and advances),
@@ -26,6 +27,7 @@ export function CustomerDetails() {
   const navigate = useNavigate()
   const { can } = useSession()
   const q = useCustomer(id)
+  const remind = useReminderAction(q.data?.party)
   const [params, setParams] = useSearchParams()
   const TABS = [{ value: 'overview', label: 'Overview' }, { value: 'invoices', label: 'Invoices' }, { value: 'payments', label: 'Payments' }, { value: 'activity', label: 'Activity' }]
   const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab')! : 'overview'
@@ -35,6 +37,7 @@ export function CustomerDetails() {
   if (!q.data) return <PageSkeleton template="detail" />
   const p = q.data.party
   if (p.party_type !== 'customer') return <NotFound what="this customer" />
+  const canRemind = can('parties.view') && p.overdue !== '0.00' // PEP-516: only with overdue invoices (the API checks again)
   const place = [p.area, p.district].filter(Boolean).join(', ')
   const contact = [
     { icon: 'users', label: 'Contact person', value: p.contact_person },
@@ -77,12 +80,14 @@ export function CustomerDetails() {
             {more && (
               <Menu style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', minWidth: 200, zIndex: 20 }}
                 items={[...(can('parties.edit') ? [{ icon: 'pencil', label: 'Edit', onClick: () => navigate(`/customers/${p.id}/edit`) }] : []),
+                  ...(canRemind ? [{ icon: 'mail', label: 'Send payment reminder', onClick: () => { setMore(false); remind.start() } }] : []),
                   { icon: 'users', label: 'All customers', onClick: () => navigate('/customers') }]} />
             )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <Button variant="ghost" icon="arrow-left" onClick={() => navigate('/customers')}>All customers</Button>
+            {canRemind && <Button variant="secondary" icon="mail" onClick={remind.start} data-testid="send-reminder">Send payment reminder</Button>}
             {can('parties.edit') && <Button variant="secondary" icon="pencil" onClick={() => navigate(`/customers/${p.id}/edit`)} data-testid="edit-customer">Edit</Button>}
           </div>
         )}
@@ -99,6 +104,7 @@ export function CustomerDetails() {
         <div style={{ overflowX: 'auto' }}><Tabs key={tab} items={TABS} value={tab} onChange={(v) => setParams(v === 'overview' ? {} : { tab: v }, { replace: true })} /></div>
         <PartyAccountLinks type="customer" id={p.id} />
       </div>
+      {remind.dialog}
       {tab === 'invoices' && <PartyDocumentsTab type="customer" partyId={p.id} />}
       {tab === 'payments' && <PartyPaymentsTab type="customer" partyId={p.id} />}
 
@@ -132,6 +138,7 @@ export function CustomerDetails() {
             </div>
           ))}
         </section>
+        <RemindersCard partyId={p.id} />
         {p.notes && (
           <section className="lf-c4" style={{ ...panel, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <h2 style={{ margin: 0, font: '650 16px/24px var(--font-sans)' }}>Notes</h2>

@@ -97,7 +97,7 @@ export function Preferences() {
   const { Card, Select, Switch, Input } = ds()
   const { can } = useSession()
   const editable = can('settings.edit')
-  const s = useSettingsDraft(['default_warehouse_id', 'default_payment_term_id', 'valuation_method', 'invoice_rounding', 'allow_negative_stock', 'require_approval', 'backdate_warning_days'])
+  const s = useSettingsDraft(['default_warehouse_id', 'default_payment_term_id', 'valuation_method', 'invoice_rounding', 'allow_negative_stock', 'require_approval', 'backdate_warning_days', 'reminders_auto', 'reminder_days_after_due'])
   const seqs = useNumberSequences()
   const updateSeq = useUpdateSequence()
   const warehouses = useWarehouses()
@@ -180,6 +180,17 @@ export function Preferences() {
           <Row label="Warn when a voucher is dated more than … days back">
             <Select aria-label="Back-date warning" disabled={!editable} value={String(d.backdate_warning_days ?? 7)} onChange={(e) => set({ backdate_warning_days: Number(e.target.value) })}
               options={['0', '3', '7', '15', '30', '60'].map((n) => ({ value: n, label: n === '0' ? 'Always ask' : `${n} days` }))} />
+          </Row>
+        </Card>
+        {/* PEP-516: automatic payment reminders (daily at 10 am; at most one a week per customer; the server decides who is due). */}
+        <Card title="Payment reminders">
+          <Row label="E-mail customers about overdue invoices" hint="Every morning Pluto e-mails each customer with overdue invoices their list and statement; at most once a week">
+            <Switch key={`rem-${String(d.reminders_auto)}`} checked={!!d.reminders_auto} disabled={!editable} onChange={(v) => set({ reminders_auto: v })} label={d.reminders_auto ? 'On' : 'Off'} />
+          </Row>
+          <Row label="Start when an invoice is … days late">
+            <Select aria-label="Days late before the first reminder" disabled={!editable || !d.reminders_auto} value={String(d.reminder_days_after_due ?? 7)}
+              onChange={(e) => set({ reminder_days_after_due: Number(e.target.value) })}
+              options={['1', '3', '7', '15', '30', '60'].map((n) => ({ value: n, label: n === '1' ? '1 day' : `${n} days` }))} />
           </Row>
         </Card>
       </>}

@@ -1,6 +1,6 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { ExportJob, LedgerStatement, OutstandingReport, PageMeta, PartyStatement, PartyTransaction, StatementSendRequest } from './contract.gen'
+import type { ExportJob, LedgerStatement, OutstandingReport, PageMeta, PartyStatement, PartyTransaction, PaymentReminder, StatementSendRequest } from './contract.gen'
 
 /**
  * Party accounts (B5–B8 / C5–C8; backlog P6.2-FE-01): ledger with running balance, transactions, outstanding/aging and
@@ -67,5 +67,22 @@ export function useSendStatements() {
   return useMutation({
     mutationFn: async ({ body, idempotencyKey }: { body: StatementSendRequest; idempotencyKey: string }) =>
       (await api.request<{ data: ExportJob }>('POST', '/parties/statements/send', { body, idempotencyKey })).data.data,
+  })
+}
+
+/** PEP-516: payment reminders e-mailed to a customer (at most one a week; the API refuses with 409 reminder_sent_recently). */
+export function usePaymentReminders(partyId: number) {
+  return useQuery({
+    queryKey: [...base(api.getCompany()), partyId, 'reminders'],
+    queryFn: async ({ signal }) => (await api.request<{ data: PaymentReminder[]; meta: PageMeta }>('GET', `/parties/${partyId}/payment-reminders`, { query: { per_page: 5 }, signal })).data,
+  })
+}
+
+export function useSendPaymentReminder(partyId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) =>
+      (await api.request<{ data: PaymentReminder }>('POST', `/parties/${partyId}/payment-reminder`, { idempotencyKey })).data.data,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: [...base(api.getCompany()), partyId, 'reminders'] }); void qc.invalidateQueries({ queryKey: ['company', api.getCompany(), 'audit-logs'] }) },
   })
 }
