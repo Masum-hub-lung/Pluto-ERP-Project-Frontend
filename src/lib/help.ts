@@ -41,7 +41,8 @@ const TOPICS: Array<[string, HelpTopic]> = [
   ['/customers', { title: 'Customers', steps: [
     'Add a customer with their mobile number; set a credit limit and payment terms if you sell on credit.',
     'Open a customer for their ledger, outstanding invoices, payments and statement.',
-    'Send a statement from the customer’s page; print or download it as PDF.'] }],
+    'Send a statement from the customer’s page; print or download it as PDF.',
+    'Send payment reminder e-mails the overdue invoices with the statement (at most once a week); Settings › Preferences can send them automatically.'] }],
   ['/suppliers', { title: 'Suppliers', steps: [
     'Add local or international suppliers; international ones can have a currency.',
     'Open a supplier for their ledger, open bills, payments and statement.'] }],
