@@ -16,6 +16,7 @@ import { useListParams } from '../../lib/useListParams'
 import { CompanyPlanDialog, PlanCell, PlansPanel } from './PlansPanel'
 import { BillingCell, BillingDialog } from './BillingPanel'
 import { AnnouncementsPanel } from './AnnouncementsPanel'
+import { UsageCell } from './UsageCell'
 
 /**
  * K17 Platform console (PEP-484; API PEP-483): the owner of this Pluto installation sees every customer company — owner,
@@ -30,7 +31,6 @@ const BUSINESS = [
   { value: 'private_limited', label: 'Private limited company' }, { value: 'sole_proprietorship', label: 'Sole proprietorship' },
   { value: 'partnership', label: 'Partnership' }, { value: 'public_limited', label: 'Public limited company' },
 ]
-const when = (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—')
 
 export function PlatformConsole() {
   const { PageHeader, Button, IconButton, Input, Tabs, DataTable, EmptyState, Badge, Banner, Segmented } = ds()
@@ -73,7 +73,8 @@ export function PlatformConsole() {
     { key: 'plan', label: 'Plan', render: (_v, r) => <PlanCell company={r.company as PlatformCompany} onChange={() => setPlanFor(r.company as PlatformCompany)} /> },
     // PEP-503: subscription status, paid until, Billing (record payment, terms, history).
     { key: 'billing', label: 'Billing', render: (_v, r) => <BillingCell company={r.company as PlatformCompany} onOpen={() => setBillingFor(r.company as PlatformCompany)} /> },
-    { key: 'last_activity_at', label: 'Last activity', render: (v: string | null) => when(v) },
+    // PEP-512: sign-ins, this month's work, active people, quiet flag (replaces the bare last-activity date).
+    { key: 'usage', label: 'Usage', render: (_v, r) => <UsageCell usage={(r.company as PlatformCompany).usage} /> },
     { key: 'status', label: 'Status', render: (v: string, r) => (
       <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
         <Badge tone={v === 'active' ? 'positive' : v === 'suspended' ? 'negative' : 'neutral'} dot>{v === 'active' ? 'Active' : v === 'suspended' ? 'Suspended' : 'Archived'}</Badge>
@@ -113,12 +114,13 @@ export function PlatformConsole() {
         <SummaryTile label="Payment due soon" value={rows.filter((r) => r.billing?.status === 'due_soon').length} sub="Within 7 days, on this page" testId="tile-due-soon" />
         <SummaryTile label="Overdue or paused" value={rows.filter((r) => r.billing?.status === 'overdue' || r.billing?.status === 'suspended').length}
           tone={rows.some((r) => r.billing?.status === 'overdue' || r.billing?.status === 'suspended') ? 'negative' : undefined} sub="Unpaid, on this page" testId="tile-overdue" />
+        <SummaryTile label="Quiet 7+ days" value={rows.filter((r) => r.usage?.quiet && r.status === 'active').length} sub="No activity for a week, on this page" testId="tile-quiet" />
       </div>
       <div style={{ marginBottom: 12, overflowX: 'auto' }}>
         <Tabs key={status} items={STATUS} value={status} onChange={(v) => set({ status: v === 'all' ? null : v })} />
       </div>
       <ListCard label="Companies" meta={list.data?.meta} onPage={(p) => set({ page: p === 1 ? null : String(p) })}
-        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'plan', 'billing', 'status', 'access'], badgeKey: 'status', empty }}
+        cards={{ columns: allColumns, rows, loading: list.isPending && !twoStep, mobileColumns: ['legal_name', 'usage', 'billing', 'status', 'access'], badgeKey: 'status', empty }}
         toolbar={<div style={{ flex: '1 1 280px', maxWidth: 380 }}>
           <Input icon="search" placeholder="Search company or owner e-mail" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search companies" />
         </div>}>
