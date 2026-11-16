@@ -16,6 +16,7 @@ import type { RouteHandle } from './router'
 import { useToast } from './toast'
 import { SupportBanner } from './SupportBanner'
 import { AnnouncementBanner } from './AnnouncementBanner'
+import { HelpPanel } from './HelpPanel'
 import './shell.css'
 
 /** VITE_APP_ENV: local | preview | production (backlog P0.5-FE-02); anything but production shows a badge. */
@@ -40,6 +41,7 @@ export function Shell() {
   const [companyOpen, setCompanyOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false) // PEP-510
   const [paletteOpen, setPaletteOpen] = useState(false)
   const unread = useUnreadCount()
   const [drawerCreateOpen, setDrawerCreateOpen] = useState(false)
@@ -85,6 +87,7 @@ export function Shell() {
   shortcutState.current = { can, navigate, toast }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'F1') { e.preventDefault(); setHelpOpen(true); return } // PEP-510: help for this page
       const a = shortcutFor(e, isMac())
       if (!a) return
       const { can: allowed, navigate: go, toast: say } = shortcutState.current
@@ -262,6 +265,8 @@ export function Shell() {
               )}
             </div>
             <span className="lf-navdrawer-fy"><Icon name="calendar" size={14} />{fyName}</span>
+            {/* PEP-510: phones have no help button in the top bar; it lives in the menu drawer. */}
+            <IconButton icon="circle-help" label="Help for this page" onClick={() => { setDrawerOpen(false); setHelpOpen(true) }} />
             <IconButton icon="x" label="Close menu" onClick={() => setDrawerOpen(false)} />
           </>}>
           <div className="lf-navdrawer-company" onClickCapture={(e) => { if (companies.length > 1 && (e.target as Element).closest('.lf-company')) setCompanyOpen((o) => !o) }}>
@@ -273,7 +278,7 @@ export function Shell() {
         </NavDrawer>
         <div className="lf-shell-top" data-scrolled={scrolled}>
           <Topbar breadcrumbs={crumbs} company={company?.company_name} fy={fyName} notifications={unread} user={me?.name} onCreateItem={quickCreate}
-            onNotifications={() => setBellOpen((o) => !o)} onSearch={() => setPaletteOpen(true)} />
+            onNotifications={() => setBellOpen((o) => !o)} onSearch={() => setPaletteOpen(true)} onHelp={() => setHelpOpen(true)} />
           {bellOpen && <NotificationPanel onClose={() => setBellOpen(false)} />}
           {/* The design opens the profile menu from the avatar (Shell.dc.html "profileItems"); Settings opens Security, the only built settings page. */}
           <div ref={avatarZone} style={{ position: 'absolute', right: 16, top: 0, bottom: 0, width: 40 }}>
@@ -286,6 +291,7 @@ export function Shell() {
           </div>
         </div>
         {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+        {helpOpen && <HelpPanel onClose={() => setHelpOpen(false)} />}
         <main ref={scroller} className="lf-shell-scroll" tabIndex={-1} aria-label="Page content">
           <div ref={sentinel} className="lf-shell-sentinel" aria-hidden />
           <div className="lf-page">
