@@ -78,6 +78,8 @@ const TOPICS: Array<[string, HelpTopic]> = [
     'Employees: add each person with their basic, house rent, medical and conveyance; Pluto shows the monthly gross.',
     'Choose how you pay them: cash, bank transfer or a mobile wallet, with the account number.',
     'Mark someone as left with their last day: they stay in past records and drop out of new salary sheets.',
+    'Salary sheets: start a month, type overtime, other earnings or deductions, save, then Approve and post (salary expense against salaries payable).',
+    'A sheet with a mistake: cancel it (the entry is reversed) and start the month again.',
     'Only Owners and Finance managers see salaries unless you give other roles the payroll permissions.'] }],
   ['/settings/users', { title: 'Users and roles', steps: [
     'Invite people by e-mail and give each a role (Owner, Accountant, Store keeper, Sales staff, Viewer).',
