@@ -82,6 +82,7 @@ const TOPICS: Array<[string, HelpTopic]> = [
     'Pay salaries: on an approved sheet, choose cash, bank or bKash and pay everyone still due, or type amounts per person; each line shows what is paid.',
     'A wrong payment: Reverse it on the sheet; the money comes back and the salary is due again.',
     'Staff advances: give money before payday with a monthly amount to take back; new salary sheets fill it in under Advance (change it while the sheet is a draft).',
+    'Festival bonus: on Salary sheets choose New bonus sheet, name the festival, and give a % of basic (100% = one month\'s basic) or the same amount to all; only people with the minimum service are added. Pay it like salaries.',
     'A sheet with a mistake: cancel it (the entry is reversed) and start the month again; a sheet with payments must have them reversed first.',
     'Only Owners and Finance managers see salaries unless you give other roles the payroll permissions.'] }],
   ['/settings/users', { title: 'Users and roles', steps: [
